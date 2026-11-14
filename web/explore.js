@@ -28,12 +28,15 @@ function hasImage(layer, i) { return !(layer.endsWith('chg') && i === 0); }
 function url(layer, i) { return `${DATA}${state.loc.id}/${layer}_${state.loc.dates[i]}.webp`; }
 
 function setImage() {
-  const loc = state.loc, src = map.getSource('radar');
-  const showable = hasImage(state.layer, state.i);
-  const u = showable ? url(state.layer, state.i) : url('composite', state.i);
-  if (src) src.updateImage({ url: u, coordinates: corners(loc.bounds_lonlat) });
-  map.setPaintProperty('radar', 'raster-opacity', showable ? +$('opacity').value / 100 : 0);
-  $('datelabel').textContent = loc.dates[state.i] + (showable ? '' : '  (first date: no earlier date to compare)');
+  const loc = state.loc, c = corners(loc.bounds_lonlat), op = +$('opacity').value / 100;
+  const isChg = state.layer.endsWith('chg');
+  // base radar image: the chosen layer, or HV under a change layer
+  map.getSource('radar').updateImage({ url: url(isChg ? 'hv' : state.layer, state.i), coordinates: c });
+  map.setPaintProperty('radar', 'raster-opacity', isChg ? 0.45 * op : op);
+  const showChg = isChg && hasImage(state.layer, state.i);
+  if (showChg) map.getSource('chg').updateImage({ url: url(state.layer, state.i), coordinates: c });
+  map.setPaintProperty('chg', 'raster-opacity', showChg ? 1 : 0);
+  $('datelabel').textContent = loc.dates[state.i] + (isChg && !showChg ? '  (first date: nothing earlier to compare)' : '');
   drawLegend();
   if (state.lastClick) drawChart(...state.lastClick);
 }
@@ -47,7 +50,7 @@ function drawLegend() {
   const s = state.loc.stretch, L = state.layer, el = $('legend');
   const bar = (css, lo, hi, unit) => `<div class="legend" style="background:${css}"></div><div class="legend-lab"><span>${lo}</span><span>${hi}</span></div><div class="note">${unit}</div>`;
   if (L === 'hv' || L === 'hh') el.innerHTML = bar('linear-gradient(90deg,#000,#fff)', `${s[L].lo} dB`, `${s[L].hi} dB`, `${L.toUpperCase()} gamma0, one fixed stretch for all dates (values outside are clipped)`);
-  else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, 'This date minus the mean of all earlier dates. Changes under 0.5 dB are transparent. Display preview from the clipped layers: real drops can be larger.');
+  else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, 'This date minus the mean of all earlier dates. Computed on ~80 m cells; changes under 1 dB are transparent (per-date noise ~0.4 dB at 20 m). Display preview from the clipped layers: real drops can be larger.');
   else el.innerHTML = `<div class="note">Red = HH (${s.hh.lo} to ${s.hh.hi} dB), green = HV (${s.hv.lo} to ${s.hv.hi} dB), blue = HH&minus;HV (${s.ratio.lo} to ${s.ratio.hi} dB). Green/yellow = forest, purple/blue = cleared or bare.</div>`;
 }
 
@@ -138,6 +141,8 @@ map.on('load', async () => {
   const first = state.manifest.locations[0];
   map.addSource('radar', { type: 'image', url: `${DATA}${first.id}/composite_${first.dates[first.dates.length - 1]}.webp`, coordinates: corners(first.bounds_lonlat) });
   map.addLayer({ id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } });
+  map.addSource('chg', { type: 'image', url: `${DATA}${first.id}/hvchg_${first.dates[first.dates.length - 1]}.webp`, coordinates: corners(first.bounds_lonlat) });
+  map.addLayer({ id: 'chg', type: 'raster', source: 'chg', paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest', 'raster-opacity': 0 } });
   story();
   await selectLoc(first.id);
 });
