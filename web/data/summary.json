@@ -1,0 +1,69 @@
+{
+ "dates": [
+  "2026-06-26",
+  "2026-07-08",
+  "2026-07-20",
+  "2026-08-13",
+  "2026-08-25",
+  "2026-09-06",
+  "2026-09-18",
+  "2026-09-30",
+  "2026-10-12"
+ ],
+ "per_date": [
+  {
+   "date": "2026-07-20",
+   "n_detections": 28,
+   "total_area_ha": 72.0,
+   "early_ha": 28.0,
+   "late_ha": 44.0
+  },
+  {
+   "date": "2026-08-13",
+   "n_detections": 52,
+   "total_area_ha": 127.0,
+   "early_ha": 52.0,
+   "late_ha": 75.0
+  },
+  {
+   "date": "2026-08-25",
+   "n_detections": 19,
+   "total_area_ha": 42.0,
+   "early_ha": 16.0,
+   "late_ha": 26.0
+  },
+  {
+   "date": "2026-09-06",
+   "n_detections": 15,
+   "total_area_ha": 30.0,
+   "early_ha": 10.0,
+   "late_ha": 20.0
+  },
+  {
+   "date": "2026-09-18",
+   "n_detections": 17,
+   "total_area_ha": 37.0,
+   "early_ha": 16.0,
+   "late_ha": 21.0
+  },
+  {
+   "date": "2026-09-30",
+   "n_detections": 13,
+   "total_area_ha": 26.0,
+   "early_ha": 6.0,
+   "late_ha": 20.0
+  },
+  {
+   "date": "2026-10-12",
+   "n_detections": 13,
+   "total_area_ha": 26.0,
+   "early_ha": 10.0,
+   "late_ha": 16.0
+  }
+ ],
+ "tuning": {
+  "split": "tune: bbox W,S,E,N -54.79,-8.195,-54.608,-8.109; holdout: bbox W,S,E,N -54.79,-8.29,-54.608,-8.204",
+  "hh_thresh": 1.0,
+  "hv_thresh": 1.0
+ }
+}
