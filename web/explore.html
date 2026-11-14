@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
   <style>
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     html, body { margin: 0; height: 100%; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #e8eaed; background: #111; }
     #map { position: absolute; inset: 0 0 0 380px; }
     #side { position: absolute; top: 0; left: 0; bottom: 0; width: 380px; overflow-y: auto; padding: 14px 16px 40px; background: #1a1c1f; border-right: 1px solid #333; }
@@ -25,6 +26,14 @@
     #chart svg { width: 100%; height: 190px; background: #202226; border-radius: 4px; }
     #chart .hint { color: #9aa0a6; font-size: 13px; padding: 10px 0; }
     .story p { margin: 6px 0; }
+    .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; vertical-align: -1px; margin: 0 3px 0 6px; }
+    .sw.ref { background: transparent; border: 1.5px solid #22d3ee; }
+    .keyrow { margin: 0 0 6px 22px; }
+    .ctitle { font-weight: 600; margin: 4px 0; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 1px 12px; margin: 4px 0; }
+    .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+    .kv dt { color: #9aa0a6; }
+    .problems { margin: 4px 0 0; padding-left: 16px; color: #fdd663; font-size: 12px; }
     .tag { display: inline-block; font-size: 11px; padding: 0 5px; border-radius: 3px; background: #3c4043; color: #fdd663; }
     a { color: #8ab4f8; }
     @media (max-width: 760px) {
@@ -60,7 +69,18 @@
   <div id="chart"><div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div></div>
 
   <h2>4. What else we know</h2>
-  <p class="note"><span class="tag">pending</span> Hansen forest loss, GLAD alerts and our clearing detections are added after the final detection run.</p>
+  <div id="extras">
+    <label><input type="checkbox" id="t-det" disabled> Our detections <span class="tag" id="p-det" hidden>pending</span></label>
+    <div class="note keyrow"><span class="sw" style="background:#f59e0b"></span> early (HH rise) <span class="sw" style="background:#be123c"></span> late (HV drop) &middot; shown from the date they first appear. Click one for its HH and HV series.</div>
+    <label><input type="checkbox" id="t-ref" disabled> GLAD-L alert events <span class="tag" id="p-ref" hidden>pending</span></label>
+    <div class="note keyrow"><span class="sw ref"></span> outline, shown from the alert's first date</div>
+    <label><input type="checkbox" id="t-han" disabled> Hansen forest loss 2021&ndash;2025 <span class="tag" id="p-han" hidden>pending</span></label>
+    <div class="note keyrow" id="han-legend"></div>
+  </div>
+  <p class="note" id="extras-off" hidden>Detections, alerts and Hansen loss are computed for S Para only.</p>
+
+  <h2 id="results-h">Results (S Para)</h2>
+  <div id="results"><span class="tag">pending</span></div>
 
   <h2>What we found so far</h2>
   <div class="story" id="story"></div>

@@ -8,10 +8,14 @@ cd web && npx http-server -p 8000   # open http://localhost:8000/explore.html (f
 ```
 
 ## What it reads
-`data/explore/explore.json` and `data/explore/<id>/...` (per-date composite / HH / HV images, `series.bin` for the click time series). See `explore.js` for the exact files.
-
-## Data files kept in `data/` for the submission (not read by the page)
-`detections.geojson`, `reference_alerts.geojson`, `metrics.json`, `summary.json` (CONTRACTS.md sections 2, 4, 5, 6), `locations.json`, and the COGs in `data/<id>/` (EPSG:3857, written by `tools/export_layers.py`). The earlier map page that drew them (accuracy and disturbance panels, detection polygons, known-limits box) was removed on request; it is in git history before the commit "web: explore only".
+- Radar views 1 to 3: `data/explore/explore.json` and `data/explore/<id>/...` (per-date composite / HH / HV images, `series.bin` for the click time series).
+- View 4 and Results (S Para only; hidden for Rondonia), all files already in `data/`:
+  - `detections.geojson`: 157 patches (id, first_date, stage early/late, area_ha, split, hh_series_db, hv_series_db). Drawn from their `first_date` on, coloured by stage. Clicking one draws its 9-value HH/HV series (full precision, 5x5 multilook patch means) with the title "Detection <id>: <area_ha> ha, first seen <first_date>, <split> half" (`buffer` reads "buffer strip"); a detection click takes priority over the plain map click, which keeps the `series.bin` chart.
+  - `reference_alerts.geojson`: GLAD-L event outlines, drawn from their `date` on.
+  - `explore/spara/hansen_loss.webp` + `hansen_loss.json`: Hansen loss 2021 to 2025 as an image on the radar image's corners (same grid), legend colours from the json.
+  - `metrics.json`: Results panel. Agreement is shown only if `agreement.split === "holdout"`, under the fixed caption "Agreement with GLAD-L alerts on the held-out south half: a reference, not ground truth." Shows precision_like, recall_like, n_detections, n_reference; `hand_labeled: null` shows "Hand-checked precision: pending". Missing or non-numeric fields are listed by name; a `reference_source` other than GLAD-L is flagged.
+- If a file fails to load, only that item shows "pending" (its checkbox is disabled); everything else keeps working. File text is rendered as plain text, never HTML.
+- Not read by the page: `summary.json`, `locations.json`, and the COGs in `data/<id>/`.
 
 ## Libraries (pinned, from unpkg)
 MapLibre GL JS 5.9.0 (UMD build; MapLibre 6 is ESM-only). Basemap: OpenFreeMap `liberty`, no API key.
