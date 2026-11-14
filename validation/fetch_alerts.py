@@ -25,10 +25,23 @@ from pyproj import Geod
 from rasterio.windows import Window, from_bounds
 
 BUCKET = "/vsicurl/https://storage.googleapis.com/earthenginepartners-hansen"
-TILE = "070W_10S_060W_00N"  # UMD 10x10 deg tile name: left-bottom / right-top corners; covers the Rondonia AOI
 GLAD_L_CONF = {2: "nominal", 3: "high"}
 S2_EPOCH = dt.date(2018, 12, 31)
 GEOD = Geod(ellps="WGS84")
+
+
+def _deg(v: int, pos: str, neg: str, width: int) -> str:
+    return f"{abs(v):0{width}d}{pos if v >= 0 else neg}"
+
+
+def glad_tile(bbox) -> str:
+    """UMD 10 x 10 deg tile holding bbox, named left_bottom_right_top, e.g. 070W_10S_060W_00N (Rondonia)."""
+    w, s, e, n = bbox
+    left, bottom = int(np.floor(w / 10) * 10), int(np.floor(s / 10) * 10)
+    if e > left + 10 or n > bottom + 10:
+        raise ValueError(f"bbox {bbox} crosses a 10 deg GLAD tile edge; split it")
+    return (f"{_deg(left, 'E', 'W', 3)}_{_deg(bottom, 'N', 'S', 2)}_"
+            f"{_deg(left + 10, 'E', 'W', 3)}_{_deg(bottom + 10, 'N', 'S', 2)}")
 
 
 def read_window(url: str, bbox) -> tuple[np.ndarray, rasterio.Affine]:
@@ -68,8 +81,8 @@ def to_rows(alert, date, transform, dataset: str, layer: str, to_date, conf) -> 
 def glad_l(bbox, years=(25, 26)) -> list[dict]:
     rows = []
     for yy in years:
-        a, t = read_window(f"{BUCKET}/GLADalert/C2/current/alert{yy}_{TILE}.tif", bbox)
-        d, _ = read_window(f"{BUCKET}/GLADalert/C2/current/alertDate{yy}_{TILE}.tif", bbox)
+        a, t = read_window(f"{BUCKET}/GLADalert/C2/current/alert{yy}_{glad_tile(bbox)}.tif", bbox)
+        d, _ = read_window(f"{BUCKET}/GLADalert/C2/current/alertDate{yy}_{glad_tile(bbox)}.tif", bbox)
         jan1 = dt.date(2000 + yy, 1, 1)
         rows += to_rows(a, d, t, "umd_glad_landsat_alerts", f"alert{yy}",
                         lambda doy, j=jan1: j + dt.timedelta(doy - 1), GLAD_L_CONF.get)
@@ -77,8 +90,8 @@ def glad_l(bbox, years=(25, 26)) -> list[dict]:
 
 
 def glad_s2(bbox) -> list[dict]:
-    a, t = read_window(f"{BUCKET}/S2alert/alert/{TILE}.tif", bbox)
-    d, _ = read_window(f"{BUCKET}/S2alert/alertDate/{TILE}.tif", bbox)
+    a, t = read_window(f"{BUCKET}/S2alert/alert/{glad_tile(bbox)}.tif", bbox)
+    d, _ = read_window(f"{BUCKET}/S2alert/alertDate/{glad_tile(bbox)}.tif", bbox)
     return to_rows(a, d, t, "umd_glad_sentinel2_alerts", "S2alert",
                    lambda n: S2_EPOCH + dt.timedelta(n), lambda v: None)
 
