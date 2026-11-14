@@ -1,5 +1,6 @@
 // Static MapLibre viewer. Reads files in web/data/ (see ../CONTRACTS.md). Every missing file shows "data not loaded yet".
-// Serve over http (cd web && python -m http.server 8000); opening index.html as a file:// URL cannot fetch data.
+// Serve over http (cd web && npx http-server -p 8000); opening index.html as a file:// URL cannot fetch data.
+// Text from data files is only ever rendered with textContent (plain text), never as HTML.
 
 const CONFIG = {
   center: [0, 0], // TODO: [lon, lat] of the AOI (CLAUDE.md "Confirmed facts")
@@ -15,7 +16,7 @@ const dataUrl = (name) => new URL(`${CONFIG.dataDir}/${name}`, document.baseURI)
 
 function el(tag, text, cls) {
   const n = document.createElement(tag);
-  if (text !== undefined) n.textContent = text; // textContent only: data files are never parsed as HTML
+  if (text !== undefined) n.textContent = text;
   if (cls) n.className = cls;
   return n;
 }
@@ -34,6 +35,45 @@ const failMsg = (name, res) => (res.error === 'invalid' ? `${name} could not be 
 
 async function exists(url) {
   try { return (await fetch(url, { method: 'HEAD' })).ok; } catch { return false; }
+}
+
+// ---------- field checking (shapes come from CONTRACTS.md; nothing is guessed) ----------
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const CHECKS = {
+  num: (v) => typeof v === 'number' && Number.isFinite(v),
+  nonneg: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0,
+  count: (v) => Number.isInteger(v) && v >= 0,
+  unit: (v) => typeof v === 'number' && v >= 0 && v <= 1,
+  str: (v) => typeof v === 'string',
+  date: (v) => typeof v === 'string' && DATE_RE.test(v),
+  dates: (v) => Array.isArray(v) && v.every((d) => typeof d === 'string' && DATE_RE.test(d)),
+  obj: (v) => v === null || (typeof v === 'object' && !Array.isArray(v)),
+  rows: (v) => Array.isArray(v),
+};
+
+// Copies the fields of `obj` that exist and have the right type; records a message for every field that is
+// missing, has an unexpected type/value, or is not in the contract. Those fields are skipped.
+function readFields(obj, spec, path, problems) {
+  const out = {};
+  if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+    problems.push(`${path || 'file'} is not an object`);
+    return out;
+  }
+  for (const [k, type] of Object.entries(spec)) {
+    if (!(k in obj)) problems.push(`${path}${k} is missing (skipped)`);
+    else if (!CHECKS[type](obj[k])) problems.push(`${path}${k} has an unexpected type or value (skipped)`);
+    else out[k] = obj[k];
+  }
+  for (const k of Object.keys(obj)) if (!(k in spec)) problems.push(`${path}${k} is an unexpected field (ignored)`);
+  return out;
+}
+
+function problemList(file, problems) {
+  if (!problems.length) return null;
+  const ul = el('ul', undefined, 'problems');
+  problems.forEach((p) => ul.append(el('li', `${file}: ${p}`)));
+  return ul;
 }
 
 // ---------- map ----------
@@ -73,6 +113,7 @@ map.on('load', async () => {
     });
   } else $('s-ref').textContent = failMsg('reference_alerts.geojson', ref);
 
+  const dates = new Set();
   if (det.data) {
     map.addSource('det', { type: 'geojson', data: det.data });
     map.addLayer({
@@ -84,15 +125,21 @@ map.on('load', async () => {
       },
       layout: { visibility: $('t-det').checked ? 'visible' : 'none' },
     });
+    const feats = Array.isArray(det.data.features) ? det.data.features : [];
+    let bad = 0;
+    feats.forEach((f) => {
+      const p = f?.properties ?? {};
+      if (CHECKS.date(p.date)) dates.add(p.date); else bad++;
+      if (p.stage !== 'early' && p.stage !== 'late') bad++;
+    });
+    if (!Array.isArray(det.data.features)) $('s-det').textContent = 'features is missing';
+    else if (bad) $('s-det').textContent = `${bad} unexpected date/stage value(s)`;
   } else $('s-det').textContent = failMsg('detections.geojson', det);
 
-  renderAccuracy(metrics);
-  renderSummary(summary);
-
-  const dates = new Set();
-  det.data?.features?.forEach((f) => f.properties?.date && dates.add(f.properties.date));
-  if (Array.isArray(metrics.data?.dates)) metrics.data.dates.forEach((d) => dates.add(d));
-  if (Array.isArray(summary.data?.by_date)) summary.data.by_date.forEach((r) => r?.date && dates.add(r.date));
+  const m = renderAccuracy(metrics);
+  const s = renderSummary(summary);
+  (m.dates ?? []).forEach((d) => dates.add(d));
+  (s.dates ?? []).forEach((d) => dates.add(d));
   setupDates([...dates].sort());
 });
 
@@ -155,105 +202,148 @@ async function updateCog(kind) {
 
 // ---------- panels ----------
 
-const pct = (v) => (Number.isFinite(v) ? v.toFixed(2) : '?');
-const num = (v) => (Number.isFinite(v) ? String(v) : '?');
-const ha = (v) => (Number.isFinite(v) ? `${v.toFixed(1)} ha` : '?');
+const f2 = (v) => v.toFixed(2);
+const ha = (v) => `${v.toFixed(1)} ha`;
 
 function kvList(rows) {
   const dl = el('dl', undefined, 'kv');
-  rows.forEach(([k, v]) => { dl.append(el('dt', k), el('dd', v)); });
+  rows.forEach(([k, v]) => { dl.append(el('dt', k), el('dd', String(v))); });
   return dl;
 }
 
-// Expects metrics.json: {agreement: {precision, recall, f1, ...} | null, hand_labeled: {precision, n_sample, n_unsure} | null,
-// reference_source, notes}. See web/README.md ("Assumed file shapes").
+// metrics.json: {agreement:{precision_like, recall_like, f1_like, level, split}|null,
+//   hand_labeled:{n_sample, precision, n_unsure}|null, n_detections, n_reference, tile, dates, reference_source, notes}
+// Returns {dates} for the date slider.
 function renderAccuracy(res) {
   const box = $('metrics');
   box.replaceChildren();
   box.classList.remove('missing');
-  if (!res.data) { box.classList.add('missing'); box.textContent = failMsg('metrics.json', res); return; }
-  const m = res.data;
+  if (!res.data) { box.classList.add('missing'); box.textContent = failMsg('metrics.json', res); return {}; }
+
+  const problems = [];
+  const m = readFields(res.data, {
+    agreement: 'obj', hand_labeled: 'obj', n_detections: 'count', n_reference: 'count',
+    tile: 'str', dates: 'dates', reference_source: 'str', notes: 'str',
+  }, '', problems);
+
   box.append(el('p', 'Agreement with RADD/GLAD alerts, a reference, not ground truth.', 'caption'));
 
-  const a = m.agreement;
-  if (a && typeof a === 'object') {
-    box.append(kvList([
-      ['Agreement (holdout) precision', pct(a.precision)],
-      ['Agreement (holdout) recall', pct(a.recall)],
-      ['Agreement (holdout) F1', pct(a.f1)],
-      ...(a.n_detections !== undefined ? [['Detections', num(a.n_detections)]] : []),
-      ...(a.n_reference !== undefined ? [['Reference alerts', num(a.n_reference)]] : []),
-    ]));
-  } else box.append(el('p', 'agreement (holdout) not available yet', 'missing'));
+  // Agreement: refuse to show numbers unless it was scored on the holdout split.
+  if ('agreement' in m) {
+    if (m.agreement === null) problems.push('agreement is null (skipped)');
+    else {
+      const a = readFields(m.agreement, {
+        precision_like: 'unit', recall_like: 'unit', f1_like: 'unit', level: 'str', split: 'str',
+      }, 'agreement.', problems);
+      if (a.split === undefined) box.append(el('p', 'agreement numbers not shown: split is missing', 'missing'));
+      else if (a.split !== 'holdout') box.append(el('p', `scored on the wrong split (split: ${a.split})`, 'missing'));
+      else {
+        const rows = [['Split', a.split]];
+        if ('level' in a) rows.push(['Level', a.level]);
+        if ('precision_like' in a) rows.push(['Precision-like', f2(a.precision_like)]);
+        if ('recall_like' in a) rows.push(['Recall-like', f2(a.recall_like)]);
+        if ('f1_like' in a) rows.push(['F1-like', f2(a.f1_like)]);
+        box.append(kvList(rows));
+      }
+    }
+  }
 
-  const h = m.hand_labeled;
-  box.append(el('h3', 'Hand-labeled sample', 'hint'));
-  if (h && typeof h === 'object') {
-    box.append(kvList([
-      ['Precision', pct(h.precision)],
-      ['n_sample', num(h.n_sample)],
-      ['n_unsure', num(h.n_unsure)],
-    ]));
-  } else box.append(el('p', 'hand-labeled sample pending', 'missing'));
+  // Hand-labeled sample: null means it has not been done yet.
+  if ('hand_labeled' in m) {
+    box.append(el('h3', 'Hand-labeled sample', 'hint'));
+    if (m.hand_labeled === null) box.append(el('p', 'hand-labeled sample pending', 'missing'));
+    else {
+      const h = readFields(m.hand_labeled, { n_sample: 'count', precision: 'unit', n_unsure: 'count' }, 'hand_labeled.', problems);
+      const rows = [];
+      if ('precision' in h) rows.push(['Precision', f2(h.precision)]);
+      if ('n_sample' in h) rows.push(['n_sample', h.n_sample]);
+      if ('n_unsure' in h) rows.push(['n_unsure', h.n_unsure]);
+      if (rows.length) box.append(kvList(rows));
+    }
+  }
 
-  if (m.reference_source) box.append(el('p', `Reference: ${m.reference_source}`, 'hint'));
+  const info = [];
+  if ('tile' in m) info.push(['Tile', m.tile]);
+  if ('reference_source' in m) info.push(['Reference', m.reference_source]);
+  if ('n_detections' in m) info.push(['Detections', m.n_detections]);
+  if ('n_reference' in m) info.push(['Reference alerts', m.n_reference]);
+  if (info.length) box.append(kvList(info));
   if (m.notes) box.append(el('p', m.notes, 'hint'));
+
+  const pl = problemList('metrics.json', problems);
+  if (pl) box.append(pl);
+  return { dates: m.dates };
 }
 
-// Expects summary.json: {n_detections, total_ha, early_ha, late_ha (any subset), by_date: [{date, early_ha, late_ha}],
-// tuning_split: {...}}. See web/README.md ("Assumed file shapes").
+// summary.json: {per_date:[{date, n_detections, total_area_ha, early_ha, late_ha}], tuning:{split, hh_thresh, hv_thresh}}
+// Returns {dates} for the date slider.
 function renderSummary(res) {
   const box = $('summary');
   box.replaceChildren();
   box.classList.remove('missing');
-  if (!res.data) { box.classList.add('missing'); box.textContent = failMsg('summary.json', res); return; }
-  const s = res.data;
+  if (!res.data) { box.classList.add('missing'); box.textContent = failMsg('summary.json', res); return {}; }
 
-  const totals = [
-    ['Detections', s.n_detections, num],
-    ['Total area', s.total_ha, ha],
-    ['Early stage', s.early_ha, ha],
-    ['Late stage', s.late_ha, ha],
-  ].filter(([, v]) => v !== undefined).map(([k, v, f]) => [k, f(v)]);
-  if (totals.length) box.append(kvList(totals));
+  const problems = [];
+  const s = readFields(res.data, { per_date: 'rows', tuning: 'obj' }, '', problems);
 
-  if (Array.isArray(s.by_date) && s.by_date.length) box.append(barChart(s.by_date));
-  else box.append(el('p', 'no by-date breakdown in summary.json', 'missing'));
-
-  if (s.tuning_split && typeof s.tuning_split === 'object') {
-    box.append(el('h3', 'Tuning split', 'hint'));
-    box.append(kvList(flatten(s.tuning_split)));
-  }
-}
-
-function flatten(obj, prefix = '') {
-  return Object.entries(obj).flatMap(([k, v]) => {
-    const key = prefix ? `${prefix} ${k}` : k;
-    if (v && typeof v === 'object' && !Array.isArray(v)) return flatten(v, key);
-    return [[key.replace(/_/g, ' '), Array.isArray(v) ? v.join(', ') : String(v)]];
+  const rows = [];
+  (s.per_date ?? []).forEach((r, i) => {
+    const before = problems.length;
+    const row = readFields(r, {
+      date: 'date', n_detections: 'count', total_area_ha: 'nonneg', early_ha: 'nonneg', late_ha: 'nonneg',
+    }, `per_date[${i}].`, problems);
+    if (problems.length === before) rows.push(row);
+    else problems.push(`per_date[${i}] left out of totals and chart`);
   });
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+
+  if (rows.length) {
+    const sum = (k) => rows.reduce((t, r) => t + r[k], 0);
+    box.append(el('p', 'Totals (sum of per_date rows)', 'hint'));
+    box.append(kvList([
+      ['Detections', sum('n_detections')],
+      ['Total area', ha(sum('total_area_ha'))],
+      ['Early stage', ha(sum('early_ha'))],
+      ['Late stage', ha(sum('late_ha'))],
+    ]));
+    box.append(barChart(rows));
+  } else if ('per_date' in s) box.append(el('p', 'no valid per_date rows', 'missing'));
+
+  if ('tuning' in s) {
+    box.append(el('h3', 'Tuning split', 'hint'));
+    if (s.tuning === null) problems.push('tuning is null (skipped)');
+    else {
+      const t = readFields(s.tuning, { split: 'str', hh_thresh: 'num', hv_thresh: 'num' }, 'tuning.', problems);
+      const trows = [];
+      if ('split' in t) trows.push(['Split', t.split]);
+      if ('hh_thresh' in t) trows.push(['HH threshold', `${t.hh_thresh} dB`]);
+      if ('hv_thresh' in t) trows.push(['HV threshold', `${t.hv_thresh} dB`]);
+      if (trows.length) box.append(kvList(trows));
+    }
+  }
+
+  const pl = problemList('summary.json', problems);
+  if (pl) box.append(pl);
+  return { dates: rows.map((r) => r.date) };
 }
 
 // One stacked bar per date: early vs late hectares.
 function barChart(rows) {
-  const clean = rows
-    .map((r) => ({ date: String(r.date), early: Number(r.early_ha) || 0, late: Number(r.late_ha) || 0 }))
-    .sort((x, y) => x.date.localeCompare(y.date));
-  const max = Math.max(...clean.map((r) => r.early + r.late), 1e-9);
+  const max = Math.max(...rows.map((r) => r.early_ha + r.late_ha), 1e-9);
   const chart = el('div', undefined, 'chart');
   chart.setAttribute('role', 'img');
   chart.setAttribute('aria-label', 'Hectares of detected disturbance by date, early versus late stage');
-  clean.forEach((r) => {
+  rows.forEach((r) => {
     const row = el('div', undefined, 'bar-row');
     const bar = el('div', undefined, 'bar');
     const e = el('span', undefined, 'early');
     const l = el('span', undefined, 'late');
-    e.style.width = `${(r.early / max) * 100}%`;
-    l.style.width = `${(r.late / max) * 100}%`;
-    e.title = `early ${r.early.toFixed(1)} ha`;
-    l.title = `late ${r.late.toFixed(1)} ha`;
+    e.style.width = `${(r.early_ha / max) * 100}%`;
+    l.style.width = `${(r.late_ha / max) * 100}%`;
+    e.title = `early ${r.early_ha.toFixed(1)} ha`;
+    l.title = `late ${r.late_ha.toFixed(1)} ha`;
     bar.append(e, l);
-    row.append(el('span', r.date), bar, el('span', `${(r.early + r.late).toFixed(1)} ha`, 'tot'));
+    row.append(el('span', r.date), bar, el('span', ha(r.early_ha + r.late_ha), 'tot'));
     chart.append(row);
   });
   const key = el('div', undefined, 'chart-key');

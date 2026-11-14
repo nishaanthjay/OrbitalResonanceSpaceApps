@@ -21,18 +21,13 @@ cd web && python -m http.server 8000   # open http://localhost:8000 (file:// can
 ## Missing files
 Nothing is faked. Each missing file shows "data not loaded yet" in its own place (layer status, date label, accuracy panel, disturbance panel). A file that exists but is not valid JSON shows "<file> could not be read".
 
-## Assumed file shapes (NOT in CONTRACTS.md yet: owners please confirm or correct)
-CONTRACTS.md section 4 still lists the older flat `metrics.json` and has no `summary.json`. The panels were built to this shape:
-```json
-metrics.json: {"agreement": {"precision": 0, "recall": 0, "f1": 0, "n_detections": 0, "n_reference": 0},
-               "hand_labeled": {"precision": 0, "n_sample": 0, "n_unsure": 0},   // or null -> "hand-labeled sample pending"
-               "reference_source": "RADD", "dates": ["YYYY-MM-DD"], "notes": ""}
-summary.json: {"n_detections": 0, "total_ha": 0, "early_ha": 0, "late_ha": 0,
-               "by_date": [{"date": "YYYY-MM-DD", "early_ha": 0, "late_ha": 0}],
-               "tuning_split": {"any": "keys", "shown": "as key/value rows"}}
-```
-Every field is optional; absent ones are skipped or shown as "?".
+## Files and fields (see ../CONTRACTS.md)
+- `metrics.json`: `agreement` {`precision_like`, `recall_like`, `f1_like`, `level`, `split`} or null; `hand_labeled` {`n_sample`, `precision`, `n_unsure`} or null (null shows "hand-labeled sample pending"); `n_detections`, `n_reference`, `tile`, `dates`, `reference_source`, `notes`.
+- `summary.json`: `per_date` rows {`date`, `n_detections`, `total_area_ha`, `early_ha`, `late_ha`}; `tuning` {`split`, `hh_thresh`, `hv_thresh`}. Totals are the sum of the valid `per_date` rows.
+- `agreement` is only shown when `agreement.split` is exactly `"holdout"`; otherwise the panel says "scored on the wrong split". The split is always displayed.
+- A missing, mistyped or unexpected field is listed in the panel by name (for example `metrics.json: agreement.level is missing (skipped)`) and skipped. Nothing is guessed. A `per_date` row with a bad field is left out of the totals and chart.
+- All text from data files is rendered as plain text, never HTML.
 
 ## Behaviour notes
-- Date slider dates come from detections, `metrics.json` `dates` and `summary.json` `by_date`. Detections are shown up to the selected date; the HH/HV change layers show exactly that date's file.
+- Date slider dates come from detections, `metrics.json` `dates` and `summary.json` `per_date`. Detections are shown up to the selected date; the HH/HV change layers show exactly that date's file.
 - The accuracy caption is fixed: "Agreement with RADD/GLAD alerts, a reference, not ground truth."
