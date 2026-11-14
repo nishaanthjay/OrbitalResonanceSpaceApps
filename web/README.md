@@ -1,37 +1,20 @@
 # web — Front end (Pro #2)
 
-**Owner:** Front end.
-**Reads (all from `web/data/`):** `detections.geojson`, `reference_alerts.geojson`, `change_hh_<date>.tif`, `change_hv_<date>.tif`, `metrics.json`, `summary.json`.
-**Writes:** nothing. Static site, no build step.
-**Live site:** https://sars-deforest.vercel.app (Vercel Hobby, deployed from this folder by `vercel deploy --prod`; Git auto-deploy is disconnected, so a push does not update the site).
+**Owner:** Front end. One page: `explore.html` + `explore.js` (the radar explorer). Static site, no build step.
+**Live site:** https://sars-deforest.vercel.app (Vercel Hobby; `vercel.json` serves `explore.html` at `/`). Deployed from this folder by `vercel deploy --prod`; Git auto-deploy is disconnected, so a push does not update the site.
 
 ```bash
-cd web && python -m http.server 8000   # open http://localhost:8000 (file:// cannot fetch data)
+cd web && npx http-server -p 8000   # open http://localhost:8000/explore.html (file:// cannot fetch data)
 ```
 
+## What it reads
+`data/explore/explore.json` and `data/explore/<id>/...` (per-date composite / HH / HV images, `series.bin` for the click time series). See `explore.js` for the exact files.
+
+## Data files kept in `data/` for the submission (not read by the page)
+`detections.geojson`, `reference_alerts.geojson`, `metrics.json`, `summary.json` (CONTRACTS.md sections 2, 4, 5, 6), `locations.json`, and the COGs in `data/<id>/` (EPSG:3857, written by `tools/export_layers.py`). The earlier map page that drew them (accuracy and disturbance panels, detection polygons, known-limits box) was removed on request; it is in git history before the commit "web: explore only".
+
 ## Libraries (pinned, from unpkg)
-- MapLibre GL JS 5.9.0 (UMD build; MapLibre 6 is ESM-only).
-- `@geomatico/maplibre-cog-protocol` 0.10.0 (MIT): a `cog://` protocol that reads Cloud-Optimized GeoTIFFs with HTTP range requests. Exposes the global `MaplibreCOGProtocol`; supports MapLibre 4.5, 5 and 6. The change layers are single-band float32 and are coloured by a custom colour function (blue = drop, red = rise, NaN transparent).
-- Basemap: OpenFreeMap `liberty` style, no API key.
-- COGs are read with HTTP range requests. `python -m http.server` ignores Range headers (checked: answers 200, not 206), so for the HH/HV change layers use a range-capable server, e.g. `cd web && npx http-server -p 8000` (checked: answers 206). The rest of the page works with either.
-- Not yet verified: tile rendering of a real COG (no data exists yet). Checked: the layer is added or skipped correctly depending on whether the file exists.
-
-## Config
-`CONFIG` at the top of `app.js` holds the AOI values copied from `CLAUDE.md` "CURRENT AOI" (centre, analysis-window bbox, track/frame/direction, the 9 stack dates, any excluded granule), plus `fitPaddingPx`, `minZoomBelowFit`, `maxBoundsPad`, `dataDir`, `changeRangeDb`. The initial view fits the bbox, `minZoom` is the fitted zoom minus `minZoomBelowFit`, and panning is limited to the window grown by `maxBoundsPad` window sizes. Update CLAUDE.md first, then copy here.
-
-## Missing files
-Nothing is faked. Each missing file shows "data not loaded yet" in its own place (layer status, date label, accuracy panel, disturbance panel). A file that exists but is not valid JSON shows "<file> could not be read".
-
-## Files and fields (see ../CONTRACTS.md)
-- `metrics.json`: `agreement` {`precision_like`, `recall_like`, `f1_like`, `level`, `split`} or null; `hand_labeled` {`n_sample`, `precision`, `n_unsure`} or null (null shows "hand-labeled sample pending"); `n_detections`, `n_reference`, `tile`, `dates`, `reference_source`, `notes`.
-- `summary.json`: `dates` list; `per_date` rows {`date`, `n_detections`, `total_area_ha`, `early_ha`, `late_ha`}; `tuning` {`split`, `hh_thresh`, `hv_thresh`} (null shows "tuning split not recorded"). Totals are the sum of the valid `per_date` rows.
-- `agreement` is only shown when `agreement.split` is exactly `"holdout"`; otherwise the panel says "scored on the wrong split". The split is always displayed.
-- A missing, mistyped or unexpected field is listed in the panel by name (for example `metrics.json: agreement.level is missing (skipped)`) and skipped. Nothing is guessed. A `per_date` row with a bad field is left out of the totals and chart.
-- All text from data files is rendered as plain text, never HTML.
-
-## Behaviour notes
-- Date slider dates come from detections, `metrics.json` `dates` and `summary.json` `per_date`. Detections are shown up to the selected date; the HH/HV change layers show exactly that date's file.
-- The accuracy caption is fixed: "Agreement with RADD/GLAD alerts, a reference, not ground truth."
+MapLibre GL JS 5.9.0 (UMD build; MapLibre 6 is ESM-only). Basemap: OpenFreeMap `liberty`, no API key.
 
 ## Deploying
 ```bash
@@ -40,4 +23,4 @@ npx vercel login                      # browser approval; the token stays on you
 npx vercel link --yes --project sars-deforest   # then run `npx vercel git disconnect --yes` (link connects the GitHub repo)
 npx vercel deploy --prod --yes
 ```
-`.vercel/` and `.env*` are gitignored (`web/.gitignore`); never commit them. Checked on 2026-11-14: the host answers a `Range` request on `index.html` and `app.js` with `206 Partial Content`. Not checked: a `.tif` (no change files exist yet), so re-run `curl -sI -H "Range: bytes=0-1023" https://sars-deforest.vercel.app/data/change_hh_<date>.tif` once one is deployed.
+`.vercel/` and `.env*` are gitignored (`web/.gitignore`); never commit them.
