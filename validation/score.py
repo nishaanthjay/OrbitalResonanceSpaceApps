@@ -81,13 +81,29 @@ def dataset_pixel_deg(dataset: str, version: str = "latest", get: Http = _http) 
     raise ValueError(f"{dataset}/{version}: no epsg-4326 raster tile set; pass pixel_deg explicitly")
 
 
-def rows_to_features(rows: list[dict], date_field: str, pixel_deg: float, source: str) -> dict:
+def rows_to_features(rows: list[dict], date_field: str, pixel_deg: float, source: str,
+                     merge_dates: bool = False) -> dict:
     """Alert pixels -> GeoJSON polygons {source, date}: one polygon per connected patch of same-date pixels.
 
     Each row's longitude/latitude must be a pixel centre on the grid (checked: (coord / pixel_deg) - 0.5 must be
     within 0.05 of an integer); the pixel square is rebuilt from the integer grid index, so neighbours share
     exactly the same edge coordinates, and same-date squares are unioned.
+    merge_dates: one polygon per connected patch of pixels of ANY date (an "event": alert products report one
+    clearing as many small same-date patches); date = its earliest pixel date, date_last = its latest.
     """
+    if merge_dates:
+        sq, dates = [], []
+        for f in rows_to_features(rows, date_field, pixel_deg, source)["features"]:
+            sq.append(shape(f["geometry"]))
+            dates.append(f["properties"]["date"])
+        u = union_all(sq) if sq else None
+        tree = STRtree(sq)
+        feats = []
+        for g in (getattr(u, "geoms", [u]) if u is not None else []):
+            ds = sorted(dates[i] for i in tree.query(g, predicate="intersects") if g.contains(sq[i].representative_point()))
+            feats.append({"type": "Feature", "geometry": mapping(g),
+                          "properties": {"source": source, "date": ds[0], "date_last": ds[-1]}})
+        return {"type": "FeatureCollection", "features": sorted(feats, key=lambda f: f["properties"]["date"])}
     by_date: dict[str, list] = {}
     for r in rows:
         lon, lat = float(r["longitude"]), float(r["latitude"])
@@ -119,6 +135,7 @@ def load_reference(
     rows_file: str | None = None,
     pixel_deg: float | None = None,
     http: Http = _http,
+    merge_dates: bool = False,
 ) -> dict:
     """Reference alerts in bbox with min(dates) <= alert date <= max(dates), as GeoJSON polygons {source, date}.
 
@@ -160,7 +177,7 @@ def load_reference(
     if min_confidence:
         keep = set(CONFIDENCE[CONFIDENCE.index(min_confidence):])
         rows = [r for r in rows if r.get(conf_f) in keep]
-    return rows_to_features(rows, date_f, pixel_deg, source)
+    return rows_to_features(rows, date_f, pixel_deg, source, merge_dates)
 
 
 # ---- holdout split -----------------------------------------------------------------------------------------
@@ -220,17 +237,22 @@ def match_detections(det: dict, ref: dict, tolerance_days: int, overlap_threshol
     rg = [shape(f["geometry"]) for f in ref["features"]]
     dd = [f["properties"]["date"] for f in det["features"]]
     rd = [f["properties"]["date"] for f in ref["features"]]
+    rl = [f["properties"].get("date_last") or f["properties"]["date"] for f in ref["features"]]
     rtree, dtree = STRtree(rg), STRtree(dg)
+
+    def ok(i: int, j: int) -> bool:
+        """Compatible dates: within tolerance of the reference date, or of its date range (merged events)."""
+        return rd[j] <= dd[i] <= rl[j] or min(_days(dd[i], rd[j]), _days(dd[i], rl[j])) <= tolerance_days
 
     det_rows = []
     for i, g in enumerate(dg):
-        hits = [j for j in rtree.query(g) if _days(dd[i], rd[j]) <= tolerance_days and g.intersects(rg[j])]
+        hits = [j for j in rtree.query(g) if ok(i, j) and g.intersects(rg[j])]
         c = _cover(g, [rg[j] for j in hits])
         det_rows.append({"id": det["features"][i]["properties"].get("id"), "date": dd[i], "cover": c,
                          "agrees": c > 0 and c >= overlap_threshold, "ref_dates": sorted({rd[j] for j in hits})})
     ref_rows = []
     for j, g in enumerate(rg):
-        hits = [i for i in dtree.query(g) if _days(dd[i], rd[j]) <= tolerance_days and g.intersects(dg[i])]
+        hits = [i for i in dtree.query(g) if ok(i, j) and g.intersects(dg[i])]
         c = _cover(g, [dg[i] for i in hits])
         ha = geodesic_ha(g)
         ref_rows.append({"index": j, "date": rd[j], "ha": ha, "cover": c, "counted": ha >= min_ref_ha,
@@ -301,6 +323,14 @@ def _filter(fc: dict, keep) -> dict:
     return {"type": "FeatureCollection", "features": [f for f in fc["features"] if keep(f)]}
 
 
+def _contract_ref(fc: dict) -> dict:
+    """reference_alerts.geojson carries exactly {source, date} per feature (CONTRACTS.md section 5)."""
+    return {"type": "FeatureCollection",
+            "features": [{"type": "Feature", "geometry": f["geometry"],
+                          "properties": {"source": f["properties"]["source"], "date": f["properties"]["date"]}}
+                         for f in fc["features"]]}
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--detections", default="web/data/detections.geojson")
@@ -314,6 +344,8 @@ def main() -> None:
     p.add_argument("--overlap-threshold", type=float, required=True, help="0..1 of patch area; 0 = any overlap")
     p.add_argument("--min-ref-ha", type=float, default=0.0,
                    help="recall counts only reference patches of at least this area (precision uses all)")
+    p.add_argument("--merge-dates", action="store_true",
+                   help="reference patch = connected alert pixels of any date (an event), not of one date")
     p.add_argument("--min-confidence", choices=CONFIDENCE)
     p.add_argument("--reference-file", help="JSON rows saved from the same GFW query (instead of calling the API)")
     p.add_argument("--origin", help="Origin header, if the API key is restricted to domains")
@@ -343,13 +375,13 @@ def main() -> None:
     lo = (dt.date.fromisoformat(dates[0]) - dt.timedelta(days=a.tolerance_days)).isoformat()
     hi = (dt.date.fromisoformat(dates[-1]) + dt.timedelta(days=a.tolerance_days)).isoformat()
     ref = load_reference(a.source, area, [lo, hi], os.environ.get("GFW_API_KEY"), a.origin, a.min_confidence,
-                         rows_file=a.reference_file)
+                         rows_file=a.reference_file, merge_dates=a.merge_dates)
     if "bbox" in holdout:
         ref = _filter(ref, lambda f: in_holdout(f, holdout))
 
     os.makedirs(a.out_dir, exist_ok=True)
     with open(os.path.join(a.out_dir, "reference_alerts.geojson"), "w", encoding="utf-8") as f:
-        json.dump(ref, f)
+        json.dump(_contract_ref(ref), f)
     matches = match_detections(det, ref, a.tolerance_days, a.overlap_threshold, a.min_ref_ha)
     m = compute_metrics(matches, a.tile, dates, a.source, os.path.join(a.out_dir, "metrics.json"))
     print(json.dumps(m["agreement"]), m["notes"])
