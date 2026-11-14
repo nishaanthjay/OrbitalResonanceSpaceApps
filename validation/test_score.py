@@ -183,6 +183,17 @@ def test_match_overlap_threshold_and_edges():
         sc.match_detections(det, ref, 10, 1.5)
 
 
+def test_min_ref_ha_limits_recall_only():
+    det, ref = _case()
+    tiny = feat(box(0.0, 0.0, 0.0001, 0.0001), source="RADD", date="2025-04-01")  # ~0.012 ha, inside det 1
+    ref["features"].append(tiny)
+    m = sc.match_detections(det, ref, 10, 0.0, min_ref_ha=1.0)  # the 0.01 deg refs are ~120 ha
+    assert m["n_reference_all"] == 4 and m["n_reference"] == 3
+    assert m["recall_like"] == pytest.approx(1 / 3)  # tiny agreeing patch not counted
+    assert m["precision_like"] == 0.5  # precision still sees every reference patch
+    assert sc.match_detections(det, ref, 10, 0.0)["recall_like"] == pytest.approx(2 / 4)
+
+
 def test_compute_metrics_contract_and_keeps_hand_labeled(tmp_path):
     det, ref = _case()
     m = sc.match_detections(det, ref, 10, 0.0)

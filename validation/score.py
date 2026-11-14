@@ -200,17 +200,19 @@ def _cover(geom, others: list) -> float:
     return geodesic_ha(inter) / geodesic_ha(geom)
 
 
-def match_detections(det: dict, ref: dict, tolerance_days: int, overlap_threshold: float) -> dict:
+def match_detections(det: dict, ref: dict, tolerance_days: int, overlap_threshold: float,
+                     min_ref_ha: float = 0.0) -> dict:
     """Patch-level matching (rule also in README).
 
     A detection patch D and a reference patch R are compatible if |date(D) - date(R)| <= tolerance_days.
     D agrees if the union of compatible R covers at least overlap_threshold of D's area, and more than zero;
     likewise R agrees if the union of compatible D covers at least overlap_threshold of R's area.
     Areas are geodesic (WGS84). overlap_threshold = 0 means any overlap.
-      precision_like = agreeing detections / detections
-      recall_like    = agreeing reference patches / reference patches
+      precision_like = agreeing detections / detections            (against all reference patches)
+      recall_like    = agreeing reference patches / reference patches, counting only patches >= min_ref_ha
       f1_like        = 2 p r / (p + r)
-    A ratio with a zero denominator is None. Returns the counts, the three ratios and per-patch details.
+    A ratio with a zero denominator is None. Returns the counts, the three ratios and per-patch details;
+    n_reference is the recall denominator, n_reference_all every reference patch.
     """
     if not 0.0 <= overlap_threshold <= 1.0:
         raise ValueError("overlap_threshold must be in [0, 1]")
@@ -230,16 +232,20 @@ def match_detections(det: dict, ref: dict, tolerance_days: int, overlap_threshol
     for j, g in enumerate(rg):
         hits = [i for i in dtree.query(g) if _days(dd[i], rd[j]) <= tolerance_days and g.intersects(dg[i])]
         c = _cover(g, [dg[i] for i in hits])
-        ref_rows.append({"index": j, "date": rd[j], "cover": c, "agrees": c > 0 and c >= overlap_threshold})
+        ha = geodesic_ha(g)
+        ref_rows.append({"index": j, "date": rd[j], "ha": ha, "cover": c, "counted": ha >= min_ref_ha,
+                         "agrees": c > 0 and c >= overlap_threshold})
 
-    n_det, n_ref = len(det_rows), len(ref_rows)
-    a_det, a_ref = sum(r["agrees"] for r in det_rows), sum(r["agrees"] for r in ref_rows)
+    counted = [r for r in ref_rows if r["counted"]]
+    n_det, n_ref = len(det_rows), len(counted)
+    a_det, a_ref = sum(r["agrees"] for r in det_rows), sum(r["agrees"] for r in counted)
     p = a_det / n_det if n_det else None
     r = a_ref / n_ref if n_ref else None
     f1 = None if p is None or r is None else (0.0 if p + r == 0 else 2 * p * r / (p + r))
-    return {"n_detections": n_det, "n_reference": n_ref, "n_detections_agreeing": a_det,
-            "n_reference_agreeing": a_ref, "precision_like": p, "recall_like": r, "f1_like": f1,
-            "tolerance_days": tolerance_days, "overlap_threshold": overlap_threshold,
+    return {"n_detections": n_det, "n_reference": n_ref, "n_reference_all": len(ref_rows),
+            "n_detections_agreeing": a_det, "n_reference_agreeing": a_ref, "precision_like": p,
+            "recall_like": r, "f1_like": f1, "tolerance_days": tolerance_days,
+            "overlap_threshold": overlap_threshold, "min_ref_ha": min_ref_ha,
             "detections": det_rows, "reference": ref_rows}
 
 
@@ -261,7 +267,9 @@ def compute_metrics(matches: dict, tile: str, dates: list[str], reference_source
         "notes": (f"Patch-level agreement with {reference_source} alerts on the holdout split only: dates within "
                   f"+/-{matches['tolerance_days']} days and overlap >= {matches['overlap_threshold']:g} of patch "
                   f"area ({matches['n_detections_agreeing']} of {matches['n_detections']} detections, "
-                  f"{matches['n_reference_agreeing']} of {matches['n_reference']} reference patches). "
+                  f"{matches['n_reference_agreeing']} of {matches['n_reference']} reference patches"
+                  + (f" of >= {matches['min_ref_ha']:g} ha; {matches['n_reference_all']} patches of any size"
+                     if matches.get("min_ref_ha") else "") + "). "
                   "Alerts are a reference, not ground truth; this is not accuracy."),
     }
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
@@ -304,6 +312,8 @@ def main() -> None:
     p.add_argument("--dates", nargs="+", help="detection dates to score with a bbox split (default: all in the file)")
     p.add_argument("--tolerance-days", type=int, required=True)
     p.add_argument("--overlap-threshold", type=float, required=True, help="0..1 of patch area; 0 = any overlap")
+    p.add_argument("--min-ref-ha", type=float, default=0.0,
+                   help="recall counts only reference patches of at least this area (precision uses all)")
     p.add_argument("--min-confidence", choices=CONFIDENCE)
     p.add_argument("--reference-file", help="JSON rows saved from the same GFW query (instead of calling the API)")
     p.add_argument("--origin", help="Origin header, if the API key is restricted to domains")
@@ -340,7 +350,7 @@ def main() -> None:
     os.makedirs(a.out_dir, exist_ok=True)
     with open(os.path.join(a.out_dir, "reference_alerts.geojson"), "w", encoding="utf-8") as f:
         json.dump(ref, f)
-    matches = match_detections(det, ref, a.tolerance_days, a.overlap_threshold)
+    matches = match_detections(det, ref, a.tolerance_days, a.overlap_threshold, a.min_ref_ha)
     m = compute_metrics(matches, a.tile, dates, a.source, os.path.join(a.out_dir, "metrics.json"))
     print(json.dumps(m["agreement"]), m["notes"])
     if a.lag_table:

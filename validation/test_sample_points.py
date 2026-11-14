@@ -51,6 +51,23 @@ def test_sample_points_strata():
     assert rows == sp.sample_points(det_fc(), forest, T, "EPSG:4326", n=2, seed=1)  # reproducible with a seed
 
 
+def test_blind_sheet_hides_strata_and_key_restores_them():
+    forest = np.ones((20, 20), bool)
+    rows = sp.sample_points(det_fc(), forest, T, "EPSG:4326", n=2, seed=1)
+    sheet, key = sp.make_blind(rows, "2026-06-18", "2026-10-16", seed=1)
+    assert list(sheet[0]) == sp.BLIND_COLUMNS and list(key[0]) == sp.KEY_COLUMNS
+    assert {r["before_date"] for r in sheet} == {"2026-06-18"} and {r["after_date"] for r in sheet} == {"2026-10-16"}
+    assert [r["id"] for r in sheet] == [f"P{k:02d}" for k in range(1, len(rows) + 1)]
+    for r in sheet:
+        r["label"] = "clearing"
+    joined = csp.join_key(sheet, key)
+    assert sorted(r["stratum"] for r in joined) == sorted(r["stratum"] for r in rows)
+    orig = {r["id"]: (r["lon"], r["lat"]) for r in rows}
+    assert all(orig[k["sample_id"]] == (s["lon"], s["lat"]) for s, k in zip(sheet, key))
+    with pytest.raises(ValueError):
+        csp.join_key(sheet, key[1:])
+
+
 def test_sample_points_holdout_and_short_strata():
     forest = np.ones((20, 20), bool)
     rows = sp.sample_points(det_fc(), forest, T, "EPSG:4326", n=15, seed=0, holdout={"dates": ["2025-03-01"]})
