@@ -17,8 +17,7 @@ cd web && python -m http.server 8000   # open http://localhost:8000 (file:// can
 - Not yet verified: tile rendering of a real COG (no data exists yet). Checked: the layer is added or skipped correctly depending on whether the file exists.
 
 ## Config
-`CONFIG` at the top of `app.js` holds the AOI values copied from `CLAUDE.md` "Confirmed facts" (centre, analysis-window bbox, track/frame/direction, the 8 stack dates, the excluded 2026-07-12 granule), plus `fitPaddingPx`, `minZoomBelowFit`, `maxBoundsPad`, `dataDir`, `changeRangeDb`. The initial view fits the bbox, `minZoom` is the fitted zoom minus `minZoomBelowFit`, and panning is limited to the window grown by `maxBoundsPad` window sizes. Update CLAUDE.md first, then copy here.
-The sidebar's ASF data-gap line (2026-07-27 to 2026-08-10) was given by the team and is not in CLAUDE.md: TODO cite the ASF notice.
+`CONFIG` at the top of `app.js` holds the AOI values copied from `CLAUDE.md` "CURRENT AOI" (centre, analysis-window bbox, track/frame/direction, the 9 stack dates, any excluded granule), plus `fitPaddingPx`, `minZoomBelowFit`, `maxBoundsPad`, `dataDir`, `changeRangeDb`. The initial view fits the bbox, `minZoom` is the fitted zoom minus `minZoomBelowFit`, and panning is limited to the window grown by `maxBoundsPad` window sizes. Update CLAUDE.md first, then copy here.
 
 ## Missing files
 Nothing is faked. Each missing file shows "data not loaded yet" in its own place (layer status, date label, accuracy panel, disturbance panel). A file that exists but is not valid JSON shows "<file> could not be read".
