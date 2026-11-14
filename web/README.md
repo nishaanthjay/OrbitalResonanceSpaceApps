@@ -3,6 +3,7 @@
 **Owner:** Front end.
 **Reads (all from `web/data/`):** `detections.geojson`, `reference_alerts.geojson`, `change_hh_<date>.tif`, `change_hv_<date>.tif`, `metrics.json`, `summary.json`.
 **Writes:** nothing. Static site, no build step.
+**Live site:** https://sars-deforest.vercel.app (Vercel Hobby, deployed from this folder by `vercel deploy --prod`; Git auto-deploy is disconnected, so a push does not update the site).
 
 ```bash
 cd web && python -m http.server 8000   # open http://localhost:8000 (file:// cannot fetch data)
@@ -32,3 +33,12 @@ Nothing is faked. Each missing file shows "data not loaded yet" in its own place
 ## Behaviour notes
 - Date slider dates come from detections, `metrics.json` `dates` and `summary.json` `per_date`. Detections are shown up to the selected date; the HH/HV change layers show exactly that date's file.
 - The accuracy caption is fixed: "Agreement with RADD/GLAD alerts, a reference, not ground truth."
+
+## Deploying
+```bash
+cd web
+npx vercel login                      # browser approval; the token stays on your machine
+npx vercel link --yes --project sars-deforest   # then run `npx vercel git disconnect --yes` (link connects the GitHub repo)
+npx vercel deploy --prod --yes
+```
+`.vercel/` and `.env*` are gitignored (`web/.gitignore`); never commit them. Checked on 2026-11-14: the host answers a `Range` request on `index.html` and `app.js` with `206 Partial Content`. Not checked: a `.tif` (no change files exist yet), so re-run `curl -sI -H "Range: bytes=0-1023" https://sars-deforest.vercel.app/data/change_hh_<date>.tif` once one is deployed.
