@@ -31,16 +31,33 @@ def block_grid(a: np.ndarray, s: np.ndarray, k: int = 8) -> np.ndarray:
     return g
 
 
+def multilook_mask(m: np.ndarray, n: int = 5) -> np.ndarray:
+    h, w = m.shape[0] // n * n, m.shape[1] // n * n
+    return m[:h, :w].reshape(h // n, n, w // n, n).mean(axis=(1, 3))
+
+
+def multilook_db(a: np.ndarray, n: int = 5) -> np.ndarray:
+    return 10 * np.log10(multilook_mask(10 ** (a / 10), n))
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--stack", required=True)
     p.add_argument("--stable-mask", required=True)
+    p.add_argument("--forest-mask", help="also print each date's 5x5-multilooked HV correlation with this mask at zero "
+                                          "shift (a date showing the right ground scores like the others; REPORT rule: < 0.5 = drop)")
     p.add_argument("--png", required=True)
     a = p.parse_args()
     st = xr.open_dataset(a.stack)
     tmpl = _with_crs(st["hh_db"].isel(time=0), st.attrs["crs"])
     s = np.asarray(load_forest_mask(a.stable_mask, tmpl).values, bool)
     dates = [str(np.datetime64(t, "D")) for t in st["time"].values]
+    if a.forest_mask:
+        fm = multilook_mask(np.asarray(load_forest_mask(a.forest_mask, tmpl).values, float))
+        for k, d in enumerate(dates):
+            hv = multilook_db(st["hv_db"].isel(time=k).values)
+            ok = np.isfinite(hv)
+            print(f"{d}  corr(HV, forest mask) = {np.corrcoef(hv[ok], fm[ok])[0, 1]:+.3f}")
     print("date        HH med  HH block dev min/max   HV med  HV block dev min/max   NaN frac  flagged blocks (row,col)")
     for k, d in enumerate(dates):
         hh, hv = st["hh_db"].isel(time=k).values, st["hv_db"].isel(time=k).values
