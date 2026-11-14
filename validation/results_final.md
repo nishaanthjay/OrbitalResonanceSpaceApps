@@ -80,3 +80,20 @@ The detect forest mask excludes Hansen loss 2001-2025 (`forest_mask.tif`), so de
 `web/data/detections.geojson` (157 patches, EPSG:4326), `reference_alerts.geojson` (2982 GLAD-L event patches any size dated 2026-06-26..2026-11-05; `cd validation && python export_reference_window.py --alerts ../$OUT/alerts_glad_l.json --source GLAD-L --bbox -54.7900 -8.2900 -54.6080 -8.1090 --start 2026-06-26 --end 2026-11-05`; its holdout-half subset has the same 2082 patches as the file `score.py` wrote), `metrics.json` (agreement.split = "holdout"; `hand_labeled` null), `summary.json` (per first_date from the patches, `tuning` from detect), `explore/spara/hansen_loss.webp` (Hansen loss 2021-2025, RGBA, 1280 x 1280 on the grid and bounds of `composite_2026-06-26.tif`; `cd validation && python export_hansen_loss.py --grid ../web/data/spara/composite_2026-06-26.tif --out ../web/data/explore/spara/hansen_loss.webp`). `du -sb web/data` = 57,128,007 bytes (under the 60 MB budget).
 
 Tests: `python -m pytest -q pipeline/detect validation` -> 62 passed.
+
+## Hand-labelled check (Sentinel-2 chips)
+Labeller: **Claude, the same assistant that ran the detection**, looking at the chips only; the key (`data/labels_private/labels_key.csv`, gitignored) was not opened until the labels were written. This is not an independent human label, and the chips are speckled (per-band stretch over forest), so only bare patches of roughly >= 1 ha are visible. Treat 0 as "no visible clearing at the point", not as a proven rate. A human re-label of `validation/labels_blank.csv` should replace it.
+
+Sample (seed 20261114): 15 holdout + 15 tune per-date detections (one random point inside each), 15 controls on stable forest outside any detection (8 holdout half, 7 tune half), shuffled as P01-P45.
+`cd validation && python make_label_sheet.py --detections ../data/final_spara/final/detections.geojson --stable-mask ../data/final_spara/stable_forest.tif --tune-bbox $(cat ../data/final_spara/tune_bbox.txt) --hold-bbox $(cat ../data/final_spara/hold_bbox.txt) --seed 20261114 --blank ../data/labels_private/sheet_s2.csv --key ../data/labels_private/labels_key.csv`
+Chips: `python validation/s2_chips.py --sheet data/labels_private/sheet_s2.csv --out-dir validation/chips --log data/labels_private/chips_log.json` (before 2026-06-24, after 2026-11-11 for 30 points and 2026-11-01 for one). **14 of 45 points had no clear after scene** (labelled `unsure`, note "no clear image"). Labels: `validation/labels_filled.csv`.
+
+Scoring (`C="python validation/compute_sample_precision.py --csv validation/labels_filled.csv --key data/labels_private/labels_key.csv"`):
+| Group | Command | Points | cleared | not_cleared | unsure | precision (unsure excluded) | Wilson 95 % |
+|---|---|---|---|---|---|---|---|
+| Holdout detections (written to `metrics.json` `hand_labeled`) | `$C --half holdout` | 15 | 0 | 6 | 9 | 0.0 (0 of 6) | 0.00-0.39 |
+| Tune detections (record only) | `$C --half tune --metrics <scratch>` | 15 | 0 | 14 | 1 | 0.0 (0 of 14) | 0.00-0.22 |
+| Both halves | `$C --metrics <scratch>` | 30 | 0 | 20 | 10 | 0.0 (0 of 20) | 0.00-0.16 |
+| Controls (stable forest, no detection) | same | 15 | 0 | 10 | 5 | false-positive rate 0 of 10 | 0.00-0.28 |
+
+Reading: no labelled detection showed visible clearing, and the controls look the same as the detections, so the chips show no difference between detected and undetected forest. Only 6 of 15 holdout detections have usable images, so the holdout precision is weakly determined. `metrics.json` `hand_labeled` = `{n_sample: 15, precision: 0.0, n_unsure: 9}`. Tests: `python -m pytest -q validation` -> 26 passed.
