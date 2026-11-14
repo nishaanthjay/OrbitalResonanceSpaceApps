@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Next Frontier: can radar see the Amazon through the clouds?</title>
+  <meta name="description" content="We tested NISAR, the NASA-ISRO radar satellite, on 20 km of Amazon forest frontier near Novo Progresso, Pará. NASA Space Apps 2026.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,500;112,700;112,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
+  <style>
+    :root {
+      --cloud: #e8ecef;      /* panel: the cloud layer */
+      --cloud-2: #d6dde2;
+      --ink: #17242e;        /* text */
+      --ink-2: #4a5a66;
+      --canopy: #2f6b4f;     /* forest */
+      --laterite: #b4401c;   /* cleared red soil of Pará */
+      --radar: #0d1a22;      /* map ground */
+      --early: #f59e0b; --late: #be123c; --glad: #22d3ee;
+      --panel-w: 440px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--radar); color: var(--ink); }
+    body { font: 400 17px/1.6 "Source Serif 4", Georgia, serif; }
+    h1, h2, h3, .sans { font-family: "Archivo", system-ui, sans-serif; font-stretch: 112%; }
+    a { color: var(--canopy); text-underline-offset: 2px; }
+    :focus-visible { outline: 3px solid var(--laterite); outline-offset: 2px; }
+
+    #map { position: fixed; inset: 0 0 0 var(--panel-w); }
+    #panel { position: relative; width: var(--panel-w); min-height: 100%; background: var(--cloud); z-index: 2; box-shadow: 1px 0 0 var(--cloud-2); }
+
+    /* the one bold moment: clouds over the map until the reader clears them */
+    #clouds { position: fixed; inset: 0 0 0 var(--panel-w); z-index: 1; pointer-events: none;
+      background:
+        radial-gradient(38% 30% at 22% 28%, #f4f6f8 0 55%, transparent 72%),
+        radial-gradient(34% 26% at 70% 20%, #eef1f4 0 50%, transparent 70%),
+        radial-gradient(40% 32% at 55% 62%, #f1f4f6 0 52%, transparent 72%),
+        radial-gradient(30% 24% at 18% 78%, #e9edf0 0 50%, transparent 70%),
+        radial-gradient(36% 28% at 88% 74%, #f3f5f7 0 52%, transparent 72%),
+        linear-gradient(#dfe5e9, #cfd8de);
+      transition: opacity 1.6s ease, transform 2.2s ease; }
+    #clouds.cleared { opacity: 0; transform: scale(1.25); }
+    @media (prefers-reduced-motion: reduce) { #clouds { transition: opacity .3s; } #clouds.cleared { transform: none; } }
+
+    .chapter { min-height: 92vh; padding: 56px 40px 40px; border-top: 1px solid var(--cloud-2); }
+    .chapter:first-child { border-top: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+    .chapter.active .num { color: var(--laterite); }
+    .num { font: 700 14px/1 "Archivo", sans-serif; color: var(--ink-2); margin-bottom: 14px; letter-spacing: .02em; }
+    h1 { font-weight: 800; font-size: 40px; line-height: 1.08; margin: 0 0 22px; letter-spacing: -.01em; }
+    h2 { font-weight: 700; font-size: 27px; line-height: 1.15; margin: 0 0 16px; }
+    p { margin: 0 0 14px; max-width: 34em; }
+    .lede { font-size: 19px; }
+    .answer { border-left: 4px solid var(--laterite); padding: 4px 0 4px 16px; margin: 22px 0 28px; }
+    .small { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+    .theme { font: 500 14px/1.4 "Archivo", sans-serif; color: var(--ink-2); margin-bottom: 26px; }
+
+    button.go { font: 700 16px/1 "Archivo", sans-serif; font-stretch: 112%; background: var(--ink); color: var(--cloud); border: 0; border-radius: 3px; padding: 15px 22px; cursor: pointer; }
+    button.go:hover { background: var(--laterite); }
+    button.quiet { font: 500 14px/1 "Archivo", sans-serif; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 3px; padding: 9px 13px; cursor: pointer; margin: 4px 6px 4px 0; }
+    button.quiet[aria-pressed="true"] { background: var(--ink); color: var(--cloud); }
+
+    .figure { display: flex; align-items: baseline; gap: 14px; margin: 18px 0 8px; }
+    .figure b { font: 800 56px/1 "Archivo", sans-serif; font-stretch: 112%; color: var(--canopy); }
+    .figure.red b { color: var(--laterite); }
+    .figure span { font-size: 15px; line-height: 1.4; color: var(--ink-2); max-width: 15em; }
+
+    .key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 16px; font: 500 14px/1.3 "Archivo", sans-serif; }
+    .key i { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; border-radius: 2px; }
+    .ramp { height: 12px; border-radius: 2px; margin: 8px 0 4px; max-width: 320px; }
+    .ramp-lab { display: flex; justify-content: space-between; max-width: 320px; font: 500 13px/1 "Archivo", sans-serif; color: var(--ink-2); }
+
+    #chart svg { width: 100%; height: 210px; display: block; background: #f5f7f8; border: 1px solid var(--cloud-2); border-radius: 3px; margin: 8px 0; }
+    .facts { list-style: none; padding: 0; margin: 14px 0; }
+    .facts li { padding: 12px 0; border-top: 1px solid var(--cloud-2); }
+    .facts li b { font-family: "Archivo", sans-serif; font-stretch: 112%; font-size: 22px; color: var(--laterite); display: block; line-height: 1.1; margin-bottom: 2px; }
+
+    #ticker { position: fixed; right: 16px; bottom: 34px; z-index: 3; background: rgba(13,26,34,.88); color: #e8ecef; font: 700 15px/1 "Archivo", sans-serif; padding: 10px 14px; border-radius: 3px; display: none; }
+    #explore { position: fixed; right: 16px; top: 16px; z-index: 3; }
+    #explore a { font: 700 14px/1 "Archivo", sans-serif; background: var(--cloud); color: var(--ink); text-decoration: none; padding: 11px 14px; border-radius: 3px; display: inline-block; box-shadow: 0 1px 0 var(--cloud-2); }
+    .maplibregl-ctrl-top-right { top: 56px; }
+
+    @media (max-width: 820px) {
+      :root { --panel-w: 100%; }
+      #map, #clouds { inset: 0 0 52vh 0; }
+      #panel { margin-top: 48vh; width: 100%; }
+      .chapter { min-height: auto; padding: 36px 22px 44px; }
+      .chapter:first-child { min-height: 52vh; }
+      h1 { font-size: 31px; }
+      #ticker { bottom: auto; top: 16px; left: 16px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+<div id="map" role="region" aria-label="Radar map of the study area"></div>
+<div id="clouds" aria-hidden="true"></div>
+<div id="explore"><a href="explore.html">Explore the data freely</a></div>
+<div id="ticker" aria-live="polite"></div>
+
+<main id="panel">
+  <section class="chapter" data-step="intro">
+    <p class="theme">NASA Space Apps 2026, theme &ldquo;The Next Frontier&rdquo;. Team OrbitalResonance.</p>
+    <h1>Can a satellite see the Amazon being cleared through the clouds?</h1>
+    <p class="lede">Optical satellites lose this forest under cloud for much of the year. Radar doesn't. We tested NISAR, the new NASA&ndash;ISRO radar satellite, on 20&nbsp;km of forest frontier near Novo Progresso, Pará, across nine passes from June to October 2026.</p>
+    <p class="answer">Short answer: it maps forest well. It does not yet catch new clearing. Here is what we found, and why.</p>
+    <p><button class="go" id="start">Clear the clouds</button></p>
+  </section>
+
+  <section class="chapter" data-step="see">
+    <div class="num">1 of 6</div>
+    <h2>Radar sees straight through cloud</h2>
+    <p>This is what NISAR recorded on 12 October 2026. Standing forest scatters the radar signal back strongly, so it shows bright. Cleared pasture is smooth, so it shows dark.</p>
+    <div class="key"><span><i style="background:#e6e6e6"></i>Standing forest</span><span><i style="background:#2a2a2a"></i>Cleared land</span></div>
+    <p>The dark blocks are the frontier: pasture cut out of the forest along roads branching off the BR-163 highway.</p>
+    <p><button class="quiet" id="optical" aria-pressed="false">Compare with an optical photo</button></p>
+    <p class="small">Radar: NISAR L-band, cross-polarised (HV) backscatter. Optical comparison: Esri World Imagery, a different date.</p>
+  </section>
+
+  <section class="chapter" data-step="forest">
+    <div class="num">2 of 6</div>
+    <h2>It can tell forest from cleared land</h2>
+    <p>We drew one brightness line between forest and cleared land on the northern half of the area, then tested it once on the southern half, which we had held back.</p>
+    <div class="figure"><b>83%</b><span>of 100&nbsp;m blocks matched the Hansen forest map on the held-back half</span></div>
+    <div class="figure"><b style="color:var(--ink-2)">52%</b><span>if you simply guessed &ldquo;forest&rdquo; everywhere</span></div>
+    <p>The same line, untouched, matched 96% of blocks in a second area in Rondônia. Here the map shows forest loss Hansen recorded from 2021 to 2025 over the radar image: the dark radar areas line up with it.</p>
+    <div id="hansenKey" class="key"></div>
+    <p class="small">Agreement with an optical map that ends in 2025, not field checks. Method fixed in advance: validation/PREREG_fnf.md.</p>
+  </section>
+
+  <section class="chapter" data-step="change">
+    <div class="num">3 of 6</div>
+    <h2>Four months, nine passes</h2>
+    <p>Watch how the radar signal changes from pass to pass, compared with all earlier passes. Clearing should show up as the forest signal dropping.</p>
+    <div class="ramp" style="background:linear-gradient(90deg,#1d4ed8,#f5f5f5,#dc2626)"></div>
+    <div class="ramp-lab"><span>signal dropped</span><span>signal rose</span></div>
+    <p style="margin-top:14px">Some drops are real change. Many are noise, rain and drying soil: radar responds to moisture too. Telling those apart is the hard part.</p>
+    <p><button class="quiet" id="replay">Play again</button></p>
+  </section>
+
+  <section class="chapter" data-step="patch">
+    <div class="num">4 of 6</div>
+    <h2>Inside one flagged patch</h2>
+    <p id="patchIntro">Our detector flags a patch when the radar signal moves by more than 1&nbsp;dB against earlier passes. This is the flagged patch with the largest drop in the forest signal.</p>
+    <div id="chart"></div>
+    <div class="key"><span><i style="background:#2f6b4f"></i>Forest signal (HV)</span><span><i style="background:#b4401c"></i>Ground signal (HH)</span><span><i style="background:repeating-linear-gradient(90deg,#4a5a66 0 4px,transparent 4px 7px)"></i>Typical stable forest</span></div>
+    <p class="small">Each point is one radar pass, averaged over the patch at full precision. A drop of about 1&nbsp;dB is only a little more than the pass-to-pass noise of about 0.4&nbsp;dB.</p>
+  </section>
+
+  <section class="chapter" data-step="truth">
+    <div class="num">5 of 6</div>
+    <h2>Does it catch clearing? Not yet</h2>
+    <p>We checked our flagged patches against GLAD, the optical alert system, and against Sentinel-2 photos.</p>
+    <div class="key"><span><i style="background:var(--early)"></i>Our flags: ground signal rose</span><span><i style="background:var(--late)"></i>Our flags: forest signal dropped</span><span><i style="background:transparent;border:2px solid var(--glad)"></i>GLAD alerts 2026</span></div>
+    <ul class="facts" id="facts">
+      <li><b>92.5%</b>of 2026 GLAD alerts here fall on land that was already cleared before 2026: pasture being re-cleared. Our method only watches standing forest, so it cannot see these by design.</li>
+      <li><b id="fAgree">2 of 57</b>of our flags in the held-back half matched a GLAD alert.</li>
+      <li><b id="fHand">0 of 20</b>flags we could check in Sentinel-2 photos showed visible clearing.</li>
+    </ul>
+    <p>So radar and the optical alerts are watching different land, and at a 1&nbsp;dB threshold our flags are mostly noise. That is a real result, and it tells us what to fix.</p>
+    <p class="small" id="handNote">Photo check: 45 points, labelled blind to which were flags. 9 of 15 held-back flags had no clear photo. Labelled by our AI assistant, not yet by an independent person. Full numbers: validation/results_final.md.</p>
+  </section>
+
+  <section class="chapter" data-step="next">
+    <div class="num">6 of 6</div>
+    <h2>The next frontier</h2>
+    <p>NISAR passes over every 12 days, and its record is only months old. Three changes could turn this map into an early warning:</p>
+    <ul class="facts">
+      <li><b>More passes</b>Require a drop to persist over several passes, so one wet day doesn't trigger a flag.</li>
+      <li><b>A pasture-aware method</b>Most clearing here is re-clearing of old pasture, which a forest-only method misses.</li>
+      <li><b>Independent checks</b>Field or high-resolution labels, so accuracy is measured rather than inferred.</li>
+    </ul>
+    <p>We don't claim this stops deforestation or works everywhere. We tested one 20&nbsp;km area with a provisional data product.</p>
+    <p><a href="explore.html">Explore every layer and date</a> · <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps">Code and methods on GitHub</a></p>
+  </section>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+<script src="story.js"></script>
+</body>
+</html>
