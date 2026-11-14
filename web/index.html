@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sars-deforest</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map"></div>
+  <aside id="sidebar">
+    <h1>sars-deforest</h1>
+    <p class="sub">NISAR L-band forest-clearing detection</p>
+
+    <section>
+      <h2>Layers</h2>
+      <label><input type="checkbox" id="t-hh"> HH change <span class="status" id="s-hh"></span></label>
+      <label><input type="checkbox" id="t-hv"> HV change <span class="status" id="s-hv"></span></label>
+      <label><input type="checkbox" id="t-det" checked> Detections <span class="status" id="s-det"></span></label>
+      <label><input type="checkbox" id="t-ref"> Reference alerts <span class="status" id="s-ref"></span></label>
+    </section>
+
+    <section>
+      <h2>Date</h2>
+      <input type="range" id="date-slider" min="0" max="0" value="0" disabled>
+      <div id="date-label">data not loaded yet</div>
+    </section>
+
+    <section>
+      <h2>Accuracy</h2>
+      <div id="metrics">data not loaded yet</div>
+    </section>
+
+    <section class="limits">
+      <h2>Known limits</h2>
+      <ul>
+        <li>Rain / moisture can cause false alarms</li>
+        <li>Fire double-bounce can mimic or mask clearing</li>
+        <li>Flooded forest false alarms</li>
+        <li>Selective logging not detected</li>
+        <li>Tested on one area only</li>
+      </ul>
+    </section>
+  </aside>
+  <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
