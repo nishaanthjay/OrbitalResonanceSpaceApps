@@ -54,9 +54,9 @@ Verified by Max #1 (scripts in pipeline/load/; QC by validation/stack_qc.py).
 - Validity floor: power <= 1e-6 -> NaN. Measured (`pipeline/load/check_units.py`): outside-swath pixels read ~1e-15 to 2e-13; all 9,009,000 window pixels per pol are >= 1e-3, so the window has no invalid pixels and the floor sits in the empty gap.
 - **Forest mask (chosen, pending Max #2 OK): Hansen GFC v1.13**, forest = treecover2000 >= 30 % AND lossyear == 0 (no loss 2001-2025) AND datamask == 1. Built on the exact stack grid by `pipeline/load/forest_mask.py` -> `data/forest_mask_rondonia_t60f173.tif` (uint8, 28 KB, EPSG:32720, 20 m; 73.2 % forest; 21.3 % of the window had loss 2001-2025). Loads via detect.load_forest_mask; HV forest-minus-non-forest contrast peaks at zero shift (alignment OK). The 30 % threshold is a parameter (`--treecover-min`), not tuned. Citation: Hansen et al. 2013, Science 342:850-853; band encodings from EE catalog UMD/hansen/global_forest_change_2025_v1_13.
 - Tune/holdout dates note for Max #2 / Pro #1: with 5 dates, baseline = earliest dates (e.g. 08-17, 08-29, 09-10) and detection on 10-04, 10-16 only.
-- Threshold HH (dB):
-- Threshold HV (dB):
-- Min detection size (ha):
+- Threshold HH (dB): 1.0 (S Para; HH rise >= 1.0 dB = early stage). Chosen 2026-11-14 on the NORTH (tune) half only, BEFORE any scoring, by `validation/noise_floor.py` (rule in `validation/run_chain.sh`: smallest grid value in {1,1.5,2,2.5,3,3.5,4,5,6} dB with <= 1 % of tune-half stable-forest pixels firing, pooled over the scored dates 2026-07-20..10-12, 5x5 multilook). 1.0 is the smallest value in that grid, so lower values were not evaluated. Output: `data/final_spara/noise_floor_tune.json`.
+- Threshold HV (dB): 1.0 (S Para; HV drop of 1.0 dB = late stage; `detect.py --hv-thresh -1` and `1` mean the same). Same rule, same tune half, same time as HH.
+- Min detection size (ha): 2 (S Para; fixed in `validation/run_chain.sh` before any sweep, not chosen on the holdout; one 5x5-multilook pixel is 1 ha).
 
 ## Data access notes
 - Product: `NISAR_L2_GCOV_PROVISIONAL_V1`, via `earthaccess`.

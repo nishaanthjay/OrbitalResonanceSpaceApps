@@ -431,3 +431,32 @@ def test_cli_rules():
     with pytest.raises(SystemExit):
         _args("--sweep-hh", "1", "--sweep-hv", "3", "--tune-bbox", "0", "0", "1", "1", "--holdout-bbox", "1", "0", "2", "1")
     assert d.build_parser().parse_args(["--stack", "x", "--min-ha", "1"]).multilook == 5
+
+
+def test_hv_threshold_accepts_negative_and_positive():
+    """-3 and 3 are the same 3 dB HV drop; 0 is refused (it would fire almost everywhere)."""
+    d_hh, d_hv = d.change_maps(make_stack(), "2025-04-01")
+    m_pos, s_pos = d.apply_thresholds(d_hh, d_hv, None, 3.0)
+    m_neg, s_neg = d.apply_thresholds(d_hh, d_hv, None, -3.0)
+    assert bool((m_pos == m_neg).all()) and bool((s_pos == s_neg).all())
+    assert int(m_neg.sum()) == 104  # the 10x10 and 2x2 HV-drop blocks only, not "everything"
+    assert d.hv_drop_db(-3) == 3.0 and d.hv_drop_db(3) == 3.0 and d.hv_drop_db(None) is None
+    for bad in (0, 0.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            d.hv_drop_db(bad)
+    with pytest.raises(ValueError):
+        d.apply_thresholds(d_hh, d_hv, None, 0.0)
+    hits_pos = d._hits(d_hh, d_hv, 1.0, 3.0)
+    hits_neg = d._hits(d_hh, d_hv, 1.0, -3.0)
+    assert all((a == b).all() for a, b in zip(hits_pos, hits_neg))
+
+
+def test_cli_negative_hv_thresh_is_stored_as_magnitude():
+    p = d.build_parser()
+    a = p.parse_args(["--stack", "s.nc", "--date", "2025-04-01", "--hh-thresh", "1.5", "--hv-thresh", "-3", "--min-ha", "2"])
+    assert a.hv_thresh == -3.0  # argparse accepts a negative number
+    d.check_args(a, p)
+    assert a.hv_thresh == 3.0
+    a = p.parse_args(["--stack", "s.nc", "--date", "2025-04-01", "--hh-thresh", "1.5", "--hv-thresh", "0", "--min-ha", "2"])
+    with pytest.raises(SystemExit):
+        d.check_args(a, p)

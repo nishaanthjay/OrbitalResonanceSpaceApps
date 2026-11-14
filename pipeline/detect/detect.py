@@ -134,6 +134,20 @@ def change_maps(stack: xr.Dataset, date: str, average: Literal["linear", "db"] =
     return d_hh, d_hv
 
 
+def hv_drop_db(hv_thresh: float | None) -> float | None:
+    """HV drop threshold as a positive dB magnitude, from either sign convention.
+
+    An HV drop is a negative change, so people write it as -3 (signed: fires when d_hv <= -3) or as 3 (magnitude: the
+    same rule). Both give 3.0. 0 is rejected: it would fire on every pixel that did not rise. None stays None (channel off).
+    """
+    if hv_thresh is None:
+        return None
+    v = float(hv_thresh)
+    if not np.isfinite(v) or v == 0:
+        raise ValueError(f"HV threshold must be a non-zero finite dB value (got {hv_thresh}); 0 would fire on almost every pixel")
+    return abs(v)
+
+
 def apply_thresholds(
     d_hh: xr.DataArray,
     d_hv: xr.DataArray,
@@ -143,14 +157,15 @@ def apply_thresholds(
     """Candidate clearing pixels and their stage. Thresholds are positive dB magnitudes (parameters, no defaults).
 
     - HH rise:  d_hh >= hh_thresh   -> early-stage signal (HH-led)
-    - HV drop:  d_hv <= -hv_thresh  -> late-stage signal (HV-led)
+    - HV drop:  d_hv <= -|hv_thresh| -> late-stage signal (HV-led); -3 and 3 both mean a 3 dB drop (see hv_drop_db)
     A pixel is a candidate if either fires ("and/or"). Stage is "late" when HV fires (including both),
     "early" when only HH fires. Pass None to disable a channel. NaN pixels never fire.
 
     Returns (mask: bool, stage: int8 with 0 none / 1 early / 2 late).
     """
     hh_hit = (d_hh >= hh_thresh) if hh_thresh is not None else xr.zeros_like(d_hh, dtype=bool)
-    hv_hit = (d_hv <= -hv_thresh) if hv_thresh is not None else xr.zeros_like(d_hv, dtype=bool)
+    hv_mag = hv_drop_db(hv_thresh)
+    hv_hit = (d_hv <= -hv_mag) if hv_mag is not None else xr.zeros_like(d_hv, dtype=bool)
     mask = hh_hit | hv_hit
     stage = xr.where(hv_hit, STAGE_LATE, xr.where(hh_hit, STAGE_EARLY, STAGE_NONE)).astype(np.int8)
     return mask.rename("mask"), stage.rename("stage")
@@ -323,7 +338,8 @@ def _candidates(n_hh, n_hv, hh_thresh, hv_thresh, forest_mask=None, region=None)
 def _hits(n_hh, n_hv, hh_thresh, hv_thresh) -> tuple[np.ndarray, np.ndarray]:
     """Per-channel firing (same rule as apply_thresholds), kept separate so "both fired" is not lost."""
     hh = n_hh.values >= hh_thresh if hh_thresh is not None else np.zeros(n_hh.shape, bool)
-    hv = n_hv.values <= -hv_thresh if hv_thresh is not None else np.zeros(n_hv.shape, bool)
+    hv_mag = hv_drop_db(hv_thresh)
+    hv = n_hv.values <= -hv_mag if hv_mag is not None else np.zeros(n_hv.shape, bool)
     return hh, hv
 
 
@@ -606,7 +622,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--stack", required=True, help="data/stack_<tile>.nc")
     p.add_argument("--date", nargs="+", help="YYYY-MM-DD ..., each in the stack (not needed to sweep a date split)")
     p.add_argument("--hh-thresh", type=float, help="HH rise threshold, positive dB (early stage)")
-    p.add_argument("--hv-thresh", type=float, help="HV drop threshold, positive dB (late stage)")
+    p.add_argument("--hv-thresh", type=float, help="HV drop threshold in dB (late stage); -3 and 3 both mean a 3 dB drop; 0 is refused")
     p.add_argument("--min-ha", type=float, required=True, help="minimum detection size in hectares")
     p.add_argument("--forest-mask", help="binary forest GeoTIFF (non-zero = forest); required with --final")
     p.add_argument("--stable-mask", help="binary stable-forest GeoTIFF for normalization (default: the forest mask)")
@@ -630,6 +646,11 @@ def check_args(a: argparse.Namespace, p: argparse.ArgumentParser) -> Split | Non
         p.error("--final requires --forest-mask")
     if a.multilook < 1:
         p.error("--multilook must be >= 1")
+    try:  # store HV thresholds as positive magnitudes so the log and summary.json never hold a signed value
+        a.hv_thresh = hv_drop_db(a.hv_thresh)
+        a.sweep_hv = [hv_drop_db(v) for v in a.sweep_hv] if a.sweep_hv is not None else None
+    except ValueError as e:
+        p.error(str(e))
     try:
         split = make_split(a.tune_bbox, a.holdout_bbox, a.tune_dates, a.holdout_dates)
     except ValueError as e:
