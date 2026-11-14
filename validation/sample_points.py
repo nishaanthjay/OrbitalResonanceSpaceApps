@@ -3,6 +3,8 @@
 Reads:  web/data/detections.geojson (CONTRACTS.md section 2) and the binary forest-mask GeoTIFF used by detect.
 Writes: a CSV with columns id, stratum, lon, lat, date, detection_id, label, notes (label and notes empty, to be
         filled by a person following validation/README.md; then run compute_sample_precision.py).
+        With --blind BEFORE AFTER: a labeling sheet id, lon, lat, before_date, after_date, label, notes that does
+        not reveal which rows are detections, and a separate --key file (compute_sample_precision.py --key).
 """
 from __future__ import annotations
 
@@ -21,6 +23,8 @@ from shapely.geometry import Point, shape
 from score import in_holdout, make_holdout
 
 COLUMNS = ["id", "stratum", "lon", "lat", "date", "detection_id", "label", "notes"]
+BLIND_COLUMNS = ["id", "lon", "lat", "before_date", "after_date", "label", "notes"]
+KEY_COLUMNS = ["id", "sample_id", "stratum", "date", "detection_id"]
 
 
 def _random_point_in(geom, rng: np.random.Generator, tries: int = 10000) -> tuple[float, float]:
@@ -83,9 +87,28 @@ def sample_points(
     return rows
 
 
-def write_csv(rows: list[dict], path: str) -> None:
+def make_blind(rows: list[dict], before: str, after: str, seed: int) -> tuple[list[dict], list[dict]]:
+    """Split sample rows into a blind labeling sheet and a separate key.
+
+    The sheet has no column that tells the strata apart: rows are shuffled, renamed P01.. in the new order, and
+    every row gets the same before / after dates (the whole stack period). The key maps each P id back to the
+    original id, stratum, date and detection_id.
+    """
+    rng = np.random.default_rng(seed + 1)  # not the sampling stream, so the sample itself is unchanged
+    order = rng.permutation(len(rows))
+    sheet, key = [], []
+    for k, i in enumerate(order, start=1):
+        r, pid = rows[i], f"P{k:02d}"
+        sheet.append({"id": pid, "lon": r["lon"], "lat": r["lat"], "before_date": before, "after_date": after,
+                      "label": "", "notes": ""})
+        key.append({"id": pid, "sample_id": r["id"], "stratum": r["stratum"], "date": r["date"],
+                    "detection_id": r["detection_id"]})
+    return sheet, key
+
+
+def write_csv(rows: list[dict], path: str, columns: list[str] = COLUMNS) -> None:
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
+        w = csv.DictWriter(f, fieldnames=columns)
         w.writeheader()
         w.writerows(rows)
 
@@ -114,7 +137,12 @@ def main() -> None:
     p.add_argument("--holdout-bbox", type=float, nargs=4, metavar=("W", "S", "E", "N"))
     p.add_argument("--holdout-dates", nargs="+")
     p.add_argument("--out", default="validation/sample_points.csv")
+    p.add_argument("--blind", nargs=2, metavar=("BEFORE", "AFTER"),
+                   help="write a blind sheet to --out (same before/after dates on every row) and the key to --key")
+    p.add_argument("--key", help="key CSV for --blind; keep it away from the labeler")
     a = p.parse_args()
+    if a.blind and not a.key:
+        p.error("--blind needs --key")
     holdout = None
     if a.holdout_bbox is not None or a.holdout_dates:
         holdout = make_holdout(a.holdout_bbox, a.holdout_dates)
@@ -124,9 +152,15 @@ def main() -> None:
         det = json.load(f)
     forest, t, crs = read_forest(a.forest_mask, (holdout or {}).get("bbox"))
     rows = sample_points(det, forest, t, crs, a.n, a.seed, holdout)
-    write_csv(rows, a.out)
+    if a.blind:
+        sheet, key = make_blind(rows, *a.blind, a.seed)
+        write_csv(sheet, a.out, BLIND_COLUMNS)
+        write_csv(key, a.key, KEY_COLUMNS)
+    else:
+        write_csv(rows, a.out)
     nd = sum(r["stratum"] == "detection" for r in rows)
-    print(f"{nd} detection + {len(rows) - nd} non-detection points (seed {a.seed}) -> {a.out}")
+    print(f"{nd} detection + {len(rows) - nd} non-detection points (seed {a.seed}) -> {a.out}"
+          + (f" (blind; key -> {a.key})" if a.blind else ""))
 
 
 if __name__ == "__main__":

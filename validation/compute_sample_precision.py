@@ -20,6 +20,14 @@ def read_rows(path: str) -> list[dict]:
         return list(csv.DictReader(f))
 
 
+def join_key(sheet: list[dict], key: list[dict]) -> list[dict]:
+    """Blind sheet (sample_points.py --blind) + its key -> rows with a stratum. The ids must match one to one."""
+    by_id = {k["id"]: k for k in key}
+    if set(by_id) != {r["id"] for r in sheet} or len(by_id) != len(sheet):
+        raise ValueError("sheet and key ids do not match one to one; wrong key file?")
+    return [{**r, "stratum": by_id[r["id"]]["stratum"]} for r in sheet]
+
+
 def _stratum(rows: list[dict]) -> dict:
     labels = [r["label"] for r in rows]
     yes, no, unsure = labels.count("clearing"), labels.count("no_clearing"), labels.count("unsure")
@@ -71,10 +79,12 @@ def write_hand_labeled(metrics_path: str, hand_labeled: dict) -> None:
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--csv", required=True, help="filled CSV from sample_points.py")
+    p.add_argument("--key", help="key CSV, when --csv is a blind sheet from sample_points.py --blind")
     p.add_argument("--metrics", default="web/data/metrics.json")
     a = p.parse_args()
     try:
-        res = compute_sample_precision(read_rows(a.csv))
+        rows = read_rows(a.csv)
+        res = compute_sample_precision(join_key(rows, read_rows(a.key)) if a.key else rows)
     except ValueError as e:
         p.error(str(e))
     for k in ("detection", "non_detection"):
