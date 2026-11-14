@@ -26,11 +26,31 @@ from rasterio.windows import from_bounds
 from scipy.ndimage import binary_dilation
 from shapely.geometry import box
 
-HANSEN = "/vsicurl/https://storage.googleapis.com/earthenginepartners-hansen/GFC-2025-v1.13/Hansen_GFC-2025-v1.13_{layer}_00N_070W.tif"
+HANSEN = "/vsicurl/https://storage.googleapis.com/earthenginepartners-hansen/GFC-2025-v1.13/Hansen_GFC-2025-v1.13_{layer}_{tile}.tif"
 WORLDCOVER = "/vsicurl/https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_{tile}_Map.tif"
-WC_TILES = ("S09W063", "S12W063")  # 3x3 deg tiles named by their SW corner; both tried, empty ones skipped
 ALERT_FILES = {"umd_glad_landsat_alerts": ("alerts_glad_l.json", 0.00025),
                "umd_glad_sentinel2_alerts": ("alerts_glad_s2.json", 0.0001)}
+
+
+def _deg(v: int, pos: str, neg: str, width: int) -> str:
+    return f"{abs(v):0{width}d}{pos if v >= 0 else neg}"
+
+
+def hansen_tile(lonlat_bbox) -> str:
+    """Hansen GFC 10 x 10 deg tile named by its top-left corner, e.g. 00N_070W (Rondonia)."""
+    w, s, e, n = lonlat_bbox
+    top, left = int(np.ceil(n / 10) * 10), int(np.floor(w / 10) * 10)
+    if s < top - 10 or e > left + 10:
+        raise ValueError(f"bbox {lonlat_bbox} crosses a Hansen tile edge")
+    return f"{_deg(top, 'N', 'S', 2)}_{_deg(left, 'E', 'W', 3)}"
+
+
+def worldcover_tiles(lonlat_bbox) -> list[str]:
+    """ESA WorldCover 3 x 3 deg tiles touching the bbox, named by their SW corner, e.g. S12W063."""
+    w, s, e, n = lonlat_bbox
+    lats = range(int(np.floor(s / 3) * 3), int(np.ceil(n / 3) * 3), 3)
+    lons = range(int(np.floor(w / 3) * 3), int(np.ceil(e / 3) * 3), 3)
+    return [f"{'N' if la >= 0 else 'S'}{abs(la):02d}{'E' if lo >= 0 else 'W'}{abs(lo):03d}" for la in lats for lo in lons]
 
 
 def stack_grid(path: str) -> tuple[rasterio.Affine, tuple[int, int], str]:
@@ -97,12 +117,16 @@ def main() -> None:
     p.add_argument("--out-dir", default="data")
     a = p.parse_args()
     t, shape, crs = stack_grid(a.stack)
+    h, w = shape
+    lonlat = transform_bounds(crs, "EPSG:4326", t.c, t.f + h * t.e, t.c + w * t.a, t.f)
+    ht, wct = hansen_tile(lonlat), worldcover_tiles(lonlat)
+    print(f"grid lon/lat bounds {[round(v, 4) for v in lonlat]}; Hansen tile {ht}; WorldCover tiles {wct}")
 
-    tc = to_grid(HANSEN.format(layer="treecover2000"), lambda v: v >= 30, t, shape, crs)
-    loss = to_grid(HANSEN.format(layer="lossyear"), lambda v: v > 0, t, shape, crs)
+    tc = to_grid(HANSEN.format(layer="treecover2000", tile=ht), lambda v: v >= 30, t, shape, crs)
+    loss = to_grid(HANSEN.format(layer="lossyear", tile=ht), lambda v: v > 0, t, shape, crs)
     hansen = (tc >= 0.5) & (loss < 0.5)
     wc = np.full(shape, np.nan, dtype=np.float32)
-    for tile in WC_TILES:
+    for tile in wct:
         part = to_grid(WORLDCOVER.format(tile=tile), lambda v: v == 10, t, shape, crs)
         wc = np.where(np.isnan(wc), part, wc)
     worldcover = wc >= 0.5
