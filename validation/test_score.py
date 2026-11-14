@@ -64,6 +64,18 @@ def test_rows_to_features_unions_same_date_patches():
                             "wur_radd_alerts__date", 1e-4, "RADD")
 
 
+def test_rows_to_features_merge_dates_makes_events():
+    rows = _rows() + [{"longitude": -59.99975, "latitude": -3.00005, "wur_radd_alerts__date": "2025-05-30"}]
+    out = sc.rows_to_features(rows, "wur_radd_alerts__date", 1e-4, "RADD", merge_dates=True)
+    assert [f["properties"] for f in out["features"]] == [
+        {"source": "RADD", "date": "2025-04-02", "date_last": "2025-05-30"},  # 4 touching pixels, two dates
+        {"source": "RADD", "date": "2025-04-20", "date_last": "2025-04-20"}]
+    det = fc(feat(box(-59.9999, -3.0001, -59.9996, -3.0), id=1, date="2025-05-10"))
+    m = sc.match_detections(det, out, tolerance_days=5, overlap_threshold=0.0)
+    assert m["detections"][0]["agrees"]  # 05-10 lies inside the event's 04-02..05-30 range
+    assert sc._contract_ref(out)["features"][0]["properties"] == {"source": "RADD", "date": "2025-04-02"}
+
+
 # ---- load_reference with a fake API ------------------------------------------------------------------------
 
 class FakeAPI:
