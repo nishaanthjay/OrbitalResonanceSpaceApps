@@ -1,2 +1,5 @@
 .vercel
 .env*
+
+# Per-location layer COGs live in data/<id>/ (the root .gitignore only re-includes web/data/*.tif)
+!data/**/*.tif
