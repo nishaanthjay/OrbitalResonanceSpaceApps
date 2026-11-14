@@ -1,0 +1,24 @@
+{
+ "agreement": {
+  "precision_like": 0.03508771929824561,
+  "recall_like": 0.0,
+  "f1_like": 0.0,
+  "level": "patch",
+  "split": "holdout"
+ },
+ "hand_labeled": null,
+ "n_detections": 57,
+ "n_reference": 179,
+ "tile": "spara_t2f174",
+ "dates": [
+  "2026-07-20",
+  "2026-08-13",
+  "2026-08-25",
+  "2026-09-06",
+  "2026-09-18",
+  "2026-09-30",
+  "2026-10-12"
+ ],
+ "reference_source": "GLAD-L",
+ "notes": "Patch-level agreement with GLAD-L alerts on the holdout split only (south half of the window, 1 km buffer strip, thresholds chosen on the north half before scoring): per-date detections vs reference events merged across dates, dates within +/-24 days, any overlap. 2 of 57 detections agree; 0 of 179 reference events of >= 1 ha agree (2082 events of any size). Scored once per source, no rerun and no retuning after the holdout numbers. Thresholds HH 1.0 dB, HV 1.0 dB, min 2 ha, 5x5 multilook, scored dates 2026-07-20 to 2026-10-12. n_detections counts per-date detections; the map shows the same detections merged across dates into patches. Alerts are a reference, not ground truth; this is not accuracy. See validation/results_final.md."
+}
