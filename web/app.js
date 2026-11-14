@@ -2,22 +2,20 @@
 // Serve over http (cd web && npx http-server -p 8000); opening index.html as a file:// URL cannot fetch data.
 // Text from data files is only ever rendered with textContent (plain text), never as HTML.
 
-// All AOI values below are copied from CLAUDE.md "Confirmed facts" (verified there 2026-11-14). Update them there first.
+// All AOI values below are copied from CLAUDE.md "CURRENT AOI" (S Para, switched 2026-11-14). Update CLAUDE.md first.
 const CONFIG = {
-  center: [-62.7564, -9.2306],       // lon, lat: Rondonia analysis window
-  bbox: [-62.8474, -9.3211, -62.6654, -9.1401], // W S E N, EPSG:4326, ~20 x 20 km analysis window
+  center: [-54.699, -8.1995],        // lon, lat: midpoint of the bbox below
+  bbox: [-54.7900, -8.2900, -54.6080, -8.1090], // W S E N, EPSG:4326, 20 x 20 km analysis window
   fitPaddingPx: 40,                  // padding around the window for the initial view
   minZoomBelowFit: 1.5,              // minZoom = initial fitted zoom minus this
   maxBoundsPad: 1.0,                 // pan limit: window grown by this many window-widths/heights on each side
   windowKm: 20,
   aoi: {
-    name: 'Rondonia, BR (Porto Velho-Ariquemes)',
-    track: 60, frame: 173, direction: 'ascending',
-    // The 8 dates in the stack (CLAUDE.md "Dates used" minus the excluded one).
-    dates: ['2026-06-18', '2026-06-30', '2026-07-24', '2026-08-17', '2026-08-29', '2026-09-10', '2026-10-04', '2026-10-16'],
-    excluded: { date: '2026-07-12', reason: 'that granule is mis-scaled in the source product' },
-    // Stated by the team; TODO cite the ASF notice (not in CLAUDE.md).
-    gap: { from: '2026-07-27', to: '2026-08-10' },
+    name: 'S Para, BR (Novo Progresso)',
+    track: 2, frame: 174, direction: 'ascending',
+    // The 9 dates in the stack; CLAUDE.md: all used, none excluded.
+    dates: ['2026-06-26', '2026-07-08', '2026-07-20', '2026-08-13', '2026-08-25', '2026-09-06', '2026-09-18', '2026-09-30', '2026-10-12'],
+    excluded: null, // or { date, reason } if CLAUDE.md lists a bad granule for this stack
   },
   dataDir: 'data',
   changeRangeDb: 6, // change layers are coloured over -6..+6 dB
@@ -132,8 +130,7 @@ function renderAoi() {
   box.replaceChildren(
     el('p', `Area: ${a.name}. NISAR track ${a.track}, frame ${a.frame}, ${a.direction}.`),
     el('p', `NISAR passes in the stack (${a.dates.length}): ${a.dates.join(', ')}.`),
-    el('p', `${a.excluded.date} is excluded: ${a.excluded.reason}.`),
-    el('p', `ASF lists an instrument data gap from ${a.gap.from} to ${a.gap.to}, so there is no pass in that period.`),
+    el('p', a.excluded ? `${a.excluded.date} is excluded: ${a.excluded.reason}.` : `All ${a.dates.length} dates are used; none is excluded.`),
   );
   const d = a.dates;
   $('tested').textContent =
