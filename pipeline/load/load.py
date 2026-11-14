@@ -141,13 +141,17 @@ def stack_windows(windows: list[xr.Dataset], dates: list[str], epsg: int, attrs:
 
 
 def build_stack(bbox: BBox, start: str, end: str, tile: str, key: GroupKey,
-                out_dir: str = "data", max_dates: int | None = None) -> str:
+                out_dir: str = "data", max_dates: int | None = None, exclude_dates: list[str] | None = None) -> str:
     """Search, open, window, convert and stack all dates of one track/frame; write data/stack_<tile>.nc."""
     grans = search_granules(bbox, start, end, key)
     if not grans:
         raise SystemExit(f"no dual-pol granules for {key} in {start}..{end}")
+    if exclude_dates:
+        grans = [g for g in grans if g.properties["startTime"][:10] not in set(exclude_dates)]
     if max_dates:
         grans = grans[:max_dates]
+    if len(grans) < 2:
+        raise SystemExit(f"only {len(grans)} date(s) left; a stack needs at least 2")
     windows, dates, epsg, names = [], [], None, []
     for g in grans:
         p = g.properties
@@ -165,7 +169,7 @@ def build_stack(bbox: BBox, start: str, end: str, tile: str, key: GroupKey,
         "tile": tile, "track": key.track, "frame": key.frame, "direction": key.direction, "mode": key.mode,
         "bbox_wsen": list(bbox), "product": "NISAR_L2_GCOV_PROVISIONAL_V1", "layers": f"{GRID_GROUP}/{{{HH_VAR},{HV_VAR}}}",
         "multilook": 1, "pixel_spacing_m": float(abs(windows[0].x[1] - windows[0].x[0])),
-        "granules": ",".join(names),
+        "granules": ",".join(names), "excluded_dates": ",".join(exclude_dates or []),
         "note": "HHHH/HVHV as delivered (possibly RTC gamma0; see CLAUDE.md TODO). No multilook applied.",
     }
     ds = stack_windows(windows, dates, epsg, attrs)
@@ -186,10 +190,12 @@ def main() -> None:
     p.add_argument("--direction", required=True, choices=["ASCENDING", "DESCENDING"])
     p.add_argument("--mode", required=True, help='rangeBandwidth joined by "/", e.g. "20+5"')
     p.add_argument("--max-dates", type=int, default=None, help="keep only the first N dates (for samples)")
+    p.add_argument("--exclude-dates", nargs="*", default=None, metavar="YYYY-MM-DD",
+                   help="drop bad granules (e.g. 2026-07-12: mis-scaled, scene mean HHHH ~577 vs ~0.22)")
     p.add_argument("--out-dir", default="data")
     a = p.parse_args()
     key = GroupKey(a.track, a.frame, a.direction, a.mode)
-    print(build_stack(tuple(a.bbox), a.start, a.end, a.tile, key, a.out_dir, a.max_dates))
+    print(build_stack(tuple(a.bbox), a.start, a.end, a.tile, key, a.out_dir, a.max_dates, a.exclude_dates))
 
 
 if __name__ == "__main__":

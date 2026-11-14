@@ -33,6 +33,9 @@ Verified 2026-11-14 by Max #1 (metadata search + streamed reads; scripts in pipe
 - Cloudiness tie-breaker: UNKNOWN (no AOI comparison found; Wilson & Jetz 2016 MODIS cloud frequency could settle it).
 - Clearing event after the first ~3 dates: NOT YET VERIFIED (needs alerts, Pro #1).
 - Backup AOI: S Para (Novo Progresso), track 2, frame 174, ASCENDING, 20+5, 9 dual-pol dates 2026-06-26..10-12, max gap 24. Also passing: Santa Cruz BO track 60 frames 169/170.
+- **Bad granule: 2026-07-12 is mis-scaled in the source product** (its own HHHH mean_value attr 576.8 vs ~0.22 on other dates, ~+24 dB in our window; same crid/pge, identical numberOfLooks and rtcGammaToSigmaFactor). Excluded via `load.py --exclude-dates 2026-07-12`. Remaining 8 dates still pass the gate (max gap 24 days).
+- Full stack: `data/stack_rondonia_t60f173.nc` (8 dates, 1001x1000, 55.4 MB, sha256 900bc431...54ba), shared on Google Drive (too big for git). Sample in git: `data/sample/stack_rondonia_t60f173_sample.nc` (06-18, 06-30).
+- Units: HHHH/HVHV are RTC gamma0; sigma0 = rtcGammaToSigmaFactor x gamma0 (an approximation per spec). Sources: https://nisar-docs.asf.alaska.edu/gcov/ and NISAR D-102274 Rev D (L2 GCOV Product Spec) p.17, p.20 sec 4.3.1. Stack keeps gamma0. Factor median in window 0.68678 on 06-30 and 07-12 (identical to 6 digits); full 9-date cross-check TODO. If identical, it cancels in dB differences.
 - Threshold HH (dB):
 - Threshold HV (dB):
 - Min detection size (ha):
