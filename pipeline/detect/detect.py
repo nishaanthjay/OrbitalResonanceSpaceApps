@@ -4,9 +4,8 @@ Reads:  data/stack_<tile>.nc  (CONTRACTS.md section 1: dims (time, y, x), hh_db 
         CRS in attrs["crs"], time as datetime64; one track/frame only, so "same-track" is guaranteed by load).
 Writes: web/data/detections.geojson (section 2; features for the same date are replaced, others kept;
         optional extra properties first_hh_date / first_hv_date), web/data/change_hh_<date>.tif /
-        change_hv_<date>.tif (section 3), web/data/summary.json ({per_date, tuning}, the shape web/app.js
-        reads; NOT yet in CONTRACTS.md) and a detect log data/detect_log_<tile>.json (split, tuning sweep,
-        normalization offsets, parameters; gitignored working record).
+        change_hv_<date>.tif (section 3), web/data/summary.json (section 6) and a detect log
+        data/detect_log_<tile>.json (split, tuning sweep, normalization offsets, parameters; gitignored record).
 
 Order per date: multilook (linear power) -> change vs baseline -> stable-forest normalization -> thresholds ->
 forest mask -> clusters >= min size. Exported d_hh / d_hv (COGs and geojson) are the raw dB change (date minus
@@ -531,28 +530,38 @@ def run(
 SUMMARY_ROW_KEYS = ("date", "n_detections", "total_area_ha", "early_ha", "late_ha")
 
 
-def merge_summary(old: dict | None, rows: list[dict], tuning: dict | None) -> dict:
-    """summary.json content: {"per_date": [...], "tuning": {...} | null}, the exact shape web/app.js reads.
+def merge_summary(old: dict | None, dates: list[str], rows: list[dict], tuning: dict | None) -> dict:
+    """summary.json content per CONTRACTS.md section 6: {"dates", "per_date", "tuning"}.
 
+    `dates` = every stack date the detections used (baseline and detection dates), merged with the stored ones.
     per_date rows are replaced by date and other dates kept (like the geojson), sorted by date. `tuning` is
-    {"split": "tune", "hh_thresh", "hv_thresh"} when the thresholds came from a tune-set sweep, else None.
+    {"split": <description>, "hh_thresh", "hv_thresh"} when the thresholds came from a tune-set sweep, else None.
     """
     by_date = {r["date"]: r for r in (old or {}).get("per_date") or []}
     by_date.update({r["date"]: {k: r[k] for k in SUMMARY_ROW_KEYS} for r in rows})
-    return {"per_date": [by_date[d] for d in sorted(by_date)], "tuning": tuning}
+    all_dates = sorted(set((old or {}).get("dates") or []) | set(dates) | set(by_date))
+    return {"dates": all_dates, "per_date": [by_date[d] for d in sorted(by_date)], "tuning": tuning}
 
 
-def export_summary(out_path: str, rows: list[dict], tuning: dict | None) -> dict:
-    """Write web/data/summary.json (shape agreed with web/app.js; not yet in CONTRACTS.md), merged by date."""
+def export_summary(out_path: str, dates: list[str], rows: list[dict], tuning: dict | None) -> dict:
+    """Write web/data/summary.json (CONTRACTS.md section 6), merged with any existing file by date."""
     old = None
     if os.path.exists(out_path):
         with open(out_path, encoding="utf-8") as f:
             old = json.load(f)
-    summary = merge_summary(old, rows, tuning)
+    summary = merge_summary(old, dates, rows, tuning)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=1)
     return summary
+
+
+def describe_split(split: Split) -> str:
+    """Human-readable split for summary.json tuning.split, e.g. "tune: dates 2025-11-02; holdout: dates 2025-11-14"."""
+    if split.by == "dates":
+        return f"tune: dates {', '.join(split.tune)}; holdout: dates {', '.join(split.holdout)}"
+    fmt = lambda b: "bbox W,S,E,N " + ",".join(f"{v:g}" for v in b)  # noqa: E731
+    return f"tune: {fmt(split.tune)}; holdout: {fmt(split.holdout)}"
 
 
 def tuning_entry(log: dict, split: Split | None, hh_thresh: float, hv_thresh: float) -> dict | None:
@@ -560,7 +569,7 @@ def tuning_entry(log: dict, split: Split | None, hh_thresh: float, hv_thresh: fl
     sweep = (log or {}).get("tuning")
     if split is None or not sweep or sweep.get("split") != split.to_dict():
         return None
-    return {"split": "tune", "hh_thresh": hh_thresh, "hv_thresh": hv_thresh}
+    return {"split": describe_split(split), "hh_thresh": hh_thresh, "hv_thresh": hv_thresh}
 
 
 def merge_log(old: dict | None, new: dict) -> dict:
@@ -692,7 +701,8 @@ def main() -> None:
     tuning = tuning_entry(log, split, a.hh_thresh, a.hv_thresh)
     if tuning is None:
         print("NOTE: no tune-set sweep on record for this split; summary.json tuning = null")
-    export_summary(os.path.join(a.out_dir, "summary.json"), rows, tuning)
+    used = sorted({b for r in rows for b in r["baseline_dates"]} | {r["date"] for r in rows})
+    export_summary(os.path.join(a.out_dir, "summary.json"), used, rows, tuning)
     print(f"-> {os.path.join(a.out_dir, 'summary.json')}, log {log_path}")
 
 

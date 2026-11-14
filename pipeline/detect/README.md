@@ -1,7 +1,7 @@
 # pipeline/detect — Pipeline B (Max #2)
 
 **Reads:** `data/stack_<tile>.nc` (CONTRACTS.md section 1), binary forest-mask GeoTIFF, optional stable-forest mask GeoTIFF.
-**Writes:** `web/data/detections.geojson` (features for the same date are replaced, other dates kept), `web/data/change_hh_<date>.tif`, `web/data/change_hv_<date>.tif` (CONTRACTS.md sections 2 and 3), `web/data/summary.json` (shape below, matches what `web/app.js` reads; **not yet in CONTRACTS.md**), and a detect log `data/detect_log_<tile>.json` (`--log`; gitignored working record of the split, tuning sweep, normalization offsets and parameters).
+**Writes:** `web/data/detections.geojson` (features for the same date are replaced, other dates kept), `web/data/change_hh_<date>.tif`, `web/data/change_hv_<date>.tif` (CONTRACTS.md sections 2 and 3), `web/data/summary.json` (CONTRACTS.md section 6), and a detect log `data/detect_log_<tile>.json` (`--log`; gitignored working record of the split, tuning sweep, normalization offsets and parameters).
 
 ```bash
 # 1. sweep thresholds on the TUNE set only (writes the sweep table to the detect log; no detections)
@@ -40,16 +40,18 @@ Give `--tune-bbox W S E N` + `--holdout-bbox W S E N` (EPSG:4326, must not overl
 - With a bbox split, the sweep counts only pixels inside the tune box (clusters crossing the edge are cut). Normalization offsets still use the whole scene's stable mask: they use no reference labels.
 - Pass the same split arguments on the detection run. `summary.json` `tuning` is filled only if the log holds a sweep made under that same split; otherwise it is `null` (and a sweep under a different split is dropped from the log).
 
-## Optional geojson properties (not yet in CONTRACTS.md)
+## Optional geojson properties (CONTRACTS.md section 2)
 `first_hh_date`, `first_hv_date` (`"YYYY-MM-DD"` or `null`): the earliest stack date, up to the detection date, on which that channel's threshold fired on at least half of the detection's pixels (same half rule as `stage`). Each date's change is against the mean of all dates before it. `null` = never fired.
 
-## `web/data/summary.json` (not yet in CONTRACTS.md; shape taken from what `web/app.js` reads)
-Exactly these fields; web lists any other field as unexpected.
+## `web/data/summary.json` (CONTRACTS.md section 6)
 ```json
-{"per_date": [{"date": "YYYY-MM-DD", "n_detections": 0, "total_area_ha": 0.0, "early_ha": 0.0, "late_ha": 0.0}],
- "tuning": {"split": "tune", "hh_thresh": 0.0, "hv_thresh": 0.0}}
+{"dates": ["YYYY-MM-DD"],
+ "per_date": [{"date": "YYYY-MM-DD", "n_detections": 0, "total_area_ha": 0.0, "early_ha": 0.0, "late_ha": 0.0}],
+ "tuning": {"split": "tune: dates D1, D2; holdout: dates D3", "hh_thresh": 0.0, "hv_thresh": 0.0}}
 ```
-`early_ha` / `late_ha` sum the areas of detections whose `stage` is early / late. Rows are replaced by date, other dates kept, sorted by date. `tuning` is `null` when the thresholds did not come from a tune-set sweep under the current split.
+- `dates`: every stack date the detections used (baseline and detection dates), merged across runs.
+- `per_date`: one row per detection date; `early_ha` / `late_ha` sum the areas of detections whose `stage` is early / late. Rows are replaced by date, other dates kept.
+- `tuning.split` describes the split (`"tune: bbox W,S,E,N ...; holdout: bbox W,S,E,N ..."` for an area split). `tuning` is `null` when the thresholds did not come from a tune-set sweep under the current split.
 
 ## Detect log `data/detect_log_<tile>.json` (our working record, gitignored)
 ```json

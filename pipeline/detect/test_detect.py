@@ -359,21 +359,27 @@ def _row(date, n):
             "baseline_dates": [], "normalization": {}}  # extra keys must not reach summary.json
 
 
-def test_merge_summary_matches_web_shape():
-    t = {"split": "tune", "hh_thresh": 1.0, "hv_thresh": 3.0}
-    s = d.merge_summary(None, [_row("2025-05-01", 1), _row("2025-04-01", 2)], t)
-    assert set(s) == {"per_date", "tuning"}  # web/app.js flags any other top-level field
+def test_merge_summary_matches_contract_section_6():
+    t = {"split": "tune: dates 2025-03-01; holdout: dates 2025-04-01", "hh_thresh": 1.0, "hv_thresh": 3.0}
+    s = d.merge_summary(None, ["2025-01-01", "2025-04-01", "2025-05-01"],
+                        [_row("2025-05-01", 1), _row("2025-04-01", 2)], t)
+    assert set(s) == {"dates", "per_date", "tuning"}
+    assert s["dates"] == ["2025-01-01", "2025-04-01", "2025-05-01"]
     assert [r["date"] for r in s["per_date"]] == ["2025-04-01", "2025-05-01"]
     assert all(set(r) == set(d.SUMMARY_ROW_KEYS) for r in s["per_date"])
-    s2 = d.merge_summary(s, [_row("2025-04-01", 5)], None)  # same date replaced, other date kept
+    s2 = d.merge_summary(s, ["2025-06-01"], [_row("2025-04-01", 5)], None)  # same date replaced, others kept
     assert [(r["date"], r["n_detections"]) for r in s2["per_date"]] == [("2025-04-01", 5), ("2025-05-01", 1)]
+    assert s2["dates"] == ["2025-01-01", "2025-04-01", "2025-05-01", "2025-06-01"]
     assert s2["tuning"] is None
 
 
 def test_tuning_entry_needs_sweep_on_same_split():
     sp = d.make_split(tune_dates=["2025-03-01"], holdout_dates=["2025-04-01"])
     log = {"tuning": {"split": sp.to_dict(), "results": []}}
-    assert d.tuning_entry(log, sp, 1.0, 3.0) == {"split": "tune", "hh_thresh": 1.0, "hv_thresh": 3.0}
+    assert d.tuning_entry(log, sp, 1.0, 3.0) == {
+        "split": "tune: dates 2025-03-01; holdout: dates 2025-04-01", "hh_thresh": 1.0, "hv_thresh": 3.0}
+    sb = d.make_split(tune_bbox=(-60, -4, -59.5, -3), holdout_bbox=(-59.5, -4, -59, -3))
+    assert d.describe_split(sb) == "tune: bbox W,S,E,N -60,-4,-59.5,-3; holdout: bbox W,S,E,N -59.5,-4,-59,-3"
     other = d.make_split(tune_dates=["2025-02-01"], holdout_dates=["2025-04-01"])
     assert d.tuning_entry(log, other, 1.0, 3.0) is None
     assert d.tuning_entry({"tuning": None}, sp, 1.0, 3.0) is None
@@ -393,8 +399,8 @@ def test_merge_log():
 
 def test_export_summary_roundtrip(tmp_path):
     p = str(tmp_path / "summary.json")
-    d.export_summary(p, [_row("2025-04-01", 2)], None)
-    d.export_summary(p, [_row("2025-05-01", 1)], None)
+    d.export_summary(p, ["2025-04-01"], [_row("2025-04-01", 2)], None)
+    d.export_summary(p, ["2025-05-01"], [_row("2025-05-01", 1)], None)
     got = json.load(open(p))
     assert [r["date"] for r in got["per_date"]] == ["2025-04-01", "2025-05-01"] and got["tuning"] is None
 
