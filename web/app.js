@@ -2,9 +2,23 @@
 // Serve over http (cd web && npx http-server -p 8000); opening index.html as a file:// URL cannot fetch data.
 // Text from data files is only ever rendered with textContent (plain text), never as HTML.
 
+// All AOI values below are copied from CLAUDE.md "Confirmed facts" (verified there 2026-11-14). Update them there first.
 const CONFIG = {
-  center: [0, 0], // TODO: [lon, lat] of the AOI (CLAUDE.md "Confirmed facts")
-  zoom: 2,        // TODO: zoom for the AOI
+  center: [-62.7564, -9.2306],       // lon, lat: Rondonia analysis window
+  bbox: [-62.8474, -9.3211, -62.6654, -9.1401], // W S E N, EPSG:4326, ~20 x 20 km analysis window
+  fitPaddingPx: 40,                  // padding around the window for the initial view
+  minZoomBelowFit: 1.5,              // minZoom = initial fitted zoom minus this
+  maxBoundsPad: 1.0,                 // pan limit: window grown by this many window-widths/heights on each side
+  windowKm: 20,
+  aoi: {
+    name: 'Rondonia, BR (Porto Velho-Ariquemes)',
+    track: 60, frame: 173, direction: 'ascending',
+    // The 8 dates in the stack (CLAUDE.md "Dates used" minus the excluded one).
+    dates: ['2026-06-18', '2026-06-30', '2026-07-24', '2026-08-17', '2026-08-29', '2026-09-10', '2026-10-04', '2026-10-16'],
+    excluded: { date: '2026-07-12', reason: 'that granule is mis-scaled in the source product' },
+    // Stated by the team; TODO cite the ASF notice (not in CLAUDE.md).
+    gap: { from: '2026-07-27', to: '2026-08-10' },
+  },
   dataDir: 'data',
   changeRangeDb: 6, // change layers are coloured over -6..+6 dB
 };
@@ -82,9 +96,50 @@ const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/liberty', // OpenFreeMap, no API key
   center: CONFIG.center,
-  zoom: CONFIG.zoom,
+  zoom: 9, // replaced right below by the fit to the analysis window
 });
-if (CONFIG.center[0] === 0 && CONFIG.center[1] === 0) $('aoi-note').hidden = false;
+
+// Initial view = the analysis window; zoom-out and panning are limited to its surroundings.
+(function limitView() {
+  const [w, s, e, n] = CONFIG.bbox;
+  const pad = CONFIG.fitPaddingPx;
+  const sidebar = window.innerWidth > 600 ? 320 : 0; // the sidebar covers the left edge of the map
+  map.fitBounds(CONFIG.bbox, { padding: { top: pad, bottom: pad, right: pad, left: pad + sidebar }, animate: false });
+  map.setMinZoom(map.getZoom() - CONFIG.minZoomBelowFit);
+  const dw = (e - w) * CONFIG.maxBoundsPad;
+  const dh = (n - s) * CONFIG.maxBoundsPad;
+  map.setMaxBounds([[w - dw, s - dh], [e + dw, n + dh]]);
+})();
+
+function windowOutline() {
+  const [w, s, e, n] = CONFIG.bbox;
+  return {
+    type: 'Feature', properties: {},
+    geometry: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] }, // from CONFIG, not a data file
+  };
+}
+
+function addWindowOutline() {
+  map.addSource('window', { type: 'geojson', data: windowOutline() });
+  map.addLayer({ id: 'window', type: 'line', source: 'window', paint: { 'line-color': '#111827', 'line-width': 1.5, 'line-dasharray': [3, 2] } });
+  const label = el('div', 'Analysis window', 'window-label');
+  new maplibregl.Marker({ element: label, anchor: 'bottom-left' }).setLngLat([CONFIG.bbox[0], CONFIG.bbox[3]]).addTo(map);
+}
+
+function renderAoi() {
+  const a = CONFIG.aoi;
+  const box = $('aoi');
+  box.replaceChildren(
+    el('p', `Area: ${a.name}. NISAR track ${a.track}, frame ${a.frame}, ${a.direction}.`),
+    el('p', `NISAR passes in the stack (${a.dates.length}): ${a.dates.join(', ')}.`),
+    el('p', `${a.excluded.date} is excluded: ${a.excluded.reason}.`),
+    el('p', `ASF lists an instrument data gap from ${a.gap.from} to ${a.gap.to}, so there is no pass in that period.`),
+  );
+  const d = a.dates;
+  $('tested').textContent =
+    `What was tested: one ${CONFIG.windowKm}x${CONFIG.windowKm} km window, ${d.length} NISAR passes, ${d[0]} to ${d[d.length - 1]}.`;
+}
+renderAoi();
 $('ramp-min').textContent = `-${CONFIG.changeRangeDb} dB`;
 $('ramp-max').textContent = `+${CONFIG.changeRangeDb} dB`;
 maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
@@ -135,6 +190,8 @@ map.on('load', async () => {
     if (!Array.isArray(det.data.features)) $('s-det').textContent = 'features is missing';
     else if (bad) $('s-det').textContent = `${bad} unexpected date/stage value(s)`;
   } else $('s-det').textContent = failMsg('detections.geojson', det);
+
+  addWindowOutline(); // above the detections and reference layers
 
   const m = renderAccuracy(metrics);
   const s = renderSummary(summary);
@@ -275,7 +332,7 @@ function renderAccuracy(res) {
   return { dates: m.dates };
 }
 
-// summary.json: {per_date:[{date, n_detections, total_area_ha, early_ha, late_ha}], tuning:{split, hh_thresh, hv_thresh}}
+// summary.json: {dates:[...], per_date:[{date, n_detections, total_area_ha, early_ha, late_ha}], tuning:{split, hh_thresh, hv_thresh}}
 // Returns {dates} for the date slider.
 function renderSummary(res) {
   const box = $('summary');
@@ -284,7 +341,7 @@ function renderSummary(res) {
   if (!res.data) { box.classList.add('missing'); box.textContent = failMsg('summary.json', res); return {}; }
 
   const problems = [];
-  const s = readFields(res.data, { per_date: 'rows', tuning: 'obj' }, '', problems);
+  const s = readFields(res.data, { dates: 'dates', per_date: 'rows', tuning: 'obj' }, '', problems);
 
   const rows = [];
   (s.per_date ?? []).forEach((r, i) => {
@@ -311,7 +368,7 @@ function renderSummary(res) {
 
   if ('tuning' in s) {
     box.append(el('h3', 'Tuning split', 'hint'));
-    if (s.tuning === null) problems.push('tuning is null (skipped)');
+    if (s.tuning === null) box.append(el('p', 'tuning split not recorded (tuning is null)', 'missing'));
     else {
       const t = readFields(s.tuning, { split: 'str', hh_thresh: 'num', hv_thresh: 'num' }, 'tuning.', problems);
       const trows = [];
@@ -324,7 +381,7 @@ function renderSummary(res) {
 
   const pl = problemList('summary.json', problems);
   if (pl) box.append(pl);
-  return { dates: rows.map((r) => r.date) };
+  return { dates: [...new Set([...(s.dates ?? []), ...rows.map((r) => r.date)])] };
 }
 
 // One stacked bar per date: early vs late hectares.
