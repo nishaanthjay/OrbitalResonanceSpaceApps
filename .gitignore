@@ -1,0 +1,21 @@
+# Raw/derived data (keep folder only)
+data/*
+!data/.gitkeep
+# If we later decide to commit tiny samples, add: !data/sample/ and !data/sample/*.nc
+*.h5
+*.nc
+
+# Secrets
+.netrc
+.env
+
+# Python / tooling
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+
+# GeoTIFFs only allowed under web/data/
+*.tif
+!web/data/*.tif
+
+.DS_Store
