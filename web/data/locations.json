@@ -51,6 +51,54 @@
         "nodata_value": 0
       },
       "notes": "NISAR L2 GCOV (provisional) track 2, frame 174, ascending; all 9 dates used, none excluded. Native 20 m, no multilook, gamma0 dB as delivered. One fixed dB stretch for all dates (see stretch). Layers are JPEG-compressed COGs (quality 85) in EPSG:3857; transparent = no data."
+    },
+    {
+      "id": "rondonia",
+      "name": "Rondonia, BR (Porto Velho-Ariquemes)",
+      "bbox": [
+        -62.8474,
+        -9.3211,
+        -62.6654,
+        -9.1401
+      ],
+      "center": [
+        -62.7564,
+        -9.2306
+      ],
+      "dates": [
+        "2026-08-17",
+        "2026-08-29",
+        "2026-09-10",
+        "2026-10-04",
+        "2026-10-16"
+      ],
+      "crs": "EPSG:3857",
+      "layers": {
+        "composite": "data/rondonia/composite_{date}.tif",
+        "hh": "data/rondonia/hh_{date}.tif",
+        "hv": "data/rondonia/hv_{date}.tif"
+      },
+      "stretch": {
+        "hh": {
+          "lo": -10.66,
+          "hi": -1.69,
+          "unit": "dB"
+        },
+        "hv": {
+          "lo": -16.02,
+          "hi": -6.58,
+          "unit": "dB"
+        },
+        "ratio": {
+          "lo": 0.43,
+          "hi": 9.37,
+          "unit": "dB"
+        },
+        "basis": "stable-forest pixels (forest mask), all exported dates, percentiles 2.0-98.0",
+        "ratio_is": "HH - HV in dB",
+        "nodata_value": 0
+      },
+      "notes": "NISAR L2 GCOV (provisional) track 60, frame 173, ascending; only the 5 good dates are exported (2026-08-17 to 2026-10-16). The earlier catalogue dates (2026-06-18, 06-30, 07-24) do not show the same landscape as Aug-Oct, and 2026-07-12 is mis-scaled in the source product; CLAUDE.md traces this to a geolocation/processing problem inside the provisional product (cause beyond that unknown), so they are not shown. Window had no alert-confirmed clearing of 1 ha or more on 2026-08-29 to 2026-10-16 (CLAUDE.md, per Pro #1). Native 20 m, no multilook, gamma0 dB as delivered. One fixed dB stretch for all dates. JPEG-compressed COGs (quality 85) in EPSG:3857; transparent = no data."
     }
   ]
 }
