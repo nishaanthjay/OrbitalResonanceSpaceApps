@@ -22,10 +22,11 @@ def read_rows(path: str) -> list[dict]:
 
 def join_key(sheet: list[dict], key: list[dict]) -> list[dict]:
     """Blind sheet (sample_points.py --blind) + its key -> rows with a stratum. The ids must match one to one."""
+    sheet = [{**r, "id": r.get("id") or r["point_id"]} for r in sheet]  # labels_blank.csv names it point_id
     by_id = {k["id"]: k for k in key}
     if set(by_id) != {r["id"] for r in sheet} or len(by_id) != len(sheet):
         raise ValueError("sheet and key ids do not match one to one; wrong key file?")
-    return [{**r, "stratum": by_id[r["id"]]["stratum"]} for r in sheet]
+    return [{**r, "stratum": by_id[r["id"]]["stratum"], "half": by_id[r["id"]].get("half", "")} for r in sheet]
 
 
 def _stratum(rows: list[dict]) -> dict:
@@ -53,7 +54,8 @@ def compute_sample_precision(rows: list[dict]) -> dict:
     """
     bad = []
     for r in rows:
-        r["label"] = (r.get("label") or "").strip().lower()
+        r["label"] = {"cleared": "clearing", "not_cleared": "no_clearing"}.get(
+            (r.get("label") or "").strip().lower(), (r.get("label") or "").strip().lower())
         if r["label"] not in LABELS:
             bad.append(r.get("id"))
     if bad:
@@ -81,10 +83,14 @@ def main() -> None:
     p.add_argument("--csv", required=True, help="filled CSV from sample_points.py")
     p.add_argument("--key", help="key CSV, when --csv is a blind sheet from sample_points.py --blind")
     p.add_argument("--metrics", default="web/data/metrics.json")
+    p.add_argument("--half", help="keep detections of this half (holdout|tune) plus all controls; needs the key's half column")
     a = p.parse_args()
     try:
         rows = read_rows(a.csv)
-        res = compute_sample_precision(join_key(rows, read_rows(a.key)) if a.key else rows)
+        rows = join_key(rows, read_rows(a.key)) if a.key else rows
+        if a.half:
+            rows = [r for r in rows if r["stratum"] == "non_detection" or r["half"] == a.half]
+        res = compute_sample_precision(rows)
     except ValueError as e:
         p.error(str(e))
     for k in ("detection", "non_detection"):

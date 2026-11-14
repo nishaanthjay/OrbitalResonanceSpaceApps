@@ -6,7 +6,11 @@
   "level": "patch",
   "split": "holdout"
  },
- "hand_labeled": null,
+ "hand_labeled": {
+  "n_sample": 15,
+  "precision": 0.0,
+  "n_unsure": 9
+ },
  "n_detections": 57,
  "n_reference": 179,
  "tile": "spara_t2f174",
