@@ -16,14 +16,15 @@ cd web && python -m http.server 8000   # open http://localhost:8000 (file:// can
 - Not yet verified: tile rendering of a real COG (no data exists yet). Checked: the layer is added or skipped correctly depending on whether the file exists.
 
 ## Config
-`CONFIG` at the top of `app.js`: `center`, `zoom` (currently 0,0 / 2: the AOI is not set), `dataDir`, `changeRangeDb`.
+`CONFIG` at the top of `app.js` holds the AOI values copied from `CLAUDE.md` "Confirmed facts" (centre, analysis-window bbox, track/frame/direction, the 8 stack dates, the excluded 2026-07-12 granule), plus `fitPaddingPx`, `minZoomBelowFit`, `maxBoundsPad`, `dataDir`, `changeRangeDb`. The initial view fits the bbox, `minZoom` is the fitted zoom minus `minZoomBelowFit`, and panning is limited to the window grown by `maxBoundsPad` window sizes. Update CLAUDE.md first, then copy here.
+The sidebar's ASF data-gap line (2026-07-27 to 2026-08-10) was given by the team and is not in CLAUDE.md: TODO cite the ASF notice.
 
 ## Missing files
 Nothing is faked. Each missing file shows "data not loaded yet" in its own place (layer status, date label, accuracy panel, disturbance panel). A file that exists but is not valid JSON shows "<file> could not be read".
 
 ## Files and fields (see ../CONTRACTS.md)
 - `metrics.json`: `agreement` {`precision_like`, `recall_like`, `f1_like`, `level`, `split`} or null; `hand_labeled` {`n_sample`, `precision`, `n_unsure`} or null (null shows "hand-labeled sample pending"); `n_detections`, `n_reference`, `tile`, `dates`, `reference_source`, `notes`.
-- `summary.json`: `per_date` rows {`date`, `n_detections`, `total_area_ha`, `early_ha`, `late_ha`}; `tuning` {`split`, `hh_thresh`, `hv_thresh`}. Totals are the sum of the valid `per_date` rows.
+- `summary.json`: `dates` list; `per_date` rows {`date`, `n_detections`, `total_area_ha`, `early_ha`, `late_ha`}; `tuning` {`split`, `hh_thresh`, `hv_thresh`} (null shows "tuning split not recorded"). Totals are the sum of the valid `per_date` rows.
 - `agreement` is only shown when `agreement.split` is exactly `"holdout"`; otherwise the panel says "scored on the wrong split". The split is always displayed.
 - A missing, mistyped or unexpected field is listed in the panel by name (for example `metrics.json: agreement.level is missing (skipped)`) and skipped. Nothing is guessed. A `per_date` row with a bad field is left out of the totals and chart.
 - All text from data files is rendered as plain text, never HTML.
