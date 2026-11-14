@@ -11,7 +11,8 @@
   <div id="map"></div>
   <aside id="sidebar">
     <h1>sars-deforest</h1>
-    <p class="sub">NISAR L-band forest-clearing detection</p>
+    <p class="sub">Forest-clearing detection from NISAR L-band backscatter</p>
+    <p id="aoi-note" class="missing" hidden>Area of interest not set yet (CONFIG in app.js).</p>
 
     <section>
       <h2>Layers</h2>
@@ -23,27 +24,46 @@
 
     <section>
       <h2>Date</h2>
-      <input type="range" id="date-slider" min="0" max="0" value="0" disabled>
-      <div id="date-label">data not loaded yet</div>
+      <input type="range" id="date-slider" min="0" max="0" value="0" disabled aria-label="Date">
+      <div id="date-label" class="missing">data not loaded yet</div>
+      <div class="hint">Detections: up to this date. Change layers: this date.</div>
+    </section>
+
+    <section>
+      <h2>Legend</h2>
+      <ul class="legend">
+        <li><i class="sw" style="background:#f59e0b"></i> Early-stage detection (HH-led)</li>
+        <li><i class="sw" style="background:#be123c"></i> Late-stage detection (HV-led)</li>
+        <li><i class="sw ref"></i> Reference alert (RADD/GLAD)</li>
+      </ul>
+      <div class="ramp" aria-hidden="true"></div>
+      <div class="ramp-labels"><span id="ramp-min">-6 dB</span><span>0</span><span id="ramp-max">+6 dB</span></div>
+      <div class="hint">HH / HV change: date minus baseline, in dB.</div>
     </section>
 
     <section>
       <h2>Accuracy</h2>
-      <div id="metrics">data not loaded yet</div>
+      <div id="metrics" class="missing">data not loaded yet</div>
+    </section>
+
+    <section>
+      <h2>Disturbance</h2>
+      <div id="summary" class="missing">data not loaded yet</div>
     </section>
 
     <section class="limits">
       <h2>Known limits</h2>
       <ul>
-        <li>Rain / moisture can cause false alarms</li>
+        <li>Rain and soil moisture can cause false alarms</li>
         <li>Fire double-bounce can mimic or mask clearing</li>
-        <li>Flooded forest false alarms</li>
-        <li>Selective logging not detected</li>
+        <li>Flooded forest causes false alarms</li>
+        <li>Selective logging is not detected</li>
         <li>Tested on one area only</li>
       </ul>
     </section>
   </aside>
   <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/@geomatico/maplibre-cog-protocol@0.10.0/dist/index.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
