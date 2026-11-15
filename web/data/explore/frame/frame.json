@@ -1,0 +1,804 @@
+{
+ "source": "NISAR L2 GCOV provisional, track 2 frame 174 ascending, frequencyA HV, 5x5 (100 m) linear block mean",
+ "prereg": "validation/PREREG_frame.md",
+ "metrics_file": "validation/frame_metrics.json",
+ "bounds_lonlat_wsen": [
+  -55.2437793481029,
+  -8.391680890398435,
+  -52.49104756353209,
+  -5.828697502862724
+ ],
+ "grid": {
+  "crs": "EPSG:3857",
+  "width": 3034,
+  "height": 2847,
+  "bounds": [
+   -6149709.386526777,
+   -937515.4753448761,
+   -5843276.685977897,
+   -649969.6947045779
+  ],
+  "full_resolution_size": [
+   3034,
+   2847
+  ],
+  "downsample_factor": 1
+ },
+ "resampling": "nearest",
+ "dates": [
+  "2026-06-26",
+  "2026-07-08",
+  "2026-07-20",
+  "2026-08-13",
+  "2026-08-25",
+  "2026-09-06",
+  "2026-09-18",
+  "2026-09-30",
+  "2026-10-12"
+ ],
+ "T_db": -11.250146865844727,
+ "outlines": {
+  "window_20km": {
+   "type": "Polygon",
+   "coordinates": [
+    [
+     [
+      -54.79,
+      -8.29
+     ],
+     [
+      -54.608,
+      -8.29
+     ],
+     [
+      -54.608,
+      -8.109
+     ],
+     [
+      -54.79,
+      -8.109
+     ],
+     [
+      -54.79,
+      -8.29
+     ]
+    ]
+   ]
+  },
+  "box_60km": {
+   "type": "Polygon",
+   "coordinates": [
+    [
+     [
+      -54.97295,
+      -8.46752
+     ],
+     [
+      -54.95029,
+      -8.46775
+     ],
+     [
+      -54.92763,
+      -8.46797
+     ],
+     [
+      -54.90497,
+      -8.4682
+     ],
+     [
+      -54.88231,
+      -8.46843
+     ],
+     [
+      -54.85965,
+      -8.46865
+     ],
+     [
+      -54.83699,
+      -8.46888
+     ],
+     [
+      -54.81432,
+      -8.4691
+     ],
+     [
+      -54.79166,
+      -8.46932
+     ],
+     [
+      -54.769,
+      -8.46954
+     ],
+     [
+      -54.74634,
+      -8.46976
+     ],
+     [
+      -54.72367,
+      -8.46997
+     ],
+     [
+      -54.70101,
+      -8.47019
+     ],
+     [
+      -54.67834,
+      -8.4704
+     ],
+     [
+      -54.65567,
+      -8.47062
+     ],
+     [
+      -54.63301,
+      -8.47083
+     ],
+     [
+      -54.61034,
+      -8.47104
+     ],
+     [
+      -54.58767,
+      -8.47125
+     ],
+     [
+      -54.565,
+      -8.47146
+     ],
+     [
+      -54.54233,
+      -8.47166
+     ],
+     [
+      -54.51966,
+      -8.47187
+     ],
+     [
+      -54.49699,
+      -8.47207
+     ],
+     [
+      -54.47432,
+      -8.47228
+     ],
+     [
+      -54.45165,
+      -8.47248
+     ],
+     [
+      -54.42898,
+      -8.47268
+     ],
+     [
+      -54.42898,
+      -8.47268
+     ],
+     [
+      -54.42878,
+      -8.4501
+     ],
+     [
+      -54.42858,
+      -8.42753
+     ],
+     [
+      -54.42838,
+      -8.40496
+     ],
+     [
+      -54.42818,
+      -8.38239
+     ],
+     [
+      -54.42799,
+      -8.35981
+     ],
+     [
+      -54.42779,
+      -8.33724
+     ],
+     [
+      -54.42759,
+      -8.31467
+     ],
+     [
+      -54.4274,
+      -8.29209
+     ],
+     [
+      -54.4272,
+      -8.26952
+     ],
+     [
+      -54.42701,
+      -8.24695
+     ],
+     [
+      -54.42681,
+      -8.22438
+     ],
+     [
+      -54.42662,
+      -8.2018
+     ],
+     [
+      -54.42643,
+      -8.17923
+     ],
+     [
+      -54.42623,
+      -8.15666
+     ],
+     [
+      -54.42604,
+      -8.13408
+     ],
+     [
+      -54.42585,
+      -8.11151
+     ],
+     [
+      -54.42566,
+      -8.08894
+     ],
+     [
+      -54.42547,
+      -8.06636
+     ],
+     [
+      -54.42528,
+      -8.04379
+     ],
+     [
+      -54.42509,
+      -8.02122
+     ],
+     [
+      -54.4249,
+      -7.99864
+     ],
+     [
+      -54.42471,
+      -7.97607
+     ],
+     [
+      -54.42452,
+      -7.9535
+     ],
+     [
+      -54.42434,
+      -7.93092
+     ],
+     [
+      -54.42434,
+      -7.93092
+     ],
+     [
+      -54.44698,
+      -7.93074
+     ],
+     [
+      -54.46962,
+      -7.93055
+     ],
+     [
+      -54.49226,
+      -7.93036
+     ],
+     [
+      -54.5149,
+      -7.93017
+     ],
+     [
+      -54.53754,
+      -7.92998
+     ],
+     [
+      -54.56018,
+      -7.92978
+     ],
+     [
+      -54.58281,
+      -7.92959
+     ],
+     [
+      -54.60545,
+      -7.92939
+     ],
+     [
+      -54.62809,
+      -7.9292
+     ],
+     [
+      -54.65072,
+      -7.929
+     ],
+     [
+      -54.67336,
+      -7.9288
+     ],
+     [
+      -54.69599,
+      -7.9286
+     ],
+     [
+      -54.71863,
+      -7.9284
+     ],
+     [
+      -54.74126,
+      -7.9282
+     ],
+     [
+      -54.7639,
+      -7.92799
+     ],
+     [
+      -54.78653,
+      -7.92779
+     ],
+     [
+      -54.80916,
+      -7.92758
+     ],
+     [
+      -54.83179,
+      -7.92737
+     ],
+     [
+      -54.85442,
+      -7.92716
+     ],
+     [
+      -54.87705,
+      -7.92695
+     ],
+     [
+      -54.89968,
+      -7.92674
+     ],
+     [
+      -54.92231,
+      -7.92653
+     ],
+     [
+      -54.94494,
+      -7.92631
+     ],
+     [
+      -54.96757,
+      -7.9261
+     ],
+     [
+      -54.96757,
+      -7.9261
+     ],
+     [
+      -54.96778,
+      -7.94866
+     ],
+     [
+      -54.968,
+      -7.97122
+     ],
+     [
+      -54.96822,
+      -7.99378
+     ],
+     [
+      -54.96844,
+      -8.01634
+     ],
+     [
+      -54.96866,
+      -8.0389
+     ],
+     [
+      -54.96888,
+      -8.06145
+     ],
+     [
+      -54.9691,
+      -8.08401
+     ],
+     [
+      -54.96932,
+      -8.10657
+     ],
+     [
+      -54.96954,
+      -8.12913
+     ],
+     [
+      -54.96976,
+      -8.15169
+     ],
+     [
+      -54.96999,
+      -8.17425
+     ],
+     [
+      -54.97021,
+      -8.19681
+     ],
+     [
+      -54.97044,
+      -8.21937
+     ],
+     [
+      -54.97066,
+      -8.24193
+     ],
+     [
+      -54.97089,
+      -8.26449
+     ],
+     [
+      -54.97111,
+      -8.28705
+     ],
+     [
+      -54.97134,
+      -8.3096
+     ],
+     [
+      -54.97157,
+      -8.33216
+     ],
+     [
+      -54.97179,
+      -8.35472
+     ],
+     [
+      -54.97202,
+      -8.37728
+     ],
+     [
+      -54.97225,
+      -8.39984
+     ],
+     [
+      -54.97248,
+      -8.4224
+     ],
+     [
+      -54.97271,
+      -8.44496
+     ],
+     [
+      -54.97295,
+      -8.46752
+     ],
+     [
+      -54.97295,
+      -8.46752
+     ]
+    ]
+   ]
+  }
+ },
+ "layers": {
+  "median": "forest_median.webp",
+  "lost": "lost.webp",
+  "first_switch": "first_switch.webp",
+  "lost_patches": "lost.geojson"
+ },
+ "colors": {
+  "forest": "#2f6b4f",
+  "non_forest": "#b4401c",
+  "lost": "#ff2bd6",
+  "transparent": "not valid on all 9 dates / not lost"
+ },
+ "first_switch_legend": [
+  {
+   "index": 0,
+   "date": "2026-06-26",
+   "colour": "#440154"
+  },
+  {
+   "index": 1,
+   "date": "2026-07-08",
+   "colour": "#472d7b"
+  },
+  {
+   "index": 2,
+   "date": "2026-07-20",
+   "colour": "#3b528b"
+  },
+  {
+   "index": 3,
+   "date": "2026-08-13",
+   "colour": "#2c728e"
+  },
+  {
+   "index": 4,
+   "date": "2026-08-25",
+   "colour": "#21908d"
+  },
+  {
+   "index": 5,
+   "date": "2026-09-06",
+   "colour": "#27ad81"
+  },
+  {
+   "index": 6,
+   "date": "2026-09-18",
+   "colour": "#5cc863"
+  },
+  {
+   "index": 7,
+   "date": "2026-09-30",
+   "colour": "#aadc32"
+  },
+  {
+   "index": 8,
+   "date": "2026-10-12",
+   "colour": "#fde725"
+  }
+ ],
+ "first_switch_definition": "per block: the first pass from which the block is non-forest on that and every later pass (frame.first_switch_index); patch value = earliest over its blocks",
+ "categories": {
+  "alert_supported": "at least one block of the patch has a GLAD-L or GLAD-S2 alert dated 2026-06-26..2026-11-05",
+  "radar_only_unconfirmed": "no GLAD-L / GLAD-S2 alert in that window; radar class switch only, not confirmed by optical alerts"
+ },
+ "counts": {
+  "blocks_valid_all_9": 5910947,
+  "lost_blocks_all_valid": 244796,
+  "lost_blocks_scored_area": 240178,
+  "patches_before_reduction": {
+   "patches": 153341,
+   "alert_supported": 5584,
+   "radar_only_unconfirmed": 147757
+  },
+  "patches_in_geojson": {
+   "patches": 17658,
+   "alert_supported": 1560,
+   "radar_only_unconfirmed": 16098
+  },
+  "geojson_min_area_ha_applied": 3.0,
+  "alert_window": [
+   "2026-06-26",
+   "2026-11-05"
+  ],
+  "note": "maps and patches include the original 20 km window and the 60 km box; the scores do not"
+ },
+ "downsampled": "web images are at full block resolution (factor 1, not downsampled); patches < 3 ha dropped to fit 15 MB. lost.geojson hv_series_db = patch mean of block HV in dB.",
+ "scores": {
+  "prereg": "validation/PREREG_frame.md",
+  "T_db": -11.250146865844727,
+  "dates": [
+   "2026-06-26",
+   "2026-07-08",
+   "2026-07-20",
+   "2026-08-13",
+   "2026-08-25",
+   "2026-09-06",
+   "2026-09-18",
+   "2026-09-30",
+   "2026-10-12"
+  ],
+  "stack": "data/stack_frame_t2f174.nc",
+  "grid": {
+   "crs": "EPSG:32722",
+   "block_m": 100.0,
+   "shape": [
+    2819,
+    3026
+   ],
+   "bounds_lonlat_wsen": [
+    -55.243321564014586,
+    -8.391278477736124,
+    -52.491152760746445,
+    -5.8291519677285715
+   ]
+  },
+  "blocks": {
+   "total": 8530294,
+   "valid_all_9": 5910947,
+   "valid_fraction": 0.6929359058433391,
+   "in_original_window": 40284,
+   "in_60km_box": 199204,
+   "scored": 5711743,
+   "scored_km2": 57117.43
+  },
+  "a_forest_map": {
+   "reference": "Hansen GFC v1.13 forest (forest_mask.py), block forest if >= 50 % of 25 px",
+   "hansen_forest_share_of_scored": 0.8615580217807419,
+   "median": {
+    "n": 5711743,
+    "tp": 4605038,
+    "fp": 109182,
+    "fn": 315960,
+    "tn": 681563,
+    "oa": 0.9255670291888133,
+    "kappa": 0.7188344241338982,
+    "forest_precision": 0.9768398589798525,
+    "forest_recall": 0.9357935118039065,
+    "all_forest_baseline": 0.8615580217807419,
+    "all_nonforest_baseline": 0.1384419782192581,
+    "nonforest_precision": 0.6832554236844665,
+    "nonforest_recall": 0.8619251465390233,
+    "confusion_rows_ref_cols_pred": {
+     "labels": [
+      "forest",
+      "non-forest"
+     ],
+     "ref_forest": [
+      4605038,
+      315960
+     ],
+     "ref_nonforest": [
+      109182,
+      681563
+     ]
+    }
+   },
+   "median_pure_blocks": {
+    "n": 5415191,
+    "tp": 4517167,
+    "fp": 57532,
+    "fn": 259146,
+    "tn": 581346,
+    "oa": 0.9415204375985999,
+    "kappa": 0.7527979878087747,
+    "forest_precision": 0.987423872040543,
+    "forest_recall": 0.9457435055030942,
+    "all_forest_baseline": 0.8820211512391715,
+    "all_nonforest_baseline": 0.11797884876082856,
+    "nonforest_precision": 0.6916734484087892,
+    "nonforest_recall": 0.9099483782506206,
+    "confusion_rows_ref_cols_pred": {
+     "labels": [
+      "forest",
+      "non-forest"
+     ],
+     "ref_forest": [
+      4517167,
+      259146
+     ],
+     "ref_nonforest": [
+      57532,
+      581346
+     ]
+    }
+   },
+   "per_date": {
+    "2026-06-26": {
+     "oa": 0.9048399061372334,
+     "kappa": 0.6549332250254029,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-07-08": {
+     "oa": 0.8929874821048496,
+     "kappa": 0.6332198369184884,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-07-20": {
+     "oa": 0.9065905101122372,
+     "kappa": 0.660816413720558,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-08-13": {
+     "oa": 0.9055290127724585,
+     "kappa": 0.6509424387655636,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-08-25": {
+     "oa": 0.8828846115800378,
+     "kappa": 0.6108147777804026,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-09-06": {
+     "oa": 0.8991931184578857,
+     "kappa": 0.6258440844151913,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-09-18": {
+     "oa": 0.8746389674745519,
+     "kappa": 0.5849724488838108,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-09-30": {
+     "oa": 0.8571413314639682,
+     "kappa": 0.5477096072511314,
+     "all_forest_baseline": 0.8615580217807419
+    },
+    "2026-10-12": {
+     "oa": 0.8260655285085481,
+     "kappa": 0.4918973439882353,
+     "all_forest_baseline": 0.8615580217807419
+    }
+   }
+  },
+  "loss_rule": {
+   "rule": "forest on >= 2 of 06-26/07-08/07-20 AND non-forest on 09-30 and 10-12",
+   "lost_blocks": 240178,
+   "lost_ha": 240178.0,
+   "lost_on_hansen_forest": 215600,
+   "stable_forest_blocks": 3093834,
+   "control_size": 240178,
+   "control_is_whole_stable_set": false
+  },
+  "b_alerts": {
+   "tolerance_days": 24,
+   "reference_dates": [
+    "2026-07-20",
+    "2026-10-12"
+   ],
+   "precision_window": [
+    "2026-06-26",
+    "2026-11-05"
+   ],
+   "GLAD-L": {
+    "alert_pixels_read": 1023460,
+    "lost": {
+     "n_blocks": 240178,
+     "n_with_alert": 8028,
+     "precision_like": 0.0334252096361865,
+     "n_reference": 64101,
+     "n_reference_hit": 7253,
+     "recall_like": 0.11314956084928472
+    },
+    "control": {
+     "n_blocks": 240178,
+     "n_with_alert": 312,
+     "precision_like": 0.0012990365478936455,
+     "n_reference": 64101,
+     "n_reference_hit": 205,
+     "recall_like": 0.003198078033104008
+    },
+    "lost_recall_on_hansen_forest_reference": {
+     "n_blocks": 240178,
+     "n_with_alert": 8028,
+     "precision_like": 0.0334252096361865,
+     "n_reference": 13559,
+     "n_reference_hit": 5471,
+     "recall_like": 0.40349583302603437
+    },
+    "control_recall_on_hansen_forest_reference": {
+     "n_blocks": 240178,
+     "n_with_alert": 312,
+     "precision_like": 0.0012990365478936455,
+     "n_reference": 13559,
+     "n_reference_hit": 205,
+     "recall_like": 0.015119109078840622
+    }
+   },
+   "GLAD-S2": {
+    "alert_pixels_read": 75688881,
+    "lost": {
+     "n_blocks": 240178,
+     "n_with_alert": 10303,
+     "precision_like": 0.04289735113124433,
+     "n_reference": 68169,
+     "n_reference_hit": 8704,
+     "recall_like": 0.12768267100881633
+    },
+    "control": {
+     "n_blocks": 240178,
+     "n_with_alert": 1702,
+     "precision_like": 0.007086410911907003,
+     "n_reference": 68169,
+     "n_reference_hit": 1442,
+     "recall_like": 0.021153310155642594
+    },
+    "lost_recall_on_hansen_forest_reference": {
+     "n_blocks": 240178,
+     "n_with_alert": 10303,
+     "precision_like": 0.04289735113124433,
+     "n_reference": 46201,
+     "n_reference_hit": 6639,
+     "recall_like": 0.1436981883509015
+    },
+    "control_recall_on_hansen_forest_reference": {
+     "n_blocks": 240178,
+     "n_with_alert": 1702,
+     "precision_like": 0.007086410911907003,
+     "n_reference": 46201,
+     "n_reference_hit": 1442,
+     "recall_like": 0.03121144563970477
+    }
+   }
+  }
+ }
+}
