@@ -338,6 +338,14 @@
     const meta = await big();
     if (!meta) { $('ovr-status').textContent = 'Radar forest maps pending.'; return; }
     [ovr.opt, ovr.cloud] = await Promise.all([getJSON(`${OPT}optical.json`), getJSON(`${BIG}cloud.json`)]);
+    if (!ovr.opt) { // no dated Sentinel-2 images built: show the cloud timeline alone, without the two-satellite framing
+      $('ovr').hidden = true;
+      $('ovr').closest('.compare-layout').classList.add('cloud-only');
+      const sec = $('optical-radar');
+      sec.querySelector('.section-head h2').textContent = 'Cloud over the same 60 km, June to October';
+      sec.querySelector('.section-head > p').textContent = 'Every Sentinel-2 scene over the 60 km map in the dry season, with the share of the area its own scene classification marks clear, next to NISAR\'s passes.';
+      sec.querySelector('.compare-side h3').textContent = 'Sentinel-2 clear share per scene, NISAR passes on top';
+    }
     $('ovr-passes').replaceChildren(...meta.dates.map((d, k) => {
       const b = node('button', d.slice(5)); b.type = 'button'; b.setAttribute('aria-label', `Compare on ${d}`);
       b.onclick = () => ovrShow(k);
@@ -351,8 +359,9 @@
         ['NISAR passes usable', `${meta.dates.length} of ${meta.dates.length} · longest gap ${gap} days`],
         ['Sentinel-2 scenes at least 80% clear', `${int(s.n_ge_80pct_clear)} of ${int(s.n_scenes)} · longest gap ${s.longest_gap_days_between_good_views} days`],
         ['Median clear share per Sentinel-2 scene', pct(s.median_clear_fraction)],
+        ['Sentinel-2 scenes fully clouded (clear < 2%)', `${c.scenes.filter((x) => x.clear_fraction_aoi < 0.02).length} of ${c.scenes.length}`],
       ]));
-      $('ovr-note').textContent = 'June to October is the dry season here, and Sentinel-2 saw this box well: optical does not go blind in this window. What radar adds is that no pass is lost to cloud, so every 12-day map is usable without screening. The wet season (about November to May), when cloud is heavier, was not measured. Clear shares come from Sentinel-2 scene classification, which misses haze and small clouds. Source: big/cloud.json.';
+      $('ovr-note').textContent = 'June to October is the dry season here, and Sentinel-2 saw this box well: it was not blinded in this window. What radar adds is that no pass is lost to cloud, so every 12-day map is usable without screening. The wet season (about November to May), when cloud is heavier, was not measured. Clear shares come from Sentinel-2 scene classification, which misses haze and small clouds. Source: big/cloud.json.';
     } else $('ovr-timeline').replaceChildren(node('span', 'pending', 'tag'));
     ovrShow(meta.dates.length - 1);
   }
