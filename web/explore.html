@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="observatory.css?v=20261115-honest-1">
   <link rel="stylesheet" href="cinema.css?v=20261115-honest-1">
+  <link rel="stylesheet" href="environment.css?v=phase2-4">
 </head>
-<body>
+<body data-environment-registry="data/environment/access-connected.json">
 <a class="skip" href="#explore">Skip to forest map</a>
 
 <header class="top">
@@ -26,6 +27,7 @@
     <a href="#threats">Threats</a>
     <a href="#compare">Compare</a>
     <a href="#detection">Detection</a>
+    <a href="#environment">Evidence</a>
     <a href="#impact">Validation</a>
     <a class="ext" href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a>
   </nav>
@@ -215,7 +217,7 @@
 
 <!-- ================= optical vs radar ================= -->
 <section id="optical-radar" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">03 / Optical vs radar</p><h2>Two satellites, the same dates</h2></div><p>Sentinel-2 sees colour but not through cloud; NISAR's L-band sees forest structure through it. Pick a pass to set the Sentinel-2 scene nearest in time beside the radar forest map.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">03 / Optical vs radar</p><h2>Same forest, nearby acquisition dates</h2></div><p>Sentinel-2 sees colour but not through cloud; NISAR's L-band sees forest structure through it. Pick a pass to set the Sentinel-2 scene nearest in time beside the radar forest map.</p></div>
   <div class="compare-layout reveal">
     <div id="ovr" class="comparison no-opt" style="--split:50%">
       <div class="compare-image after-image"><img id="ovr-radar" alt="NISAR forest map for the selected pass"></div>
@@ -269,12 +271,26 @@
   </div>
       <div class="compare-footer"><span>Drag the divider or use the arrow keys</span><span>Same bounds and display stretch for both dates</span></div>
       <p id="compare-note" class="note"></p>
-      <p class="note">Optical comparison: not available. This frontend has no dated, aligned optical observation pair. The map's Esri basemap is context only.</p>
+      <p class="note">Dated Sentinel-2 imagery is available in Optical and the disturbance investigation panel. This slider compares NISAR acquisitions. The map's Esri basemap remains undated context.</p>
     </aside>
   </div>
 </section>
 
 <!-- ================= detection ================= -->
+
+<section id="environment" class="section">
+  <div class="section-head"><div><p class="eyebrow">Environmental evidence</p><h2>Investigate the signal, then the context</h2></div><p>Rainfall, regional soil moisture and thermal anomalies can help investigate radar ambiguity. They do not establish what caused a change. Only retrieved, quality-screened measurements are plotted.</p></div>
+  <div class="env-tools"><label>Context acquisition date<select id="env-date" disabled aria-label="Environmental context date"></select></label><button id="invest-example" disabled type="button">Explore a real disturbance</button><label><input id="env-fire-toggle" type="checkbox" disabled> FIRMS overlay, ±7 days (retrospective)</label></div>
+  <p id="env-load-status" class="note" role="status">The example is the first item in the existing area-ranked watchlist, not a representative validation sample. Rainfall windows use complete UTC days before the selected date.</p>
+  <div class="env-list">
+    <article class="env-dataset"><p class="eyebrow">Precipitation / IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking dataset</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>3-, 7- and 14-day totals require every daily observation. Gaps remain unavailable. Regional 0.1° rainfall is not a patch measurement.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
+    <article class="env-dataset"><p class="eyebrow">Soil moisture / SMAP</p><h3>Regional moisture context</h3><p id="env-smap-state" class="env-state" role="status">Checking dataset</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is a 9 km modeled assimilation product. NSIDC reports a geolocation issue from May 14 to July 28, 2026; affected dates need verified reprocessing.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
+    <article class="env-dataset"><p class="eyebrow">Active fire / FIRMS</p><h3>Nearby thermal anomalies</h3><p id="env-fire-state" class="env-state" role="status">Checking dataset</p><p id="env-fire-reason"></p><p>VIIRS anomalies have nominal 375 m footprints. The investigation checks within 5 km of the patch centroid and ±7 days, using acquisition timestamps and original confidence codes. A nearby anomaly does not identify a disturbance as fire-caused.</p><a href="https://firms.modaps.eosdis.nasa.gov/api/area/" target="_blank" rel="noopener">FIRMS access and metadata</a></article>
+  </div>
+  <details class="evidence-policy"><summary>How the evidence categories are assigned</summary><p>Existing class-switch patches marked alert_supported retain the repository's GLAD-L / GLAD-S2 overlap category and pre-registered June 26–November 5 matching window. Other patches remain insufficient evidence for confirmation. No optical interpretation is inferred from regional clear fraction. No wet/dry anomaly is assigned without an independent climatology. No calibrated confidence probability is available.</p><p>New environmental context is limited to the 60 km southern Pará box. Full-frame patches outside that box have unavailable context. Environment processing is separate from the frozen detection and validation rules.</p></details>
+</section>
+<dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Disturbance investigation</h2><button id="invest-close" type="button" aria-label="Close investigation">Close</button></header><div class="invest-body"><section><p class="eyebrow">Evidence assessment</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>Radar evidence</h3><div id="invest-radar" class="invest-series"></div><p>ΔHV is relative to the first exported acquisition, not the detector's multi-date baseline. The original interactive time-series chart remains in the map panel.</p></section><section><h3>Dated Sentinel-2 context</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Environmental context</h3><div id="invest-environment"></div></section></div></dialog>
+
 <section id="detection" class="section">
   <div class="section-head reveal"><div><p class="eyebrow">06 / Investigate</p><h2>Inspect potential disturbances</h2></div><p>Potential disturbances from a JJ-FAST-inspired method. Open a patch to see it on the map with its HH and HV history next to stable radar forest.</p></div>
   <div id="method" class="method-sequence">
@@ -374,8 +390,10 @@
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=20261115-honest-1"></script>
+<script src="explore.js?v=phase2-4"></script>
 <script src="observatory.js?v=20261115-honest-1"></script>
-<script src="cinema.js?v=20261115-honest-1"></script>
+<script src="cinema.js?v=phase2-4"></script>
+<script src="evidence-core.js?v=phase2-4"></script>
+<script src="environment.js?v=phase2-4"></script>
 </body>
 </html>

@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-11-15T17:27:16.133884+00:00",
+  "bbox_wsen": [
+    -54.972945606450594,
+    -8.472268545181047,
+    -54.424769774012425,
+    -7.926099021500293
+  ],
+  "crs": "EPSG:4326",
+  "nisar_dates": [
+    "2026-06-26",
+    "2026-07-08",
+    "2026-07-20",
+    "2026-08-13",
+    "2026-08-25",
+    "2026-09-06",
+    "2026-09-18",
+    "2026-09-30",
+    "2026-10-12"
+  ],
+  "start": "2026-06-12",
+  "end": "2026-10-12",
+  "scope": "Southern Para 60 km box only; not the full NISAR frame.",
+  "datasets": {
+    "imerg": {
+      "name": "NASA GPM IMERG",
+      "collection": "GPM_3IMERGDL",
+      "resolution": "0.1 degree grid",
+      "unit": "mm/day",
+      "source": "https://gpm.nasa.gov/data/directory",
+      "access": "Earthdata Login and GES DISC data access, or a PPS registered account. Late Run is selected because Final Run can lag by months.",
+      "status": "unavailable",
+      "observations": [],
+      "probes": [
+        {
+          "url": "https://cmr.earthdata.nasa.gov/search/granules.json?short_name=GPM_3IMERGDL&temporal=2026-06-12T00%3A00%3A00Z%2C2026-10-12T23%3A59%3A59Z&bounding_box=-54.972945606450594%2C-8.472268545181047%2C-54.424769774012425%2C-7.926099021500293&page_size=1",
+          "status": 200,
+          "matching_granules": "123",
+          "returned": 1
+        },
+        {
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGDL.07/2026/06/3B-DAY-L.MS.MRG.3IMERG.20260612-S000000-E235959.V07C.nc4",
+          "status": 401
+        },
+        {
+          "url": "https://jsimpsonhttps.pps.eosdis.nasa.gov/imerg/gis/late/2026/06/",
+          "status": 401
+        }
+      ],
+      "example_granule": {
+        "id": "G4215421991-GES_DISC",
+        "title": "GPM_3IMERGDL.07:3B-DAY-L.MS.MRG.3IMERG.20260612-S000000-E235959.V07C.nc4",
+        "time_start": "2026-06-12T00:00:00.000Z",
+        "time_end": "2026-06-12T23:59:59.999Z"
+      },
+      "reason": "Catalog metadata retrieved; no quality-screened regional measurements downloaded. Follow the documented authenticated subset workflow."
+    },
+    "smap": {
+      "name": "NASA SMAP L4 SPL4SMGP v8",
+      "collection": "SPL4SMGP",
+      "resolution": "9 km EASE-Grid; 3-hourly land-model assimilation",
+      "unit": "m3/m3",
+      "source": "https://nsidc.org/data/spl4smgp/versions/8",
+      "access": "Earthdata Login; order a geographic subset through NSIDC / Harmony. Preserve provider quality and assimilation diagnostics.",
+      "status": "unavailable",
+      "observations": [],
+      "probes": [
+        {
+          "url": "https://cmr.earthdata.nasa.gov/search/granules.json?short_name=SPL4SMGP&temporal=2026-06-12T00%3A00%3A00Z%2C2026-10-12T23%3A59%3A59Z&bounding_box=-54.972945606450594%2C-8.472268545181047%2C-54.424769774012425%2C-7.926099021500293&page_size=1",
+          "status": 200,
+          "matching_granules": "985",
+          "returned": 1
+        },
+        {
+          "url": "https://data.nsidc.earthdatacloud.nasa.gov/nsidc-cumulus-prod-protected/SMAP/SPL4SMGP/008/2026/06/11/SMAP_L4_SM_gph_20260611T223000_Vv8013_001.h5",
+          "status": 401
+        }
+      ],
+      "example_granule": {
+        "id": "G4356949985-NSIDC_CPRD",
+        "title": "SMAP_L4_SM_gph_20260611T223000_Vv8013_001.h5_u9loH5HD",
+        "time_start": "2026-06-11T21:00:00.000Z",
+        "time_end": "2026-06-12T00:00:00.000Z"
+      },
+      "reason": "Catalog metadata retrieved; no quality-screened regional measurements downloaded. Follow the documented authenticated subset workflow."
+    },
+    "firms": {
+      "name": "NASA FIRMS VIIRS S-NPP standard processing",
+      "resolution": "nominal 375 m detection footprint; not a burned-area product",
+      "unit": "thermal anomaly; FRP in MW",
+      "source": "https://firms.modaps.eosdis.nasa.gov/api/area/",
+      "access": "A free FIRMS MAP_KEY is needed. Set FIRMS_MAP_KEY in your local environment, never in a frontend file. Check data_availability before historical retrieval.",
+      "status": "unavailable",
+      "observations": [],
+      "reason": "No FIRMS_MAP_KEY supplied; no historical fire measurements requested. Missing fire data is not evidence of no fires."
+    }
+  },
+  "smap_notice": {
+    "source": "https://nsidc.org/data/spl4smgp/versions/8",
+    "start": "2026-05-14",
+    "end": "2026-07-28",
+    "note": "NSIDC reports a SMAP geolocation issue in this interval; L4 reprocessing is pending as of 2026-11-15. Require a documented reprocessed source before using these dates."
+  }
+}

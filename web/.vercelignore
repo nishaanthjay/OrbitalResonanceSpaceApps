@@ -1,0 +1,11 @@
+# Publish the static observatory and its curated data, not local processing tools.
+tools/
+__pycache__/
+.pytest_cache/
+README.md
+*.h5
+*.nc
+*.nc4
+.env*
+.netrc
+_netrc

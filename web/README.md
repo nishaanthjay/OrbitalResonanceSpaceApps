@@ -46,3 +46,11 @@ npx vercel link --yes --project sars-deforest   # then run `npx vercel git disco
 npx vercel deploy --prod --yes
 ```
 `.vercel/` and `.env*` are gitignored (`web/.gitignore`); never commit them.
+
+## Phase 2 environmental investigation
+
+`environment.js`, `evidence-core.js` and `environment.css` add the Environmental Evidence section and a nonmodal patch investigation panel. The panel opens from real map/patch selections and the existing area-ranked watchlist example. It shows shipped radar values, dated Sentinel-2 crops, the existing alert-product category and environmental availability. The optical archive now contains nine dated images; older notes above about its absence describe the fallback, not the current data state.
+
+`data/environment/access.json` contains an actual NASA access audit, not environmental measurements: IMERG and SMAP catalog discovery succeeded, but science-file requests returned HTTP 401. No FIRMS key was supplied. Charts and fire controls stay unavailable until quality-screened files are explicitly registered. No sample measurements are shipped. See [tools/ENVIRONMENT.md](tools/ENVIRONMENT.md) for account setup, schemas, quality notices, processing and registration.
+
+The new map hooks are `evidence:selection` and `evidence:map-date`. Tour hooks reveal the investigation only during its evidence step and close it on completion. Existing cinematic features and frozen scientific rules remain in place. Run `node --test web/tools/test_evidence.cjs web/tools/test_environment_ui.cjs` from the repository root, plus `python -m unittest discover -s web/tools -p test_environment_data.py -v`.
