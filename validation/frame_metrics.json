@@ -1,0 +1,238 @@
+{
+  "prereg": "validation/PREREG_frame.md",
+  "T_db": -11.250146865844727,
+  "dates": [
+    "2026-06-26",
+    "2026-07-08",
+    "2026-07-20",
+    "2026-08-13",
+    "2026-08-25",
+    "2026-09-06",
+    "2026-09-18",
+    "2026-09-30",
+    "2026-10-12"
+  ],
+  "stack": "data/stack_frame_t2f174.nc",
+  "grid": {
+    "crs": "EPSG:32722",
+    "block_m": 100.0,
+    "shape": [
+      2819,
+      3026
+    ],
+    "bounds_lonlat_wsen": [
+      -55.243321564014586,
+      -8.391278477736124,
+      -52.491152760746445,
+      -5.8291519677285715
+    ]
+  },
+  "blocks": {
+    "total": 8530294,
+    "valid_all_9": 5910947,
+    "valid_fraction": 0.6929359058433391,
+    "in_original_window": 40284,
+    "in_60km_box": 199204,
+    "scored": 5711743,
+    "scored_km2": 57117.43
+  },
+  "a_forest_map": {
+    "reference": "Hansen GFC v1.13 forest (forest_mask.py), block forest if >= 50 % of 25 px",
+    "hansen_forest_share_of_scored": 0.8615580217807419,
+    "median": {
+      "n": 5711743,
+      "tp": 4605038,
+      "fp": 109182,
+      "fn": 315960,
+      "tn": 681563,
+      "oa": 0.9255670291888133,
+      "kappa": 0.7188344241338982,
+      "forest_precision": 0.9768398589798525,
+      "forest_recall": 0.9357935118039065,
+      "all_forest_baseline": 0.8615580217807419,
+      "all_nonforest_baseline": 0.1384419782192581,
+      "nonforest_precision": 0.6832554236844665,
+      "nonforest_recall": 0.8619251465390233,
+      "confusion_rows_ref_cols_pred": {
+        "labels": [
+          "forest",
+          "non-forest"
+        ],
+        "ref_forest": [
+          4605038,
+          315960
+        ],
+        "ref_nonforest": [
+          109182,
+          681563
+        ]
+      }
+    },
+    "median_pure_blocks": {
+      "n": 5415191,
+      "tp": 4517167,
+      "fp": 57532,
+      "fn": 259146,
+      "tn": 581346,
+      "oa": 0.9415204375985999,
+      "kappa": 0.7527979878087747,
+      "forest_precision": 0.987423872040543,
+      "forest_recall": 0.9457435055030942,
+      "all_forest_baseline": 0.8820211512391715,
+      "all_nonforest_baseline": 0.11797884876082856,
+      "nonforest_precision": 0.6916734484087892,
+      "nonforest_recall": 0.9099483782506206,
+      "confusion_rows_ref_cols_pred": {
+        "labels": [
+          "forest",
+          "non-forest"
+        ],
+        "ref_forest": [
+          4517167,
+          259146
+        ],
+        "ref_nonforest": [
+          57532,
+          581346
+        ]
+      }
+    },
+    "per_date": {
+      "2026-06-26": {
+        "oa": 0.9048399061372334,
+        "kappa": 0.6549332250254029,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-07-08": {
+        "oa": 0.8929874821048496,
+        "kappa": 0.6332198369184884,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-07-20": {
+        "oa": 0.9065905101122372,
+        "kappa": 0.660816413720558,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-08-13": {
+        "oa": 0.9055290127724585,
+        "kappa": 0.6509424387655636,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-08-25": {
+        "oa": 0.8828846115800378,
+        "kappa": 0.6108147777804026,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-09-06": {
+        "oa": 0.8991931184578857,
+        "kappa": 0.6258440844151913,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-09-18": {
+        "oa": 0.8746389674745519,
+        "kappa": 0.5849724488838108,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-09-30": {
+        "oa": 0.8571413314639682,
+        "kappa": 0.5477096072511314,
+        "all_forest_baseline": 0.8615580217807419
+      },
+      "2026-10-12": {
+        "oa": 0.8260655285085481,
+        "kappa": 0.4918973439882353,
+        "all_forest_baseline": 0.8615580217807419
+      }
+    }
+  },
+  "loss_rule": {
+    "rule": "forest on >= 2 of 06-26/07-08/07-20 AND non-forest on 09-30 and 10-12",
+    "lost_blocks": 240178,
+    "lost_ha": 240178.0,
+    "lost_on_hansen_forest": 215600,
+    "stable_forest_blocks": 3093834,
+    "control_size": 240178,
+    "control_is_whole_stable_set": false
+  },
+  "b_alerts": {
+    "tolerance_days": 24,
+    "reference_dates": [
+      "2026-07-20",
+      "2026-10-12"
+    ],
+    "precision_window": [
+      "2026-06-26",
+      "2026-11-05"
+    ],
+    "GLAD-L": {
+      "alert_pixels_read": 1023460,
+      "lost": {
+        "n_blocks": 240178,
+        "n_with_alert": 8028,
+        "precision_like": 0.0334252096361865,
+        "n_reference": 64101,
+        "n_reference_hit": 7253,
+        "recall_like": 0.11314956084928472
+      },
+      "control": {
+        "n_blocks": 240178,
+        "n_with_alert": 312,
+        "precision_like": 0.0012990365478936455,
+        "n_reference": 64101,
+        "n_reference_hit": 205,
+        "recall_like": 0.003198078033104008
+      },
+      "lost_recall_on_hansen_forest_reference": {
+        "n_blocks": 240178,
+        "n_with_alert": 8028,
+        "precision_like": 0.0334252096361865,
+        "n_reference": 13559,
+        "n_reference_hit": 5471,
+        "recall_like": 0.40349583302603437
+      },
+      "control_recall_on_hansen_forest_reference": {
+        "n_blocks": 240178,
+        "n_with_alert": 312,
+        "precision_like": 0.0012990365478936455,
+        "n_reference": 13559,
+        "n_reference_hit": 205,
+        "recall_like": 0.015119109078840622
+      }
+    },
+    "GLAD-S2": {
+      "alert_pixels_read": 75688881,
+      "lost": {
+        "n_blocks": 240178,
+        "n_with_alert": 10303,
+        "precision_like": 0.04289735113124433,
+        "n_reference": 68169,
+        "n_reference_hit": 8704,
+        "recall_like": 0.12768267100881633
+      },
+      "control": {
+        "n_blocks": 240178,
+        "n_with_alert": 1702,
+        "precision_like": 0.007086410911907003,
+        "n_reference": 68169,
+        "n_reference_hit": 1442,
+        "recall_like": 0.021153310155642594
+      },
+      "lost_recall_on_hansen_forest_reference": {
+        "n_blocks": 240178,
+        "n_with_alert": 10303,
+        "precision_like": 0.04289735113124433,
+        "n_reference": 46201,
+        "n_reference_hit": 6639,
+        "recall_like": 0.1436981883509015
+      },
+      "control_recall_on_hansen_forest_reference": {
+        "n_blocks": 240178,
+        "n_with_alert": 1702,
+        "precision_like": 0.007086410911907003,
+        "n_reference": 46201,
+        "n_reference_hit": 1442,
+        "recall_like": 0.03121144563970477
+      }
+    }
+  }
+}

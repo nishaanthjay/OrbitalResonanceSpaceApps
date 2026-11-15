@@ -167,3 +167,42 @@ Reading, stated plainly: this window is the dry season, and Sentinel-2 saw this 
 `python validation/first_switch.py --stack data/stack_big_t2f174.nc --big-dir web/data/explore/big`: for each lost block (PREREG_scale.md rule unchanged, valid on all 9 dates, whole 60 km map incl. the test window: 4,618 blocks), the first pass after 07-20 on which it is non-forest and stays non-forest through 10-12. Blocks: 08-13 427, 08-25 212, 09-06 328, 09-18 1,347, 09-30 2,304. Patches (earliest block date per patch; 2,999 patches): 08-13 358, 08-25 165, 09-06 253, 09-18 883, 09-30 1,340. Written to `web/data/explore/big/first_switch.webp` (legend in `big.json` under `first_switch`) and `first_switch_date` in `lost.geojson`. No new score or threshold. Half of the lost blocks switch only at 09-30, the last pass the rule allows, so most flags rest on two passes.
 
 Tests: `python -m pytest -q validation pipeline/load web/tools` -> 53 passed.
+
+
+## Forest map, full frame (NISAR track 2 frame 174, out-of-sample)
+Run once on 2026-11-14 under `validation/PREREG_frame.md` (committed before streaming and scoring); no rerun, no retuning, T_db = -11.250146865844727 dB fixed. Every number below is read from `validation/frame_metrics.json`, produced by one command:
+`python validation/frame.py --stack data/stack_frame_t2f174.nc --mask data/forest_mask_frame_t2f174.tif --alerts-dir data/final_frame --out validation/frame_metrics.json`
+Stack: `data/stack_frame_t2f174.nc` (see CLAUDE.md "Frame stack"), mask `data/forest_mask_frame_t2f174.tif` (`python pipeline/load/forest_mask.py --grid-from 32410 9353930 3026 2819 --subdivide 5 --out data/forest_mask_frame_t2f174.tif`), alerts `data/final_frame/` (`validation/fetch_alerts_frame.py`).
+
+### Area
+- Grid 3026 x 2819 blocks of 100 m = 8,530,294 blocks; valid on all 9 dates: 5,910,947 (69.3 % of the rectangle).
+- Excluded from every score: 40,284 blocks in the original 20 km window and 199,204 in the 60 km box (valid blocks only).
+- Scored: 5,711,743 blocks = 57,117 km2. Hansen forest share of the scored blocks: 86.2 %.
+
+### (a) 9-date median forest map vs Hansen v1.13 forest
+| | value |
+|---|---|
+| Overall accuracy | **0.926** |
+| All-forest baseline | 0.862 (all-non-forest 0.138) |
+| Cohen's kappa | 0.719 |
+| Forest precision / recall | 0.977 / 0.936 |
+| Non-forest precision / recall | 0.683 / 0.862 |
+
+Confusion (rows = Hansen, columns = radar), blocks: Hansen forest: 4,605,038 forest, 315,960 non-forest; Hansen non-forest: 109,182 forest, 681,563 non-forest.
+Pure-block subset (Hansen block fraction <= 10 % or >= 90 %, n = 5,415,191): OA 0.942, baseline 0.882, kappa 0.753, forest precision / recall 0.987 / 0.946, non-forest precision / recall 0.692 / 0.910.
+Per date (OA / kappa; baseline 0.862 on every date): 06-26 0.905 / 0.655; 07-08 0.893 / 0.633; 07-20 0.907 / 0.661; 08-13 0.906 / 0.651; 08-25 0.883 / 0.611; 09-06 0.899 / 0.626; 09-18 0.875 / 0.585; 09-30 0.857 / 0.548; 10-12 0.826 / 0.492.
+Reading, stated plainly: the median map beats the all-forest baseline (0.926 vs 0.862). Single dates are weaker, and 2026-10-12 (0.826) is below the all-forest baseline. Hansen is a 2000-2025 map, so some disagreement is real change since then, not radar error; this is agreement with a reference, not accuracy.
+
+### (b) Lost blocks vs GLAD alerts (+/- 24 days, rule from PREREG_scale.md)
+Lost blocks: 240,178 (4.20 % of scored blocks, 240,178 ha of class switch), of which 215,600 on Hansen forest. Stable-forest blocks available to the control: 3,093,834; control size 240,178 (seed 20261114).
+
+| Source | | blocks | with alert | precision_like | reference blocks | hit | recall_like |
+|---|---|---|---|---|---|---|---|
+| GLAD-L | lost | 240,178 | 8,028 | 0.0334 | 64,101 | 7,253 | 0.1131 |
+| GLAD-L | control | 240,178 | 312 | 0.0013 | 64,101 | 205 | 0.0032 |
+| GLAD-S2 | lost | 240,178 | 10,303 | 0.0429 | 68,169 | 8,704 | 0.1277 |
+| GLAD-S2 | control | 240,178 | 1,702 | 0.0071 | 68,169 | 1,442 | 0.0212 |
+
+Recall_like restricted to Hansen-forest reference blocks: GLAD-L lost 0.4035 (5,471 of 13,559), control 0.0151; GLAD-S2 lost 0.1437 (6,639 of 46,201), control 0.0312.
+Alert pixels read: GLAD-L 1,023,460, GLAD-S2 75,688,881.
+Reading, stated plainly: lost blocks have an alert about 26 times (GLAD-L) and 6 times (GLAD-S2) as often as random stable-forest blocks, so the class switch is not random. But only 3.3 % (GLAD-L) and 4.3 % (GLAD-S2) of lost blocks carry an alert. The rest are **radar-only, unconfirmed**; we do not call them deforestation. Alerts are a reference, not ground truth.
