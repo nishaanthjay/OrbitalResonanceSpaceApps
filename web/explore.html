@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261114-glass-1">
+  <link rel="stylesheet" href="observatory.css?v=20261114-glass-2">
 </head>
 <body>
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -147,13 +147,8 @@
 <!-- ================= compare ================= -->
 <section id="compare" class="section">
   <div class="section-head reveal"><div><p class="eyebrow">02 / Compare</p><h2>Compare radar acquisitions</h2></div><p>Slide between actual radar acquisitions on the same geographic grid. A change in backscatter is evidence to investigate, not proof of clearing.</p></div>
-  <div class="compare-toolbar reveal">
-    <label>Study area<span class="select"><select id="compare-loc" disabled aria-label="Comparison study area"></select></span></label>
-    <label>Radar layer<span class="select"><select id="compare-layer"><option value="composite">Composite · HH / HV / HH−HV</option><option value="hv">HV backscatter</option><option value="hh">HH backscatter</option><option value="hvchg">HV change preview</option><option value="hhchg">HH change preview</option></select></span></label>
-    <label>Before<span class="select"><select id="before-date" disabled></select></span></label>
-    <label>After<span class="select"><select id="after-date" disabled></select></span></label>
-  </div>
-  <div id="comparison" class="comparison reveal" style="--split:50%">
+  <div class="compare-layout reveal">
+  <div id="comparison" class="comparison" style="--split:50%">
     <div class="compare-image after-image"><img id="after-image" alt="Later dated NISAR radar acquisition"></div>
     <div class="compare-image before-image"><img id="before-image" alt="Earlier dated NISAR radar acquisition"></div>
     <div class="compare-label before-label glass">Before <span id="before-label"></span></div>
@@ -162,9 +157,18 @@
     <input id="swipe" type="range" min="0" max="100" value="50" aria-label="Before and after divider position">
     <p id="compare-status" class="compare-status glass" role="status">Loading available acquisitions&hellip;</p>
   </div>
-  <div class="compare-footer"><span>Drag the divider · or use arrow keys</span><span>Same bounds · fixed display stretch across dates</span></div>
-  <p id="compare-note" class="note"></p>
-  <p class="note">Optical comparison: not available. This frontend has no dated, aligned optical observation pair. The map's Esri basemap is context only.</p>
+    <aside class="compare-side panel glass">
+      <div class="compare-toolbar">
+    <label>Study area<span class="select"><select id="compare-loc" disabled aria-label="Comparison study area"></select></span></label>
+    <label>Radar layer<span class="select"><select id="compare-layer"><option value="composite">Composite · HH / HV / HH−HV</option><option value="hv">HV backscatter</option><option value="hh">HH backscatter</option><option value="hvchg">HV change preview</option><option value="hhchg">HH change preview</option></select></span></label>
+    <label>Before<span class="select"><select id="before-date" disabled></select></span></label>
+    <label>After<span class="select"><select id="after-date" disabled></select></span></label>
+  </div>
+      <div class="compare-footer"><span>Drag the divider or use the arrow keys</span><span>Same bounds and display stretch for both dates</span></div>
+      <p id="compare-note" class="note"></p>
+      <p class="note">Optical comparison: not available. This frontend has no dated, aligned optical observation pair. The map's Esri basemap is context only.</p>
+    </aside>
+  </div>
 </section>
 
 <!-- ================= detection ================= -->
@@ -230,7 +234,7 @@
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=20261114-glass-1"></script>
-<script src="observatory.js?v=20261114-glass-1"></script>
+<script src="explore.js?v=20261114-glass-2"></script>
+<script src="observatory.js?v=20261114-glass-2"></script>
 </body>
 </html>

@@ -76,7 +76,7 @@
   ['before-date','after-date'].forEach(id => el(id).onchange = updateComparison);
   el('swipe').oninput = e => el('comparison').style.setProperty('--split', `${e.target.value}%`);
 
-  let detections = null, summary = null, metrics = null;
+  let detections = null, summary = null, metrics = null, openPatch = null;
   function renderPatches() {
     const box = el('patches'); box.replaceChildren();
     if (!detections) { el('patch-count').textContent = 'Detection data not available. Restore data/detections.geojson to inspect patches.'; return; }
@@ -86,11 +86,13 @@
     if (!features.length) box.append(node('p','No patches match these filters.','note'));
     features.forEach(f => {
       const p = f.properties, button = node('button','', 'patch'); button.type = 'button';
+      if (p.id === openPatch) button.setAttribute('aria-current', 'true');
       const label = node('span', `Patch ${p.id}`); label.append(node('small',`${p.first_date} · ${p.split || 'Split not available'}`));
       const detail = node('span', `${fmt(p.area_ha)} ha`, p.stage); detail.append(node('small',p.stage === 'early' ? 'Early · HH rise' : 'Late · HV drop'));
       button.append(label,detail); button.onclick = async () => {
         if (!manifest || typeof state === 'undefined' || !state.manifest || !map.getSource('radarA')) { el('patch-count').textContent = 'Map is not ready yet. Wait a moment and try again.'; return; }
         button.disabled = true;
+        openPatch = p.id; box.querySelectorAll('.patch').forEach(b => b.removeAttribute('aria-current')); button.setAttribute('aria-current', 'true');
         try {
           if (state.loc.id !== 'spara') { el('loc').value = 'spara'; await selectLoc('spara'); }
           const ring = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
@@ -110,6 +112,7 @@
     const total = features && features.every(f => Number.isFinite(f.properties.area_ha)) ? features.reduce((s,f) => s + f.properties.area_ha,0) : null;
     const rows = [['Map patches',features?.length,'Merged across dates · whole study window'],['Mapped patch area',total === null ? null : `${fmt(total)} ha`,'Sum of merged patch areas · potential disturbance'],['Early-stage patches',features?.filter(f => f.properties.stage === 'early').length,'HH rise · whole window'],['Late-stage patches',features?.filter(f => f.properties.stage === 'late').length,'HV drop · whole window']];
     rows.forEach(([title,value,note]) => { const card = node('article','', 'metric'); card.append(node('span',title),node('strong',value == null ? 'Not available' : typeof value === 'number' ? fmt(value) : value),node('small',note)); box.append(card); });
+    countUp(box);
     const chart = el('area-chart'); chart.replaceChildren();
     const rowsData = summary?.per_date;
     if (!Array.isArray(rowsData) || !rowsData.length || !rowsData.every(r => typeof r.date === 'string' && ['total_area_ha','early_ha','late_ha'].every(k => Number.isFinite(r[k]) && r[k] >= 0))) { chart.append(node('p','Per-date area data not available.','note')); return; }
@@ -124,6 +127,21 @@
     const details = document.createElement('details'), caption = node('summary','View accessible data table'), table = document.createElement('table');
     const head = document.createElement('tr'); ['Date','Patches','Area (ha)','Early (ha)','Late (ha)'].forEach(t => head.append(node('th',t))); table.append(head);
     rowsData.forEach(r => { const tr = document.createElement('tr'); [r.date,r.n_detections,r.total_area_ha,r.early_ha,r.late_ha].forEach(v => tr.append(node('td',String(v)))); table.append(tr); }); details.append(caption,table); chart.append(details);
+  }
+  // metric values count up once, the first time the grid scrolls into view (the final text is the same fmt() output)
+  function countUp(box) {
+    if (reduced || !('IntersectionObserver' in window)) return;
+    const items = [...box.querySelectorAll('strong')].map(n => { const m = n.textContent.match(/^([\d,.]+)(.*)$/); return m ? { n, to: Number(m[1].replace(/,/g, '')), rest: m[2], text: n.textContent } : null; }).filter(i => i && Number.isFinite(i.to));
+    if (!items.length) return;
+    const io = new IntersectionObserver(([e]) => { // fires with the scroll reveal, while the grid is still faded out
+      if (!e.isIntersecting) return; io.disconnect();
+      const t0 = performance.now(), D = 1200;
+      const step = now => { const k = Math.min(1, (now - t0) / D), ease = 1 - Math.pow(1 - k, 4);
+        items.forEach(i => { i.n.textContent = k < 1 ? `${fmt(Number.isInteger(i.to) ? Math.round(i.to * ease) : i.to * ease)}${i.rest}` : i.text; });
+        if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }, { rootMargin: '0px 0px -10% 0px' });
+    io.observe(box);
   }
   el('download-report').onclick = () => {
     const report = {title:'The Next Frontier : frontend data report',sources:['data/detections.geojson','data/summary.json','data/metrics.json','data/explore/explore.json'],scope:'Southern Para; map patches span the whole window; agreement is scored only on holdout per-date detections.',caveats:['Radar disturbance is not confirmed deforestation.','GLAD-L alerts are a reference, not ground truth.','Optical chip labels were made by the same AI assistant that ran detection; not independently human validated.'],map_patch_count:detections?.features.length ?? null,map_patch_area_ha:detections?.features.every(f=>Number.isFinite(f.properties.area_ha)) ? detections.features.reduce((s,f)=>s+f.properties.area_ha,0) : null,summary,metrics};
