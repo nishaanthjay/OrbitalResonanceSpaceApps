@@ -1,3 +1,13 @@
+# Frame run log (full NISAR frame, track 2 frame 174)
+
+## Summary (2026-11-14, overnight run)
+**Finished:** PREREG_frame.md committed before streaming/scoring (be9cd05); frame streamed (9 tiles, 1569 s, no retries) and merged to data/stack_frame_t2f174.nc (3026 x 2819 blocks, sha256 in CLAUDE.md "Frame stack"); Hansen mask (80.4 % forest); GLAD-L/S2 rasters; scored ONCE (no crash rerun) -> validation/frame_metrics.json; results_final.md section "Forest map, full frame"; web layers in web/data/explore/frame/ (9.7 MB; web/data 66 MB); pytest 100 passed. Not deployed to Vercel.
+**Headline numbers** (all from frame_metrics.json; T_db -11.25 fixed):
+- Scored 5,711,743 blocks (57,117 km2) after excluding the 60 km box (contains the 20 km window); 69.3 % of the rectangle valid on all 9 dates.
+- Median forest map vs Hansen: OA 0.926 vs all-forest baseline 0.862; kappa 0.719; forest precision/recall 0.977/0.936; non-forest precision/recall 0.683/0.862. Single dates 0.826-0.907 (2026-10-12, 0.826, is below the baseline).
+- Lost blocks 240,178 (4.20 % of scored). GLAD-L: precision_like 0.0334 (control 0.0013), recall_like 0.113 (control 0.0032). GLAD-S2: precision_like 0.0429 (control 0.0071), recall_like 0.128 (control 0.0212). About 96 % of lost blocks have no alert: radar-only, unconfirmed, not called deforestation.
+**Failed / caveats:** nothing failed. The web lost.geojson keeps only patches >= 3 ha (17,658 of 153,341; counts in frame.json). Hansen is a 2000-2025 map, so part of the disagreement is real change. Final `python validation/frame.py` printed a harmless "Error in sys.excepthook" at interpreter exit (rc 0, metrics written). Empty dir data/tiles_frame may remain (held by a shell).
+
 
 ## Agent C (alerts)
 - Fetched GLAD-L (alert26/alertDate26, plus alert25/alertDate25 since cheap) and GLAD-S2 windows for bbox -55.30 -8.45 -52.43 -5.78 (tile 060W_10S_050W_00N) via fetch_alerts.read_window; saved as deflate GeoTIFFs in data/final_frame/ (gitignored) with README.txt. Total ~103 MB, 119 s, no network retries needed.
@@ -18,3 +28,19 @@
 - Result: data/stack_frame_t2f174.nc, 307,588,009 bytes, sha256 a6347a7e537aad74cd040f555f640504b4bd1fde9520822efa04a6786924e0de. Shape (9, 2819, 3026), float32, x[0]=32410, y[0]=9353930, x[-1]=334910, y[-1]=9072130, steps exactly 100 m, 9 dates exact. attrs: crs EPSG:32722, multilook 5, window_first_pixel_xy [32370, 9353970], window_pixels_nx_ny [15130, 14095], tile frame_t2f174.
 - Valid (finite HV) per date 06-26..10-12: 70.2, 70.2, 72.1, 70.2, 70.2, 70.2, 70.2, 70.2, 70.2 %; valid on all 9 dates 69.3 % (5,910,947 of 8,530,294 blocks = 2819 x 3026).
 - data/tiles_frame deleted after this verification.
+
+## Agent E (checks)
+- pytest `pipeline validation web/tools` together: 100 passed, no collection clash.
+- web/data: 57M before frame; first measure 113M (lost.geojson 58.5 MB), final measure explore/frame 8.7M (lost.geojson 8.9 MB) so web/data ~66M. explore/big 1.9M, rondonia 7.8M, spara 15M.
+- results_final.md "Forest map, full frame" numbers all match frame_metrics.json at printed precision; stack size/sha256 and valid-per-date match fresh computation. Caveat: window (40,284) is contained in the 60 km box (199,204); scored = 5,910,947 - 199,204.
+- No "deforestation" used for radar-only blocks.
+
+## Agent D (web layers)
+- Built `web/tools/make_frame.py` (+ `test_make_frame.py`, synthetic only) -> `web/data/explore/frame/` (forest_median.webp, lost.webp, first_switch.webp, lost.geojson, frame.json). Reuses make_big (classes/rgba/save_webp), scale.lost_rule, frame.first_switch_index, frame.box60_mask, fetch_alerts_frame.read_saved, scale.block_index/alert_blocks. frame.run() not called; frame_metrics.json only read, 'scores' = json load/dump copy (checked equal).
+- Check: derived lost over scored area (valid, minus 20 km window and 60 km box) = 240178 == frame_metrics loss_rule.lost_blocks, asserted before writing. Layers draw all valid lost blocks (244,796 incl. window/box).
+- Grid: one EPSG:3857 grid 3034 x 2847 px (rasterio default transform, nearest, lossless RGBA webp), factor 1 (no downsampling needed: images total ~0.73 MB).
+- Choice: patch hv_series_db = mean of block dB (as asked), not the linear-power mean make_big uses. Patches via ndimage.label (8-connected) + rasterio shapes (block outline, no smoothing), one pass over label image instead of per-patch loops (153k patches). Coordinates WGS84, 5 decimals.
+- Choice: lost colour #ff2bd6 (magenta, distinct from forest/non-forest); first_switch legend = viridis 9 samples, one per date (lost blocks only use indices 2..7).
+- Alert window for category: 2026-06-26..2026-11-05 (REF_START-24 d .. REF_END+24 d), GLAD-L or GLAD-S2, any block of patch.
+- REDUCTION: full lost.geojson (153,341 patches: 5,584 alert_supported, 147,757 radar_only_unconfirmed) exceeded the 15 MB folder limit (>15 MB alone), so patches < 3 ha were dropped: 17,658 kept (1,560 alert_supported, 16,098 radar_only_unconfirmed), lost.geojson 8.9 MB. Images stay full-res; the dropped small patches are still visible in lost.webp / first_switch.webp. Recorded in frame.json counts.
+- Sizes: folder 9.7 MB; `du -sh web/data` = 66M (was 57M).
