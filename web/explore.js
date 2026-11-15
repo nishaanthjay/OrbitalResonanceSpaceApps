@@ -295,7 +295,7 @@ function placeMarker(lon, lat, fresh) {
 const KEY = `<b style="color:${CHART.hh}">HH</b> and <b style="color:${CHART.hv}">HV</b>`;
 function drawChart(lon, lat, fresh = true) {
   state.last = { kind: 'point', lon, lat };
-  if (isForestLoc()) { $('chart').innerHTML = `<div class="hint">Click a ${isFrame() ? 'magenta' : 'red'} "forest lost" patch to see its HV series against the forest threshold.</div>`; return; }
+  if (isForestLoc()) { $('chart').innerHTML = `<div class="hint">Click a ${isFrame() ? 'magenta' : 'red'} flagged patch to see its HV series against the forest threshold.</div>`; return; }
   const c = cellAt(lon, lat), el = $('chart');
   if (!c) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
   if (!state.series) { el.textContent = 'Pixel time series not available. Try a detection patch or reload.'; return; }
@@ -329,7 +329,7 @@ function drawLost(f, lngLat, fresh = true) {
   state.last = { kind: 'lost', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates, T = (isFrame() ? state.frameMeta : state.bigMeta).T_db;
   const cat = { alert_supported: 'alert-supported (a GLAD alert in the patch)', radar_only_unconfirmed: 'radar only, unconfirmed' }[p.category];
-  const title = `Lost patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_switch_date || p.first_flagged || 'n/a')}${cat ? `, ${cat}` : ''}${p.in_original_window ? ', inside the test window' : ''}`;
+  const title = `Flagged patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_switch_date || p.first_flagged || 'n/a')}${cat ? `, ${cat}` : ''}${p.in_original_window ? ', inside the test window' : ''}`;
   const hv = Array.isArray(p.hv_series_db) && p.hv_series_db.length === dates.length ? p.hv_series_db.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null;
   if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hv_series_db must hold ${dates.length} numbers.</div>`; return; }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates, fresh)}
@@ -353,7 +353,7 @@ function redrawLast() { // same selection, new pass: redraw without the entrance
 // ---------- story ----------
 function story() {
   $('story').innerHTML = `
-    <p><b>The new frontier, twice.</b> The place: the forest edge along the BR-163 highway near Novo Progresso, Pará, a frontier town where forest is being cut for cattle pasture (Mongabay; see submission/sources.md). The sensor: NISAR's L-band radar, which sees through the cloud that hides this forest from optical satellites for much of the year.</p>
+    <p><b>The next frontier, twice.</b> The place: the forest edge along the BR-163 highway near Novo Progresso, Pará, a frontier town where forest is being cut for cattle pasture (Mongabay; see submission/sources.md). The sensor: NISAR's L-band radar, which sees through cloud: every one of its 9 passes here was usable, while Sentinel-2 had 5 fully clouded scenes in the same months (validation/cloud_blindness.json). This was the dry season; the wet season, when cloud is worst, was not tested.</p>
     <p><b>Radar separates forest from cleared land.</b> One HV threshold, chosen on the north half of the window and tested once on the south half, put 83.1% of 100 m blocks in the same class as the Hansen forest map (kappa 0.66), against 52.4% for calling everything forest. The same threshold, unchanged, scored 95.6% in Rondônia. <span class="note">(validation/fnf_metrics.json; pre-registered in validation/PREREG_fnf.md. This is agreement with an optical map that ends in 2025, not ground truth.)</span></p>
     <p><b>Catching new clearing is harder, and we say so.</b> On the held-out south half, 2 of 57 detections agree with GLAD-L alerts, and 0 of 179 GLAD-L events of 1 ha or more are caught. 92.5% of 2026 GLAD-L alert pixels fall on land Hansen already mapped as cleared 2001&ndash;2025, which our forest-only method excludes by design. By pixel area, 98.0% to 99.1% of our detections fall on Hansen-intact forest. Whether they are new clearing or radar noise is not established by the available optical chip check. Independent human review is needed. Our threshold, 1.0 dB, is the lowest value we tested and is close to the per-date noise (about 0.4 dB standard deviation on stable forest). We make no claim that these detections are clearing. <span class="note">(validation/results_final.md. Agreement with an alert product is a reference, not ground truth.)</span></p>
     <p class="note">We do not claim this stops deforestation or works everywhere. Rain, fire, flooding and selective logging are not handled.</p>`;
@@ -517,16 +517,17 @@ function renderBigResults(meta) {
     ['Forest map (9-pass median) agreeing with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} all-forest baseline`],
     ['Kappa', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available'],
     ['Blocks scored (test window excluded)', `${int(bl.scored)} × 1 ha`],
-    ['Lost blocks (class-switch rule)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
+    ['Blocks flagged by the class-switch rule (unconfirmed)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
   ];
   for (const [src, label] of [['GLAD-L', 'GLAD-L'], ['GLAD-S2', 'GLAD-S2']]) {
     const a = al[src];
-    rows.push([`Lost blocks with a ${label} alert`, a ? `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control` : 'not available']);
+    rows.push([`Flagged blocks with a ${label} alert`, a ? `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control` : 'not available']);
   }
   const dl = mk('dl', undefined, 'kv');
   rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
   box.append(dl);
   const w = sc.alert_windows || {};
+  box.append(mk('p', 'Flagged blocks are unconfirmed radar change: the rule compares the last two passes (late dry season), so some flags are likely seasonal drying. Enrichment vs random stable forest is the signal; the flagged area is not forest loss.', 'note'));
   box.append(mk('p', `Alerts dated ${w.precision ? w.precision.join(' to ') : 'n/a'} (±24 days around ${w.reference ? w.reference.join(' to ') : 'n/a'}). Scored once, rules pre-registered in validation/PREREG_scale.md; full numbers in validation/scale_metrics.json.`, 'note'));
 }
 
@@ -540,7 +541,7 @@ function renderBigProtected(pj) {
   const o = pj.outside_all_areas || {};
   dl.append(mk('dt', 'Outside all protected areas'), mk('dd', `${int(o.lost_blocks)} blocks (${pct(o.lost_share_of_valid_blocks)} of mapped blocks)`));
   box.append(dl);
-  box.append(mk('p', `Whole 60 km map, test window included (${int(pj.total_lost_blocks)} lost blocks). A block counts when its centre is inside the official boundary. Boundaries: FUNAI Terras Indígenas (read 2026-11-14); MMA CNUC 07/2026 has no conservation unit in this area. See submission/sources.md.`, 'note'));
+  box.append(mk('p', `Whole 60 km map, test window included (${int(pj.total_lost_blocks)} flagged blocks). A block counts when its centre is inside the official boundary. Boundaries: FUNAI Terras Indígenas (read 2026-11-14); MMA CNUC 07/2026 has no conservation unit in this area. See submission/sources.md.`, 'note'));
 }
 
 function watchlist() {
@@ -555,7 +556,7 @@ function downloadWatchlist(kind) {
   const rows = watchlist();
   if (kind === 'geojson') {
     const fc = { type: 'FeatureCollection', name: 'br163_60km_forest_lost_watchlist',
-      description: `Lost patches (class-switch rule, ${state.loc.dates[0]}..${state.loc.dates[state.loc.dates.length - 1]}), NISAR HV threshold ${state.bigMeta.T_db.toFixed(2)} dB. first_flagged: ${state.bigMeta.first_flagged_definition}. Unverified radar flags, not confirmed clearing.`,
+      description: `Flagged patches (class-switch rule, ${state.loc.dates[0]}..${state.loc.dates[state.loc.dates.length - 1]}), NISAR HV threshold ${state.bigMeta.T_db.toFixed(2)} dB. first_flagged: ${state.bigMeta.first_flagged_definition}. Unverified radar flags, not confirmed clearing.`,
       features: rows.map((r) => ({ type: 'Feature', properties: r, geometry: { type: 'Point', coordinates: [r.centroid_lon, r.centroid_lat] } })) };
     saveFile('br163_forest_lost_watchlist.geojson', JSON.stringify(fc), 'application/geo+json');
   } else {
@@ -633,7 +634,7 @@ function renderBigExtras(meta, cloud) {
 
   const wp = meta.watch_priorities, list = $('big-watch'); list.replaceChildren();
   if (wp && Array.isArray(wp.items)) {
-    $('big-watch-note').textContent = 'The 20 largest lost patches. Distance = to land already non-forest at the start (100 m = touching). Places to check first, not confirmed clearing. Click one to fly there.';
+    $('big-watch-note').textContent = 'The 20 largest flagged patches. Distance = to land already non-forest at the start (100 m = touching). Places to check first, not confirmed clearing. Click one to fly there.';
     wp.items.forEach((it) => {
       const li = mk('li'), b = mk('button', undefined, 'watch-item'); b.type = 'button';
       b.append(mk('b', `${it.area_ha} ha`), mk('span', `${it.category === 'alert_supported' ? 'alert-supported' : 'radar only'} · from ${it.first_switch_date} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test window' : ''}`));
@@ -731,15 +732,19 @@ function renderFrameResults(meta) {
     ['Kappa', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available'],
     ['Forest: precision / recall', `${pct(fm.forest_precision)} / ${pct(fm.forest_recall)}`],
     ['Non-forest: precision / recall', `${pct(fm.nonforest_precision)} / ${pct(fm.nonforest_recall)}`],
-    ['Lost blocks (class-switch rule)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
+    ['Blocks flagged by the class-switch rule (unconfirmed)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
   ];
   for (const src of ['GLAD-L', 'GLAD-S2']) {
     const a = al[src];
-    if (a) rows.push([`Lost blocks with a ${src} alert`, `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control`]);
+    if (a) rows.push([`Flagged blocks with a ${src} alert`, `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control`]);
   }
   box.append(kvList(rows));
   const n = meta.counts || {}, pg = n.patches_in_geojson || {};
-  $('frame-note').textContent = `Map shows ${int(pg.patches)} lost patches of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} alert-supported, ${int(pg.radar_only_unconfirmed)} radar only); smaller patches are in the lost-block image but not clickable. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
+  $('frame-note').textContent = `Map shows ${int(pg.patches)} flagged patches of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} alert-supported, ${int(pg.radar_only_unconfirmed)} radar only); smaller patches are in the flag image but not clickable. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
+  const pd = (sc.a_forest_map || {}).per_date || {}, ds = Object.keys(pd).sort();
+  if (ds.length >= 2 && typeof pd[ds[0]].oa === 'number' && typeof pd[ds[ds.length - 1]].oa === 'number') {
+    $('frame-note').textContent += ` Caution: single-pass agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (all-forest baseline ${pct(fm.all_forest_baseline)}): HV drops as the dry season goes on. The class-switch rule compares the last two passes, so many flags are likely seasonal drying, not clearing. Flags are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? Math.round(al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like) : 'n/a'}x more likely than random stable forest to overlap a GLAD-L alert, but most are unconfirmed. Never read the flagged area as forest loss.`;
+  }
 }
 
 // ---------- setup ----------
@@ -768,7 +773,7 @@ async function selectLoc(id) {
   if (frame) loadFrameLost();
   document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; });
   applyVisibility();
-  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} "forest lost" patch to see its HV series.</div>` : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
+  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} flagged patch to see its HV series.</div>` : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
   drawPasses();
   drawStrip();
