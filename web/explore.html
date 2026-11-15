@@ -10,7 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261115-frame-2">
+  <link rel="stylesheet" href="observatory.css?v=20261115-cine-3">
+  <link rel="stylesheet" href="cinema.css?v=20261115-cine-3">
 </head>
 <body>
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -20,13 +21,22 @@
   <nav class="glass" aria-label="Main navigation">
     <span id="nav-blob" aria-hidden="true"></span>
     <a href="#explore" data-go="explore">Explore</a>
+    <a href="#frontier">Clock</a>
+    <a href="#optical-radar">Optical</a>
+    <a href="#threats">Threats</a>
     <a href="#compare">Compare</a>
     <a href="#detection">Detection</a>
-    <a href="#analysis">Analysis</a>
     <a href="#impact">Validation</a>
     <a class="ext" href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a>
   </nav>
+  <button class="tour-btn glass" id="tour-btn" type="button" aria-pressed="false" aria-controls="tour"><svg width="10" height="12" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z" fill="currentColor"/></svg>Tour</button>
 </header>
+
+<div id="tour" class="tour glass" role="status" hidden>
+  <span class="tour-step" id="tour-step"></span>
+  <p id="tour-text"></p>
+  <button class="mini" id="tour-stop" type="button">Stop tour</button>
+</div>
 
 <main>
 <!-- ================= the radar stage: hero over the tinted radar, controls panel when exploring ================= -->
@@ -69,6 +79,13 @@
       <span><b id="play-txt">Play passes</b><span id="datelabel"></span></span>
     </button>
   </div>
+
+  <div class="cine-ui" aria-live="polite">
+    <p class="eyebrow" id="cine-eyebrow"></p>
+    <p class="cine-name" id="cine-name"></p>
+    <button class="mini cine-skip" id="cine-skip" type="button">Skip intro</button>
+  </div>
+  <div id="legend-3d" class="legend-3d glass" hidden><span class="l3-k">3D columns</span><span>Flagged patches (unconfirmed). Height = patch area. Colour = first pass non-forest:</span><span class="l3-ramp" id="legend-3d-ramp"></span></div>
 
   <div id="map-status" class="map-status glass" role="status">Loading map and radar observations&hellip;</div>
 
@@ -172,9 +189,64 @@
   </aside>
 </section>
 
+<!-- ================= frontier clock ================= -->
+<section id="frontier" class="section">
+  <div class="section-head reveal"><div><p class="eyebrow">02 / Frontier clock</p><h2>Nine passes over one forest edge</h2></div><p>The 60 km forest map, redrawn from each NISAR pass with one fixed HV threshold, nothing tuned per pass. Green is forest, rust is non-forest; transparent is outside the swath on that pass.</p></div>
+  <div class="clock reveal">
+    <div class="clock-stage">
+      <div class="clock-imgs" id="clock-imgs"></div>
+      <p class="clock-date glass" id="clock-date"></p>
+      <p class="compare-status glass" id="clock-status" role="status">Loading the 9 forest maps&hellip;</p>
+    </div>
+    <aside class="clock-side panel glass">
+      <p class="eyebrow">Forest share on this pass</p>
+      <strong class="clock-share" id="clock-share">&ndash;</strong>
+      <div class="clock-spark" id="clock-spark"></div>
+      <div class="clock-steps" id="clock-steps" role="group" aria-label="Passes"></div>
+      <button class="cta clock-play" id="clock-play" type="button" aria-pressed="false" disabled><svg id="clock-ico" width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z" fill="currentColor"/></svg><span id="clock-play-txt">Play the clock</span></button>
+      <p class="note" id="clock-note"></p>
+      <div class="countdown" id="countdown"></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ================= optical vs radar ================= -->
+<section id="optical-radar" class="section">
+  <div class="section-head reveal"><div><p class="eyebrow">03 / Optical vs radar</p><h2>Two satellites, the same dates</h2></div><p>Sentinel-2 sees colour but not through cloud; NISAR's L-band sees forest structure through it. Pick a pass to set the Sentinel-2 scene nearest in time beside the radar forest map.</p></div>
+  <div class="compare-layout reveal">
+    <div id="ovr" class="comparison no-opt" style="--split:50%">
+      <div class="compare-image after-image"><img id="ovr-radar" alt="NISAR forest map for the selected pass"></div>
+      <div class="compare-image before-image"><img id="ovr-optical" alt="Sentinel-2 true-colour scene nearest the selected pass"></div>
+      <div class="compare-label before-label glass">Sentinel-2 <span id="ovr-opt-label"></span></div>
+      <div class="compare-label after-label glass">NISAR <span id="ovr-rad-label"></span></div>
+      <div class="divider-line" aria-hidden="true"><span class="glass"><svg width="18" height="10" viewBox="0 0 18 10"><path d="M5 1L1 5l4 4M13 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span></div>
+      <input id="ovr-swipe" class="swipe" type="range" min="0" max="100" value="50" aria-label="Optical and radar divider position">
+      <p id="ovr-status" class="compare-status glass" role="status">Loading&hellip;</p>
+    </div>
+    <aside class="compare-side panel glass">
+      <h3>Every pass, both satellites</h3>
+      <div class="ovr-passes" id="ovr-passes" role="group" aria-label="NISAR passes"></div>
+      <div class="ovr-timeline" id="ovr-timeline"></div>
+      <div id="ovr-summary"></div>
+      <p class="note" id="ovr-note"></p>
+    </aside>
+  </div>
+</section>
+
+<!-- ================= threat board ================= -->
+<section id="threats" class="section">
+  <div class="section-head reveal"><div><p class="eyebrow">04 / Threat board</p><h2>Where to look first</h2></div><p>Flagged blocks inside Indigenous lands, and the 20 largest flagged patches on the 60 km map with their pass-by-pass history. Radar flags to check, not confirmed clearing; some are likely seasonal drying.</p></div>
+  <div class="threat-grid">
+    <article class="panel glass reveal"><div class="panel-heading"><h3>Protected areas</h3><span>FUNAI boundaries</span></div><div id="threat-areas"><span class="tag">pending</span></div></article>
+    <article class="panel glass reveal"><div class="panel-heading"><h3>Places to check first</h3><span id="tl-date"></span></div>
+      <div id="threat-clusters" class="clusters"><span class="tag">pending</span></div>
+      <p class="note">Each tile is a 3.2 km square of the per-pass forest map around the patch (outlined), cycling through the 9 passes. Ranked by area. Distance is to land already non-forest at the start; 100 m means touching.</p></article>
+  </div>
+</section>
+
 <!-- ================= compare ================= -->
 <section id="compare" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">02 / Compare</p><h2>Compare radar acquisitions</h2></div><p>Slide between actual radar acquisitions on the same geographic grid. A change in backscatter is evidence to investigate, not proof of clearing.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">05 / Compare</p><h2>Compare radar acquisitions</h2></div><p>Slide between actual radar acquisitions on the same geographic grid. A change in backscatter is evidence to investigate, not proof of clearing.</p></div>
   <div class="compare-layout reveal">
   <div id="comparison" class="comparison" style="--split:50%">
     <div class="compare-image after-image"><img id="after-image" alt="Later dated NISAR radar acquisition"></div>
@@ -201,7 +273,7 @@
 
 <!-- ================= detection ================= -->
 <section id="detection" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">03 / Investigate</p><h2>Inspect potential disturbances</h2></div><p>Potential disturbances from a JJ-FAST-inspired method. Open a patch to see it on the map with its HH and HV history next to stable radar forest.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">06 / Investigate</p><h2>Inspect potential disturbances</h2></div><p>Potential disturbances from a JJ-FAST-inspired method. Open a patch to see it on the map with its HH and HV history next to stable radar forest.</p></div>
   <div id="method" class="method-sequence">
     <article class="glass reveal"><span>01 / Observation</span><h3>Observe the canopy</h3><p>L-band radar measures backscatter: microwave energy returned from the landscape. HH and HV describe different transmit/receive polarizations.</p></article>
     <article class="glass reveal"><span>02 / Detection</span><h3>Identify a change</h3><p>An HH rise can indicate an early-stage disturbance; an HV drop can indicate a late stage. Rain, fire and flooding can also change the signal.</p></article>
@@ -234,7 +306,7 @@
 
 <!-- ================= analysis ================= -->
 <section id="analysis" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">04 / Understand</p><h2>Forest disturbance analysis</h2></div><p>Measured values from the repository's southern Par&aacute; datasets. Whole-window map patches and holdout scoring use different counting units.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">07 / Understand</p><h2>Forest disturbance analysis</h2></div><p>Measured values from the repository's southern Par&aacute; datasets. Whole-window map patches and holdout scoring use different counting units.</p></div>
   <div id="analysis-metrics" class="metric-grid reveal"><p>Data pending</p></div>
   <div class="analysis-grid">
     <article class="panel glass reveal"><h3>First-observed patch area</h3><p class="note">Hectares by first detection date, from summary.json. Patches are counted once, on their first date.</p><div id="area-chart">Not available</div></article>
@@ -244,13 +316,13 @@
 
 <!-- ================= validation ================= -->
 <section id="impact" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">05 / Validate</p><h2>Validation and limitations</h2></div><p>A transparent prototype for investigating forest change. Alert agreement is a comparison with another product, not independently verified accuracy.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">08 / Validate</p><h2>Validation and limitations</h2></div><p>A transparent prototype for investigating forest change. Alert agreement is a comparison with another product, not independently verified accuracy.</p></div>
   <div class="analysis-grid">
     <article class="panel glass reveal"><h3 id="results-h">Held-out reference agreement</h3><div id="results">Pending</div><p id="metrics-notes" class="note"></p><p class="warn">The optical chip check was performed by the same AI assistant that ran detection, not an independent human reviewer. Human re-labeling is needed.</p><button id="download-report" class="mini" disabled>Download data report</button></article>
     <article class="panel glass reveal"><h3>What this prototype demonstrates</h3><p>Real radar acquisitions, aligned temporal exploration, inspectable detection patches, and explicit reference comparisons in one open workflow.</p><h3>What remains uncertain</h3><ul class="limits"><li>Rain, soil moisture, fire and flooded forest can mimic disturbances.</li><li>Selective logging is not detected. Detection was tested on one study area.</li><li>Provisional radar products and compressed display layers introduce limitations.</li><li>Low reference agreement does not establish new forest clearing. Independent verification remains essential.</li></ul><h3>Where it could go next</h3><p>Human-reviewed labels, improved noise rejection, and further study areas could support a better-tested monitoring workflow.</p></article>
   </div>
   <details class="story-panel glass reveal" id="findings"><summary>Research context and supporting findings</summary><div class="story" id="story"></div></details>
-  <div class="sources reveal" id="sources"><h3>Data sources and acknowledgments</h3><p>NASA&ndash;ISRO NISAR L2 GCOV provisional · GLAD-L alerts · Hansen Global Forest Change · MapLibre GL JS · OpenFreeMap / OpenStreetMap · Esri contextual imagery.</p><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md">Sources &amp; acknowledgments</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md">Methods &amp; validation record</a><p class="note">RADD comparison is not available in the shipped frontend datasets.</p></div>
+  <div class="sources reveal" id="sources"><h3>Data sources and acknowledgments</h3><p>NASA&ndash;ISRO NISAR L2 GCOV provisional · Copernicus Sentinel-2 scene classification (Earth Search) · Mapzen / AWS Terrain Tiles · FUNAI Terras Ind&iacute;genas · GLAD-L alerts · Hansen Global Forest Change · MapLibre GL JS · OpenFreeMap / OpenStreetMap · Esri contextual imagery.</p><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md">Sources &amp; acknowledgments</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md">Methods &amp; validation record</a><p class="note">RADD comparison is not available in the shipped frontend datasets.</p></div>
 </section>
 </main>
 
@@ -262,7 +334,8 @@
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=20261115-frame-2"></script>
-<script src="observatory.js?v=20261115-frame-2"></script>
+<script src="explore.js?v=20261115-cine-3"></script>
+<script src="observatory.js?v=20261115-cine-3"></script>
+<script src="cinema.js?v=20261115-cine-3"></script>
 </body>
 </html>

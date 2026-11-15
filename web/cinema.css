@@ -1,0 +1,123 @@
+/* cinema.css : globe fly-in, tour, 3D legend, frontier clock, optical vs radar, threat board. Tokens from observatory.css. */
+
+/* ---------- globe fly-in: the hero waits off-stage, its entrance animations replay on landing ---------- */
+.cine-ui { position: absolute; z-index: 4; left: calc(var(--rail) + 70px); bottom: 20%; pointer-events: none; opacity: 0; transition: opacity .6s var(--ease); }
+.cine .cine-ui { opacity: 1; }
+.cine-name { font: 800 clamp(44px, 6.4vw, 92px)/.98 var(--sans); letter-spacing: -.045em; color: #fff; margin: 0; text-shadow: 0 10px 40px rgba(0, 0, 0, .6); }
+.cine-skip { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); pointer-events: auto; background: rgba(9, 16, 8, .55); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+             box-shadow: inset 0 0 0 1px rgba(206, 217, 223, .18); visibility: hidden; }
+.cine .cine-skip { visibility: visible; }
+.cine .hero, .cine .strip, .cine .rail { opacity: 0; visibility: hidden; }
+.cine .hero, .cine .hero *, .cine .strip, .cine .rail, .cine .rail * { animation-name: none !important; }
+.cine .shade { opacity: .12; }
+.cine .tint { opacity: .5; }
+.cine .map-status { display: none; }
+.hero .caption .cd { white-space: nowrap; }
+
+/* ---------- tour ---------- */
+.tour-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 9px 16px; font: 700 13px var(--sans); color: #fff; flex: none;
+            transition: transform .3s var(--spring); }
+.tour-btn:hover { transform: translateY(-1px); }
+.tour-btn[aria-pressed=true] { box-shadow: inset 0 0 0 1px var(--lichen), 0 0 24px rgba(147, 168, 137, .35); }
+.tour { position: fixed; z-index: 40; top: 76px; left: 0; right: 0; margin: 0 auto; width: min(760px, calc(100% - 32px)); display: flex; align-items: center; gap: 16px;
+        padding: 14px 14px 14px 20px; border-radius: 18px; animation: fadeDown .5s var(--ease) both; }
+.tour p { margin: 0; flex: 1; font: 600 14px/1.45 var(--sans); color: var(--mist); }
+.tour-step { font: 500 11px var(--mono); color: var(--lichen); letter-spacing: .08em; flex: none; }
+.touring .strip { opacity: 0; pointer-events: none; }
+
+/* ---------- 3D ---------- */
+.ctl-3d { font: 700 12px var(--sans) !important; color: var(--mist) !important; }
+.ctl-3d[aria-pressed=true] { background: rgba(147, 168, 137, .3) !important; color: #fff !important; }
+.legend-3d { position: absolute; z-index: 4; top: 72px; right: 56px; max-width: 290px; padding: 12px 14px; border-radius: 14px; display: grid; gap: 6px; font-size: 12px; color: var(--mist); }
+.l3-k { font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--lichen); }
+.l3-ramp { display: flex; gap: 4px; flex-wrap: wrap; }
+.l3-ramp span { display: inline-flex; align-items: center; gap: 4px; font: 500 11px var(--mono); color: var(--slate); }
+.l3-ramp span::before { content: ''; width: 10px; height: 10px; border-radius: 2px; background: var(--c); }
+
+/* ---------- shared chips (pass pickers) ---------- */
+.clock-steps, .ovr-passes { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 14px; }
+.clock-steps button, .ovr-passes button { border: 0; border-radius: 999px; padding: 5px 9px; font: 500 11px var(--mono); color: var(--slate); background: rgba(206, 217, 223, .05);
+  box-shadow: inset 0 0 0 1px rgba(206, 217, 223, .08); transition: background .25s, color .25s; }
+.clock-steps button:hover, .ovr-passes button:hover { color: var(--mist); background: rgba(206, 217, 223, .1); }
+.clock-steps button[aria-pressed=true], .ovr-passes button[aria-pressed=true] { color: var(--canopy); background: var(--lichen); box-shadow: none; }
+svg .lab { font: 500 10px var(--mono); fill: var(--slate); }
+svg .lab.dim { opacity: .75; }
+svg .axis { stroke: var(--moss); stroke-opacity: .55; }
+
+/* ---------- frontier clock ---------- */
+.clock { display: grid; grid-template-columns: auto minmax(280px, 1fr); gap: 16px; align-items: start; }
+.clock-stage { position: relative; width: min(680px, 74vh); aspect-ratio: 1; border-radius: 24px; overflow: hidden; background: rgba(31, 47, 34, .45);
+               box-shadow: inset 0 0 0 1px rgba(206, 217, 223, .1), 0 30px 80px -30px rgba(0, 0, 0, .9); }
+.clock-imgs img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; opacity: 0; transition: opacity .5s var(--ease); }
+.clock-imgs img.on { opacity: 1; }
+.clock-date { position: absolute; z-index: 2; top: 16px; left: 16px; margin: 0; padding: 8px 14px; border-radius: 14px; font: 500 12px var(--mono); color: var(--mist); }
+.clock-date:empty { display: none; }
+.clock-side .eyebrow { margin-bottom: 6px; }
+.clock-share { display: block; font: 800 64px/1 var(--sans); letter-spacing: -.045em; color: #fff; font-variant-numeric: tabular-nums; }
+.clock-spark svg { width: 100%; height: auto; display: block; margin-top: 12px; overflow: visible; }
+.clock-spark circle { fill: var(--moss); stroke: var(--lichen); stroke-width: 1.5; transition: r .3s var(--spring), fill .3s; }
+.clock-spark circle.on { fill: #fff; stroke: #fff; r: 5.5; }
+.reveal.in .spark-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: drawLine 1.4s var(--ease) forwards .2s; }
+.clock-play { margin: 2px 0 16px; }
+.countdown { display: grid; gap: 4px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.countdown:empty { display: none; }
+.cd-k { font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--lichen); }
+.countdown strong { font: 700 20px var(--sans); color: #fff; letter-spacing: -.02em; }
+.countdown small { font-size: 12px; color: var(--slate); line-height: 1.5; }
+
+/* ---------- optical vs radar ---------- */
+.swipe { position: absolute; z-index: 3; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; touch-action: pan-y; }
+.no-opt .divider-line, .no-opt .before-label, .no-opt .swipe, .no-opt .before-image { display: none; }
+.ovr-timeline svg { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+.ovr-timeline .rad { fill: var(--lichen); stroke: var(--canopy); stroke-width: 2; }
+.ovr-timeline .opt { fill: #5d6b62; }
+.ovr-timeline .opt.good { fill: var(--mist); }
+
+/* ---------- threat board ---------- */
+.threat-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 16px; align-items: start; }
+.threat-grid .panel-heading { margin-bottom: 12px; }
+.threat-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.threat-row b { display: block; color: #fff; font-size: 15px; }
+.threat-row small { font: 500 11px var(--mono); color: var(--slate); }
+.threat-row strong { font: 700 22px var(--sans); letter-spacing: -.02em; color: #fff; font-variant-numeric: tabular-nums; }
+.tbar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(31, 47, 34, .9); overflow: hidden; }
+.tbar::before { content: ''; display: block; height: 100%; width: var(--w); border-radius: inherit; background: linear-gradient(90deg, #b4401c, #e0794f); transform-origin: left; }
+.in .tbar::before { animation: growX 1s var(--ease) both .2s; }
+.threat-row.ref b, .threat-row.ref strong { color: var(--mist); font-weight: 600; }
+.threat-row.ref .tbar::before { background: var(--slate); }
+#threat-areas .note { margin-top: 14px; }
+.clusters { display: grid; gap: 6px; max-height: 560px; overflow: auto; margin: 0 -8px; padding: 0 8px; scrollbar-width: thin; scrollbar-color: rgba(147, 168, 137, .35) transparent; }
+.cluster { display: grid; grid-template-columns: 22px 84px 1fr auto; gap: 14px; align-items: center; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: 14px;
+           background: transparent; transition: background .25s; }
+.cluster:hover, .cluster:focus-visible { background: rgba(206, 217, 223, .06); }
+.cluster canvas { width: 84px; height: 84px; border-radius: 10px; image-rendering: pixelated; box-shadow: inset 0 0 0 1px rgba(206, 217, 223, .1); }
+.cluster .rank { font: 500 12px var(--mono); font-style: normal; color: var(--slate); text-align: right; }
+.cl-txt { display: grid; gap: 2px; min-width: 0; }
+.cl-txt b { font: 800 20px var(--sans); color: #fff; letter-spacing: -.02em; }
+.cl-txt .cat { font: 600 12px var(--sans); }
+.cat.al { color: #fdd663; } .cat.ro { color: #f3b49b; }
+.cl-txt small { font: 500 11px var(--mono); color: var(--slate); }
+.cluster .fly { font: 600 12px var(--sans); color: var(--lichen); opacity: 0; transform: translateX(-4px); transition: opacity .25s, transform .35s var(--spring); }
+.cluster:hover .fly, .cluster:focus-visible .fly { opacity: 1; transform: none; }
+#tl-date { text-transform: none; letter-spacing: 0; }
+
+@media (max-width: 1100px) {
+  .threat-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .cine-ui { left: 16px; right: 16px; bottom: 28%; }
+  .tour-btn { padding: 7px 11px; font-size: 12px; }
+  .tour { top: 70px; padding: 12px 12px 12px 14px; gap: 10px; flex-wrap: wrap; }
+  .tour p { flex-basis: 100%; order: 2; font-size: 13px; }
+  .tour-step { order: 1; } .tour .mini { order: 1; margin-left: auto; }
+  .legend-3d { top: auto; bottom: calc(56% + 12px); right: 12px; left: 12px; max-width: none; }
+  .clock { grid-template-columns: 1fr; }
+  .clock-stage { width: 100%; border-radius: 20px; }
+  .clock-share { font-size: 48px; }
+  .cluster { grid-template-columns: 64px 1fr; gap: 12px; }
+  .cluster canvas { width: 64px; height: 64px; }
+  .cluster .rank, .cluster .fly { display: none; }
+}
+
+/* four hero cards + facts no longer fit next to each other below 1600 px */
+@media (max-width: 1600px) { .facts, .facts + .divider { display: none; } }

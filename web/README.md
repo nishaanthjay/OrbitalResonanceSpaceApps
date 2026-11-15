@@ -23,6 +23,17 @@ MapLibre GL JS 5.9.0 (UMD build; MapLibre 6 is ESM-only). Basemap: OpenFreeMap `
 ## Layout
 The page opens on the radar itself: a full-screen hero over the tinted HV image, a pass rail (one tick per date) and a glass strip (cards, play). "Explore" or a map click switches to the explorer: tint off, map gestures on, controls panel slides in (location, layers, evidence overlays, click chart, 60 km results). Esc or "Intro" goes back. Below it: Compare, Detection, Analysis, Validation (`observatory.js`). Styles in `observatory.css`; motion respects `prefers-reduced-motion`.
 
+## Cinematic layer (`cinema.js`, `cinema.css`)
+Presentation only, on top of `explore.js` (it uses its globals; `explore.js` exposes two hooks: `state.cinema` pauses `fit()`, and the `explore:ready` event fires after the data loads, also on failure).
+- **Globe fly-in:** globe projection, slow spin while the data loads, then Amazon, Pará, frontier; the radar fades in under the hero. "Skip intro", Esc, a click or a scroll skips it. Plays once per tab session; never with `prefers-reduced-motion` or when the page opens on a section link (`#compare` etc.).
+- **3D** (map control "3D"): terrain from the free Mapzen / AWS Terrain Tiles (terrarium encoding, attributed on the map), pitch 62°. On the 60 km map the lost patches (`big/lost.geojson`) rise as columns: height = patch area, colour = `first_switch_date` (legend from `big.json` `first_switch.legend`).
+- **Frontier clock** (`#frontier`): the 9 per-pass 60 km forest maps cross-fading, plus a forest-share sparkline. The shares are counted in the browser from the lossless `forest_<date>.webp` layers, over display pixels valid on all 9 passes; nothing new is stored.
+- **Next-pass countdown:** last pass in `big.json` + 12-day steps, labelled "planned repeat cycle, not a confirmed acquisition". Day precision only (no acquisition time is known).
+- **Optical vs radar** (`#optical-radar`): swipe between a Sentinel-2 image and the radar forest map for the same pass, plus a dual timeline from `big/cloud.json`. The images come from `data/explore/optical/` (Max B). Until that exists the page shows "pending" and the nearest scene's clear share from `cloud.json`. Expected `optical/optical.json`: `{"passes": [{"nisar_date": "2026-06-26", "scene_id": "...", "date": "2026-06-29", "cloud_pct": 13.9, "file": "optical_2026-06-26.webp"}, {"nisar_date": "...", "scene_id": null, "note": "no scene within 6 days"}]}`, images on the same EPSG:3857 grid as `big/forest_median.webp`. While the folder is missing, the browser logs one 404 for `optical.json`.
+- **Threat board** (`#threats`): the FUNAI areas from `big/big_protected.json`, ranked by lost hectares, with the outside-all-areas rate for comparison. Also the 20 `watch_priorities` from `big.json`, each with a 3.2 km mini time-lapse cut from the per-pass forest maps (patch outlined) and fly-to.
+- **Tour** (header button): about 60 s through the above for the screen recording. Captions take their numbers from the data files. Stop with the button or Esc.
+- Location switcher: the panel's location menu and the hero cards list S Para 20 km, the 60 km map and the full frame. Each appears only when its files load.
+
 ## Deploying
 ```bash
 cd web
