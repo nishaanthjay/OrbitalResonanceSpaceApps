@@ -497,3 +497,7 @@ table.scales tbody th { color: var(--mist); font: 600 13px var(--sans); }
 @media (max-width: 1100px) { .headline { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .facts-band { padding: 24px 16px 0; } .headline { gap: 10px; } .fact { padding: 16px 14px; } .fact strong { font-size: 30px; } }
 @media (min-width: 1600px) { .facts-band { padding-left: max(7%, calc((100vw - 1400px) / 2)); padding-right: max(7%, calc((100vw - 1400px) / 2)); } }
+
+/* final pass: strip card captions truncate with an ellipsis instead of running into the next card */
+.card > span:last-child { min-width: 0; overflow: hidden; }
+.card b, .card small { overflow: hidden; text-overflow: ellipsis; }

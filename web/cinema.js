@@ -409,7 +409,7 @@
       };
       rows.forEach((a, i) => areas.append(row(`${i + 1}. ${a.name}`, `${a.kind.split(' (')[0]} · ${a.etnia_nome || ''}`.replace(/ · $/, ''), `${int(a.lost_blocks_inside)} ha`, a.lost_share_of_valid_blocks)));
       if (o.lost_blocks != null) areas.append(row('Outside all protected areas', 'for comparison', `${int(o.lost_blocks)} ha`, o.lost_share_of_valid_blocks, 'ref'));
-      areas.append(node('p', `Bar = share of the area's mapped 100 m blocks flagged forest-to-cleared June to October (${rows.map((a) => `${a.name} ${pct(a.lost_share_of_valid_blocks)}`).join(', ')}; outside ${pct(o.lost_share_of_valid_blocks)}). Whole 60 km map, test window included; a block counts when its centre is inside the official FUNAI boundary. MMA CNUC lists no conservation unit in this box. Flags are unconfirmed radar change, and some are likely seasonal drying.`, 'note'));
+      areas.append(node('p', `Bar = share of the area's mapped 100 m blocks flagged forest-to-non-forest June to October (${rows.map((a) => `${a.name} ${pct(a.lost_share_of_valid_blocks)}`).join(', ')}; outside ${pct(o.lost_share_of_valid_blocks)}). Whole 60 km map, test window included; a block counts when its centre is inside the official FUNAI boundary. MMA CNUC lists no conservation unit in this box. Flags are unconfirmed radar change, and some are likely seasonal drying.`, 'note'));
     } else areas.append(node('span', 'pending', 'tag'));
 
     const box = $('threat-clusters');

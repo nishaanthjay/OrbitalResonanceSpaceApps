@@ -413,14 +413,20 @@ function addDetections(fc) {
 
 async function loadExtras() {
   // start every fetch at once, add the layers in drawing order (Hansen under alerts under detections)
-  const pHan = getJSON(`${DATA}spara/hansen_loss.json`), pRef = getJSON('data/reference_alerts.geojson');
+  const pHan = getJSON(`${DATA}spara/hansen_loss.json`);
   const pDet = getJSON('data/detections.geojson'), pMet = getJSON('data/metrics.json');
   const han = await pHan;
   if (han && han.years && state.manifest.locations.some((l) => l.id === 'spara') && await fileExists(`${DATA}spara/hansen_loss.webp`)) addHansen(han);
   else pending('han', true);
-  addRef(await pRef);
+  pending('ref', false); // enabled now; the file itself is fetched on first toggle (ensureRef), and addRef shows pending if it fails
   addDetections(await pDet);
   state.metrics = await pMet;
+}
+
+let refLoading = null;
+function ensureRef() { // reference_alerts.geojson (1.6 MB) is fetched the first time the GLAD-L toggle is switched on
+  if (!refLoading) refLoading = getJSON('data/reference_alerts.geojson').then((fc) => { addRef(fc); updateFilters(); applyVisibility(); });
+  return refLoading;
 }
 
 function updateFilters() { // detections from their first date on, alerts from their date on
@@ -646,8 +652,8 @@ async function loadFrame() {
   if (!meta || !Array.isArray(meta.dates) || !Array.isArray(meta.bounds_lonlat_wsen)) return;
   state.frameMeta = meta;
   const b = meta.bounds_lonlat_wsen, c = corners(b);
-  state.frame = { id: 'frame', kind: 'frame', name: 'Full NISAR frame, ~60,000 km² (forest map)', dates: meta.dates, bounds_lonlat: b,
-    notes: 'The whole radar frame (track 2, frame 174, ascending), 100 m blocks, the same fixed HV threshold and forest-to-cleared flag rule as the 60 km map. Only the 9-pass median map is shown at this size. Out-of-sample; agreement with Hansen/GLAD is a reference, not ground truth.' };
+  state.frame = { id: 'frame', kind: 'frame', name: `Full NISAR frame${Number.isFinite(meta.scores?.blocks?.scored_km2) ? `, ${Math.round(meta.scores.blocks.scored_km2).toLocaleString()} km² scored` : ''} (forest map)`, dates: meta.dates, bounds_lonlat: b,
+    notes: 'The whole radar frame (track 2, frame 174, ascending), 100 m blocks, the same fixed HV threshold and forest-to-non-forest flag rule as the 60 km map. Only the 9-pass median map is shown at this size. Out-of-sample; agreement with Hansen/GLAD is a reference, not ground truth.' };
   $('loc').append(new Option(`${state.frame.name} (${meta.dates.length} dates)`, 'frame'));
   const raster = { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' };
   map.addSource('flost-img', { type: 'image', url: `${FRAME}${meta.layers.lost}`, coordinates: c });
@@ -662,7 +668,11 @@ async function loadFrame() {
   map.addLayer({ id: 'fout-label', type: 'symbol', source: 'fout-pt', layout: { visibility: 'none', 'text-field': ['get', 'name'], 'text-size': 11, 'text-anchor': 'bottom-left', 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#091008', 'text-halo-width': 1.5 } });
   legendRow($('ffs-legend'), (meta.first_switch_legend || []).map((l) => [l.colour, l.date.slice(5)]));
   renderFrameResults(meta);
-  if ($('card-frame')) { $('thumb-frame').src = `${FRAME}${meta.layers.median}`; $('card-frame').hidden = false; }
+  if ($('card-frame')) {
+    $('thumb-frame').src = `${FRAME}${meta.layers.median}`; $('card-frame').hidden = false;
+    if (Number.isFinite(meta.scores?.blocks?.scored_km2)) $('card-frame-sub').textContent = `${Math.round(meta.scores.blocks.scored_km2).toLocaleString()} km² scored`;
+    if (Number.isFinite(meta.counts?.geojson_min_area_ha_applied)) $('frame-min-ha').textContent = String(meta.counts.geojson_min_area_ha_applied);
+  }
 }
 let frameLostLoading = null;
 function loadFrameLost() { // 9 MB of patches: fetched only when the frame is opened
@@ -700,7 +710,7 @@ function renderFrameResults(meta) {
   $('frame-note').textContent = `Map shows ${int(pg.patches)} flagged patches of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} alert-supported, ${int(pg.radar_only_unconfirmed)} radar only); smaller patches are in the flag image but not clickable. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
   const pd = (sc.a_forest_map || {}).per_date || {}, ds = Object.keys(pd).sort();
   if (ds.length >= 2 && typeof pd[ds[0]].oa === 'number' && typeof pd[ds[ds.length - 1]].oa === 'number') {
-    $('frame-note').textContent += ` Caution: single-pass agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (all-forest baseline ${pct(fm.all_forest_baseline)}): HV drops as the dry season goes on. The class-switch rule compares the last two passes, so many flags are likely seasonal drying, not clearing. Flags are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? Math.round(al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like) : 'n/a'}x more likely than random stable forest to overlap a GLAD-L alert, but most are unconfirmed. Never read the flagged area as forest loss.`;
+    $('frame-note').textContent += ` Caution: single-pass agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (all-forest baseline ${pct(fm.all_forest_baseline)}): HV drops as the dry season goes on. The class-switch rule compares the last two passes, so many flags are likely seasonal drying, not clearing. Flags are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? (al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like).toFixed(1) : 'n/a'}× more likely than random stable forest to overlap a GLAD-L alert, but most are unconfirmed. Never read the flagged area as forest loss.`;
   }
 }
 
@@ -800,6 +810,7 @@ $('opacity').oninput = () => setImage(false);
 $('optical').onchange = (e) => map.setLayoutProperty('esri', 'visibility', e.target.checked ? 'visible' : 'none');
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.onchange = () => { state.layer = r.value; setImage(); }));
 ['det', 'ref', 'han', 'lost', 'prot', 'win', 'fs', 'flost', 'ffs', 'fout'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
+$('t-ref').addEventListener('change', () => { if ($('t-ref').checked) ensureRef(); });
 map.on('click', (e) => {
   if (!state.loc) return;
   setMode('exploring');
