@@ -176,7 +176,7 @@ Stack: `data/stack_frame_t2f174.nc` (see CLAUDE.md "Frame stack"), mask `data/fo
 
 ### Area
 - Grid 3026 x 2819 blocks of 100 m = 8,530,294 blocks; valid on all 9 dates: 5,910,947 (69.3 % of the rectangle).
-- Excluded from every score: 40,284 blocks in the original 20 km window and 199,204 in the 60 km box (valid blocks only).
+- Excluded from every score: the 60 km box, 199,204 valid blocks, which already contains the original 20 km window (40,284 of them). Scored = 5,910,947 - 199,204.
 - Scored: 5,711,743 blocks = 57,117 km2. Hansen forest share of the scored blocks: 86.2 %.
 
 ### (a) 9-date median forest map vs Hansen v1.13 forest
