@@ -1,0 +1,737 @@
+{
+ "source": {
+  "stac": "https://earth-search.aws.element84.com/v1/search",
+  "collection": "sentinel-2-l2a",
+  "search_bbox_wsen": [
+   -54.972945606450594,
+   -8.472676196151681,
+   -54.4243354144277,
+   -7.926099021500299
+  ],
+  "dates": [
+   "2026-06-26",
+   "2026-10-12"
+  ],
+  "items_returned": 64,
+  "items_after_dedupe": 63
+ },
+ "rule": {
+  "clear_scl": [
+   4,
+   5,
+   6
+  ],
+  "not_clear": "all other SCL classes (cloudy = 3, 8, 9, 10)",
+  "grid": "stack block grid EPSG:32722, 100 m, SCL resampled by mode, tiles mosaicked per date",
+  "good_view": "clear_fraction >= 0.8",
+  "caveat": "SCL only; s2_chips.py found SCL misses haze/smoke and small cumulus, so these are upper bounds"
+ },
+ "areas": {
+  "aoi_blocks": 360000,
+  "nisar_footprint_blocks": 199204
+ },
+ "sentinel2": {
+  "aoi": {
+   "n_scenes": 32,
+   "n_ge_80pct_clear": 19,
+   "good_dates": [
+    "2026-06-29",
+    "2026-07-01",
+    "2026-07-04",
+    "2026-07-09",
+    "2026-07-14",
+    "2026-07-19",
+    "2026-07-24",
+    "2026-08-03",
+    "2026-08-08",
+    "2026-08-13",
+    "2026-08-18",
+    "2026-08-20",
+    "2026-08-23",
+    "2026-08-28",
+    "2026-08-30",
+    "2026-09-02",
+    "2026-09-19",
+    "2026-10-09",
+    "2026-10-12"
+   ],
+   "median_clear_fraction": 0.8860847222222222,
+   "longest_gap_days_between_good_views": 20,
+   "between": [
+    "2026-09-19",
+    "2026-10-09"
+   ],
+   "longest_gap_days_incl_window_ends": 20,
+   "incl_window_ends_between": [
+    "2026-09-19",
+    "2026-10-09"
+   ]
+  },
+  "nisar_footprint": {
+   "n_scenes": 32,
+   "n_ge_80pct_clear": 22,
+   "good_dates": [
+    "2026-06-29",
+    "2026-07-01",
+    "2026-07-04",
+    "2026-07-09",
+    "2026-07-14",
+    "2026-07-19",
+    "2026-07-24",
+    "2026-07-29",
+    "2026-08-03",
+    "2026-08-08",
+    "2026-08-13",
+    "2026-08-18",
+    "2026-08-20",
+    "2026-08-23",
+    "2026-08-28",
+    "2026-08-30",
+    "2026-09-02",
+    "2026-09-17",
+    "2026-09-19",
+    "2026-09-22",
+    "2026-10-09",
+    "2026-10-12"
+   ],
+   "median_clear_fraction": 0.9002153571213429,
+   "longest_gap_days_between_good_views": 17,
+   "between": [
+    "2026-09-22",
+    "2026-10-09"
+   ],
+   "longest_gap_days_incl_window_ends": 17,
+   "incl_window_ends_between": [
+    "2026-09-22",
+    "2026-10-09"
+   ]
+  }
+ },
+ "nisar": {
+  "passes": 9,
+  "usable": 9,
+  "dates": [
+   "2026-06-26",
+   "2026-07-08",
+   "2026-07-20",
+   "2026-08-13",
+   "2026-08-25",
+   "2026-09-06",
+   "2026-09-18",
+   "2026-09-30",
+   "2026-10-12"
+  ],
+  "note": "9 of 9 passes usable over the NISAR footprint (all 9 dates in the stack; L-band is not blocked by cloud). NISAR covers the footprint only (55.3 % of the 60 km box; the swath edge cuts the west).",
+  "longest_gap_days": 24
+ },
+ "per_scene": [
+  {
+   "date": "2026-06-29",
+   "items": [
+    "S2C_21LYL_20260629_0_L2A",
+    "S2C_21MYM_20260629_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.8608055555555556,
+    "cloud_shadow_cirrus_fraction": 0.13853055555555555,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0006638888888888889
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9207345234031445,
+    "cloud_shadow_cirrus_fraction": 0.0785275396076384,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.000737936989217084
+   }
+  },
+  {
+   "date": "2026-07-01",
+   "items": [
+    "S2A_21LYL_20260701_0_L2A",
+    "S2A_21MYM_20260701_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9993333333333333,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0006666666666666666
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9991616634204132,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0008383365795867553
+   }
+  },
+  {
+   "date": "2026-07-04",
+   "items": [
+    "S2B_21LYL_20260704_0_L2A",
+    "S2B_21MYM_20260704_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9993444444444445,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0006555555555555556
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.999076323768599,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0009236762314009759
+   }
+  },
+  {
+   "date": "2026-07-09",
+   "items": [
+    "S2C_21LYL_20260709_0_L2A",
+    "S2C_21MYM_20260709_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9222027777777778,
+    "cloud_shadow_cirrus_fraction": 0.066625,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.011172222222222222
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.8973263589084557,
+    "cloud_shadow_cirrus_fraction": 0.08292002168631152,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.019753619405232827
+   }
+  },
+  {
+   "date": "2026-07-11",
+   "items": [
+    "S2A_21LYL_20260711_0_L2A",
+    "S2A_21MYM_20260711_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.0006388888888888889,
+    "cloud_shadow_cirrus_fraction": 0.9971361111111111,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.002225
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.0011545952892512198,
+    "cloud_shadow_cirrus_fraction": 0.994829421095962,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0040159836147868515
+   }
+  },
+  {
+   "date": "2026-07-14",
+   "items": [
+    "S2B_21LYL_20260714_0_L2A",
+    "S2B_21MYM_20260714_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9946027777777777,
+    "cloud_shadow_cirrus_fraction": 0.004508333333333333,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0008888888888888889
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9987901849360454,
+    "cloud_shadow_cirrus_fraction": 0.00027609887351659604,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.000933716190437943
+   }
+  },
+  {
+   "date": "2026-07-19",
+   "items": [
+    "S2C_21LYL_20260719_0_L2A",
+    "S2C_21MYM_20260719_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.994675,
+    "cloud_shadow_cirrus_fraction": 0.004866666666666667,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0004583333333333333
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9994628621915222,
+    "cloud_shadow_cirrus_fraction": 5.019979518483565e-06,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0005321178289592578
+   }
+  },
+  {
+   "date": "2026-07-24",
+   "items": [
+    "S2B_21LYL_20260724_0_L2A",
+    "S2B_21MYM_20260724_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.99825,
+    "cloud_shadow_cirrus_fraction": 0.000988888888888889,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0007611111111111111
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.997560289954017,
+    "cloud_shadow_cirrus_fraction": 0.001440734121804783,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0009989759241782294
+   }
+  },
+  {
+   "date": "2026-07-29",
+   "items": [
+    "S2C_21LYL_20260729_0_L2A",
+    "S2C_21MYM_20260729_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.78145,
+    "cloud_shadow_cirrus_fraction": 0.21674722222222223,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0018027777777777777
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.8804441677877954,
+    "cloud_shadow_cirrus_fraction": 0.11784903917592016,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.001706793036284412
+   }
+  },
+  {
+   "date": "2026-07-31",
+   "items": [
+    "S2A_21LYL_20260731_1_L2A",
+    "S2A_21MYM_20260731_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.45348055555555555,
+    "cloud_shadow_cirrus_fraction": 0.09184166666666667,
+    "nodata_fraction": 0.4538861111111111,
+    "other_fraction": 0.0007916666666666666
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.6578733358767896,
+    "cloud_shadow_cirrus_fraction": 0.0847573341900765,
+    "nodata_fraction": 0.25646071364028833,
+    "other_fraction": 0.0009086162928455252
+   }
+  },
+  {
+   "date": "2026-08-03",
+   "items": [
+    "S2B_21LYL_20260803_0_L2A",
+    "S2B_21MYM_20260803_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9991555555555556,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0008444444444444444
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9989257243830445,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0010742756169554828
+   }
+  },
+  {
+   "date": "2026-08-08",
+   "items": [
+    "S2C_21LYL_20260808_0_L2A",
+    "S2C_21MYM_20260808_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9966361111111111,
+    "cloud_shadow_cirrus_fraction": 0.002988888888888889,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.000375
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9988303447721933,
+    "cloud_shadow_cirrus_fraction": 0.0007078171121061826,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.00046183811570048793
+   }
+  },
+  {
+   "date": "2026-08-10",
+   "items": [
+    "S2A_21LYL_20260810_0_L2A",
+    "S2A_21MYM_20260810_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.15191944444444444,
+    "cloud_shadow_cirrus_fraction": 0.8385583333333333,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.009522222222222222
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.12175960322081886,
+    "cloud_shadow_cirrus_fraction": 0.868948414690468,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.009291982088713078
+   }
+  },
+  {
+   "date": "2026-08-13",
+   "items": [
+    "S2B_21LYL_20260813_0_L2A",
+    "S2B_21MYM_20260813_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9993055555555556,
+    "cloud_shadow_cirrus_fraction": 5.555555555555556e-06,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0006888888888888888
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9990462038914881,
+    "cloud_shadow_cirrus_fraction": 5.019979518483565e-06,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0009487761289933937
+   }
+  },
+  {
+   "date": "2026-08-18",
+   "items": [
+    "S2C_21LYL_20260818_0_L2A",
+    "S2C_21MYM_20260818_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.99965,
+    "cloud_shadow_cirrus_fraction": 5.555555555555556e-06,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0003444444444444444
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.999533141904781,
+    "cloud_shadow_cirrus_fraction": 1.003995903696713e-05,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.00045681813618200437
+   }
+  },
+  {
+   "date": "2026-08-20",
+   "items": [
+    "S2A_21LYL_20260820_0_L2A",
+    "S2A_21MYM_20260820_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9921777777777778,
+    "cloud_shadow_cirrus_fraction": 0.007083333333333333,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0007388888888888889
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9973394108552037,
+    "cloud_shadow_cirrus_fraction": 0.0015963534868777736,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0010642356579185156
+   }
+  },
+  {
+   "date": "2026-08-23",
+   "items": [
+    "S2B_21LYL_20260823_0_L2A",
+    "S2B_21MYM_20260823_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9114083333333334,
+    "cloud_shadow_cirrus_fraction": 0.08509444444444444,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0034972222222222223
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9894931828678138,
+    "cloud_shadow_cirrus_fraction": 0.009151422662195539,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0013553944699905625
+   }
+  },
+  {
+   "date": "2026-08-28",
+   "items": [
+    "S2C_21LYL_20260828_0_L2A",
+    "S2C_21MYM_20260828_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9989027777777778,
+    "cloud_shadow_cirrus_fraction": 0.00035,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0007472222222222223
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9990160840143772,
+    "cloud_shadow_cirrus_fraction": 0.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0009839159856227786
+   }
+  },
+  {
+   "date": "2026-08-30",
+   "items": [
+    "S2A_21LYL_20260830_0_L2A",
+    "S2A_21MYM_20260830_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9796555555555555,
+    "cloud_shadow_cirrus_fraction": 0.018452777777777776,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0018916666666666667
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9821941326479388,
+    "cloud_shadow_cirrus_fraction": 0.01631995341459007,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0014859139374711352
+   }
+  },
+  {
+   "date": "2026-09-02",
+   "items": [
+    "S2B_21LYL_20260902_0_L2A",
+    "S2B_21MYM_20260902_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.835025,
+    "cloud_shadow_cirrus_fraction": 0.14912777777777778,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.01584722222222222
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9737756269954418,
+    "cloud_shadow_cirrus_fraction": 0.024070801791128693,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0021535712134294494
+   }
+  },
+  {
+   "date": "2026-09-07",
+   "items": [
+    "S2C_21LYL_20260907_0_L2A",
+    "S2C_21MYM_20260907_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.0,
+    "cloud_shadow_cirrus_fraction": 1.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.0,
+    "cloud_shadow_cirrus_fraction": 1.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0
+   }
+  },
+  {
+   "date": "2026-09-09",
+   "items": [
+    "S2A_21LYL_20260909_0_L2A",
+    "S2A_21MYM_20260909_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.0031944444444444446,
+    "cloud_shadow_cirrus_fraction": 0.9924583333333333,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.004347222222222222
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.001626473363988675,
+    "cloud_shadow_cirrus_fraction": 0.9947240015260738,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0036495251099375515
+   }
+  },
+  {
+   "date": "2026-09-12",
+   "items": [
+    "S2B_21LYL_20260912_0_L2A",
+    "S2B_21MYM_20260912_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.6242916666666667,
+    "cloud_shadow_cirrus_fraction": 0.3741888888888889,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0015194444444444444
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.7025511535912934,
+    "cloud_shadow_cirrus_fraction": 0.2967309893375635,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0007178570711431498
+   }
+  },
+  {
+   "date": "2026-09-17",
+   "items": [
+    "S2C_21LYL_20260917_0_L2A",
+    "S2C_21MYM_20260917_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.7634722222222222,
+    "cloud_shadow_cirrus_fraction": 0.2338111111111111,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0027166666666666667
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.8031264432441115,
+    "cloud_shadow_cirrus_fraction": 0.19438866689423906,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0024848898616493644
+   }
+  },
+  {
+   "date": "2026-09-19",
+   "items": [
+    "S2A_21LYL_20260919_0_L2A",
+    "S2A_21MYM_20260919_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.9095,
+    "cloud_shadow_cirrus_fraction": 0.08718055555555555,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0033194444444444443
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.9031043553342303,
+    "cloud_shadow_cirrus_fraction": 0.09462159394389671,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.002274050721873055
+   }
+  },
+  {
+   "date": "2026-09-22",
+   "items": [
+    "S2B_21LYL_20260922_0_L2A",
+    "S2B_21MYM_20260922_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.7766222222222222,
+    "cloud_shadow_cirrus_fraction": 0.21810833333333332,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.005269444444444445
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.8322423244513162,
+    "cloud_shadow_cirrus_fraction": 0.16301881488323527,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.004738860665448485
+   }
+  },
+  {
+   "date": "2026-09-27",
+   "items": [
+    "S2C_21LYL_20260927_0_L2A",
+    "S2C_21MYM_20260927_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.7236638888888889,
+    "cloud_shadow_cirrus_fraction": 0.26865,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0076861111111111114
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.6790526294652718,
+    "cloud_shadow_cirrus_fraction": 0.31437621734503324,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.006571153189694986
+   }
+  },
+  {
+   "date": "2026-09-29",
+   "items": [
+    "S2A_21LYL_20260929_0_L2A",
+    "S2A_21MYM_20260929_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.0,
+    "cloud_shadow_cirrus_fraction": 1.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.0,
+    "cloud_shadow_cirrus_fraction": 1.0,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0
+   }
+  },
+  {
+   "date": "2026-10-02",
+   "items": [
+    "S2B_21LYL_20261002_0_L2A",
+    "S2B_21MYM_20261002_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.016497222222222222,
+    "cloud_shadow_cirrus_fraction": 0.9826611111111111,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0008416666666666667
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.006325174193289291,
+    "cloud_shadow_cirrus_fraction": 0.9925202305174595,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0011545952892512198
+   }
+  },
+  {
+   "date": "2026-10-07",
+   "items": [
+    "S2C_21LYL_20261007_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.5946416666666666,
+    "cloud_shadow_cirrus_fraction": 0.023436111111111112,
+    "nodata_fraction": 0.38119444444444445,
+    "other_fraction": 0.0007277777777777778
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.453118411276882,
+    "cloud_shadow_cirrus_fraction": 0.01547659685548483,
+    "nodata_fraction": 0.5306369350013052,
+    "other_fraction": 0.0007680568663279854
+   }
+  },
+  {
+   "date": "2026-10-09",
+   "items": [
+    "S2A_21LYL_20261009_0_L2A",
+    "S2A_21MYM_20261009_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.8730361111111111,
+    "cloud_shadow_cirrus_fraction": 0.104,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.022963888888888888
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.8060631312624245,
+    "cloud_shadow_cirrus_fraction": 0.15679404028031566,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.03714282845725989
+   }
+  },
+  {
+   "date": "2026-10-12",
+   "items": [
+    "S2B_21LYL_20261012_0_L2A",
+    "S2B_21MYM_20261012_0_L2A"
+   ],
+   "aoi": {
+    "clear_fraction": 0.8991333333333333,
+    "cloud_shadow_cirrus_fraction": 0.09845277777777778,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.002413888888888889
+   },
+   "nisar_footprint": {
+    "clear_fraction": 0.8415744663761772,
+    "cloud_shadow_cirrus_fraction": 0.1565982610790948,
+    "nodata_fraction": 0.0,
+    "other_fraction": 0.0018272725447280175
+   }
+  }
+ ],
+ "command": "python validation/cloud_blindness.py --stack data/stack_big_t2f174.nc --out validation/cloud_blindness.json --web-out web/data/explore/big/cloud.json"
+}
