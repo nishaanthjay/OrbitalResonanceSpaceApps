@@ -466,3 +466,11 @@ footer .brand { font-size: 15px; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; transition-delay: 0s !important; }
 }
+.ramp { display: inline-flex; gap: 0; margin-right: 6px; vertical-align: middle; }
+.ramp .sw { margin: 0; width: 10px; }
+.watch { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; }
+.watch-item { width: 100%; text-align: left; display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; font-size: 12px; background: transparent; border: 1px solid rgba(147, 168, 137, .25); border-radius: 6px; color: inherit; cursor: pointer; }
+.watch-item:hover, .watch-item:focus-visible { border-color: rgba(147, 168, 137, .7); }
+.watch-item b { min-width: 48px; font-variant-numeric: tabular-nums; }
+.watch-item span { opacity: .8; }
+#big-cloud svg { width: 100%; height: auto; display: block; margin-top: 6px; }

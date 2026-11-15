@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261114-glass-2">
+  <link rel="stylesheet" href="observatory.css?v=20261115-frame-1">
 </head>
 <body>
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -60,6 +60,7 @@
     <button class="card" data-go="composite" id="card-radar"><span class="thumb"><img id="thumb-radar" alt=""></span><span><b>Through the clouds</b><small>Radar composite, HH + HV</small></span></button>
     <button class="card" data-go="hvchg" id="card-change"><span class="thumb"><img id="thumb-change" alt=""></span><span><b>What changed</b><small>HV change vs earlier passes</small></span></button>
     <button class="card" data-go="big" id="card-big" hidden><span class="thumb"><img id="thumb-big" alt=""></span><span><b>Forest map, 60 km</b><small>BR-163 frontier at scale</small></span></button>
+    <button class="card" data-go="frame" id="card-frame" hidden><span class="thumb"><img id="thumb-frame" alt=""></span><span><b>Whole radar frame</b><small>~60,000 km&sup2; forest map</small></span></button>
     <button class="play" id="play" aria-label="Play through the passes">
       <span class="ico">
         <svg class="ring" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="22"/></svg>
@@ -93,6 +94,8 @@
         <div id="big-layers" class="choices" hidden>
           <label class="choice"><input type="radio" name="layer" value="forest"><b>Forest map on this pass</b><small>one fixed HV threshold</small></label>
           <label class="choice"><input type="radio" name="layer" value="median"><b>9-pass median</b><small>forest map from all passes</small></label>
+          <label class="choice"><input type="radio" name="layer" value="confidence"><b>Confidence</b><small>grey where the median is within &plusmn;0.5 dB of the threshold</small></label>
+          <label class="choice"><input type="radio" name="layer" value="persistence"><b>Passes seen as forest</b><small>0 to 9 of the 9 passes</small></label>
         </div>
         <div id="legend"></div>
         <div class="row" style="margin-top:12px"><label class="note" for="opacity">Opacity</label><input type="range" id="opacity" min="0" max="100" value="100"></div>
@@ -113,10 +116,20 @@
         <div id="big-extras" hidden>
           <label class="check"><input type="checkbox" id="t-lost" checked> Forest lost June to October</label>
           <div class="note keyrow"><span class="sw" style="background:#b4401c"></span> 100 m blocks: forest on &ge; 2 of 06-26/07-08/07-20, non-forest on 09-30 and 10-12. Click a patch for its HV series.</div>
+          <label class="check"><input type="checkbox" id="t-fs"> Colour lost blocks by first-switch date</label>
+          <div class="note keyrow" id="fs-legend"></div>
+          <div class="note keyrow"><span class="sw ref" style="border-color:#fdd663"></span> alert-supported patch <span class="sw ref" style="border-color:#f3b49b;margin-left:6px"></span> radar only, unconfirmed (outlines from zoom 12)</div>
           <label class="check"><input type="checkbox" id="t-prot" checked> Protected areas &amp; Indigenous lands <span class="tag" id="p-prot" hidden>pending</span></label>
           <div class="note keyrow"><span class="sw ref" style="border-color:#e8d48a"></span> official boundaries (FUNAI; MMA CNUC has none in this area)</div>
           <label class="check"><input type="checkbox" id="t-win" checked> Test window outline</label>
           <div class="note keyrow"><span class="sw ref" style="border-style:dashed;border-color:#fdd663"></span> original 20 km window, excluded from scale scores</div>
+        </div>
+        <div id="frame-extras" hidden>
+          <label class="check"><input type="checkbox" id="t-flost" checked> Forest lost June to October</label>
+          <div class="note keyrow"><span class="sw" style="background:#ff2bd6"></span> 100 m blocks, same rule as the 60 km map. Click a patch (&ge; 3 ha) for its HV series.</div>
+          <label class="check"><input type="checkbox" id="t-ffs"> Colour lost blocks by first-switch date</label>
+          <div class="note keyrow" id="ffs-legend"></div>
+          <label class="check"><input type="checkbox" id="t-fout" checked> 60 km map and test window outlines</label>
         </div>
         <p class="note" id="extras-off" hidden>Detections, alerts and Hansen loss are computed for S Para only.</p>
       </section>
@@ -134,6 +147,21 @@
         <div id="big-protected"><span class="tag">pending</span></div>
         <div class="row wrap"><button id="dl-geojson" class="mini" type="button" disabled>Watchlist (GeoJSON)</button><button id="dl-csv" class="mini" type="button" disabled>Watchlist (CSV)</button></div>
         <p class="note" id="dl-note"></p>
+        <h3>Forest and non-forest, class by class</h3>
+        <div id="big-classes"><span class="tag">pending</span></div>
+        <h3>Lost patches: alert-supported or radar only</h3>
+        <div id="big-cats"><span class="tag">pending</span></div>
+        <h3>Top 20 places to check first</h3>
+        <p class="note" id="big-watch-note"></p>
+        <ol id="big-watch" class="watch"></ol>
+        <h3>Optical vs radar over the same 60 km</h3>
+        <div id="big-cloud"><span class="tag">pending</span></div>
+      </section>
+      <section id="frame-panel" hidden>
+        <h2>Full NISAR frame <span class="tag">out-of-sample</span></h2>
+        <p class="note">The same fixed threshold and loss rule over the whole radar frame (track 2, frame 174), scored once against Hansen and GLAD, rules pre-registered in validation/PREREG_frame.md. A reference, not ground truth.</p>
+        <div id="frame-results"><span class="tag">pending</span></div>
+        <p class="note" id="frame-note"></p>
       </section>
 
       <section>
@@ -234,7 +262,7 @@
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=20261114-glass-2"></script>
-<script src="observatory.js?v=20261114-glass-2"></script>
+<script src="explore.js?v=20261115-frame-1"></script>
+<script src="observatory.js?v=20261115-frame-1"></script>
 </body>
 </html>
