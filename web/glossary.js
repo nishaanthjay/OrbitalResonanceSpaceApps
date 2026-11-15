@@ -107,24 +107,43 @@
     const b = isTip(e.target);
     if (b) { e.preventDefault(); e.stopPropagation(); if (owner === b && pinned) hide(); else show(b, true); return; }
     const g = e.target.closest && e.target.closest('[data-open-glossary]');
-    if (g) { e.preventDefault(); hide(); openGlossary(g.dataset.openGlossary || ''); return; }
+    if (g) { e.preventDefault(); returnTo = bubble && bubble.contains(g) ? owner : g; hide(); openGlossary(g.dataset.openGlossary || ''); return; }
     if (bubble && !bubble.hidden && !bubble.contains(e.target)) hide();
   }, true);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bubble && !bubble.hidden) { const o = owner; hide(); o && o.focus(); } });
+  // keyboard path into the bubble's "Glossary" link: Tab from a pinned "?" (opened with Enter/Space) goes to the link;
+  // Tab from the link goes on to whatever follows the "?" in the page, Shift+Tab goes back to the "?"
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || !bubble || bubble.hidden || !owner) return;
+    const link = bubble.querySelector('a');
+    if (document.activeElement === owner && pinned && !e.shiftKey) { e.preventDefault(); link.focus(); return; }
+    if (document.activeElement !== link) return;
+    e.preventDefault();
+    const o = owner; hide();
+    if (e.shiftKey) { o.focus(); return; }
+    const all = [...document.querySelectorAll(FOCUSABLE)].filter((n) => !bubble.contains(n) && n.offsetParent !== null);
+    const next = all[all.indexOf(o) + 1]; (next || o).focus();
+  });
   window.addEventListener('scroll', () => { if (owner && bubble && !bubble.hidden) place(owner); }, { passive: true, capture: true });
   window.addEventListener('resize', () => { if (owner && bubble && !bubble.hidden) place(owner); });
 
   // ---- glossary drawer ----
-  let drawer = null;
+  let drawer = null, returnTo = null; // returnTo: the button that opened the drawer (a "?" when opened from its bubble)
   function buildDrawer() {
     if (drawer) return drawer;
     drawer = document.createElement('dialog');
     drawer.id = 'glossary'; drawer.className = 'glossary'; drawer.setAttribute('aria-labelledby', 'glossary-title');
-    const items = Object.entries(TERMS).sort((a, b) => a[1].plain.localeCompare(b[1].plain))
-      .map(([k, t]) => `<div class="g-item" id="g-${k}" tabindex="-1"><dt>${esc(t.plain)}</dt><dd><span class="g-term">${esc(t.term)}</span>${esc(t.tip)}</dd></div>`).join('');
+    // headword = the plain words (or the term itself when the plain entry is only a note, like "(chart axes only)"),
+    // sorted without a leading "a" / "an" / "the"
+    const head = (t) => (t.plain.startsWith('(') ? t.term : t.plain);
+    const sortKey = (t) => head(t).replace(/^(a|an|the)\s+/i, '').toLowerCase();
+    const items = Object.entries(TERMS).sort((a, b) => sortKey(a[1]).localeCompare(sortKey(b[1])))
+      .map(([k, t]) => `<div class="g-item" id="g-${k}" tabindex="-1"><dt>${esc(head(t))}</dt><dd><span class="g-term">${esc(t.plain.startsWith('(') ? t.plain : t.term)}</span>${esc(t.tip)}</dd></div>`).join('');
     drawer.innerHTML = `<header><h2 id="glossary-title">Glossary</h2><button type="button" class="mini" data-close-glossary>Close</button></header>
       <p class="note">Plain words used on this site, the technical term behind each one, and what it means.</p><dl>${items}</dl>`;
     drawer.addEventListener('click', (e) => { if (e.target === drawer || e.target.closest('[data-close-glossary]')) drawer.close(); });
+    drawer.addEventListener('close', () => { const r = returnTo; returnTo = null; if (r && r.isConnected) setTimeout(() => r.focus({ preventScroll: true }), 0); });
     document.body.append(drawer);
     return drawer;
   }
