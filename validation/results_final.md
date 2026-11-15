@@ -146,3 +146,24 @@ Reading: the lost blocks agree with alerts far more often than random stable for
 `python web/tools/make_big.py --stack data/stack_big_t2f174.nc --metrics validation/scale_metrics.json --out-dir web/data/explore/big`: 9 `forest_<date>.webp`, `forest_median.webp`, `lost.webp` (603 x 607 px, EPSG:3857, lossless RGBA, 4.8 to 11.6 KB each), `lost.geojson` (2,999 patches, 4,618 ha incl. 923 patches touching the original window, flagged `in_original_window`; 1.39 MB), `big.json` (bounds, grid, dates, T_db, original window, scores copied from `scale_metrics.json`). All of `web/data` = 58,624,727 bytes (under 60 MB).
 
 Tests: `python -m pytest -q pipeline/load validation web/tools` -> 45 passed.
+
+
+## Cloud blindness (Sentinel-2 vs NISAR, 60 km AOI)
+Run 2026-11-14, descriptive (no threshold or score from the forest map changed). Command:
+`python validation/cloud_blindness.py --stack data/stack_big_t2f174.nc --out validation/cloud_blindness.json --web-out web/data/explore/big/cloud.json`
+Source: Earth Search STAC v1, `sentinel-2-l2a` (same search as `s2_chips.py`), 2026-06-26..2026-10-12: 64 items, 63 after one-per-tile-and-date, grouped into one scene per acquisition date (tiles MGRS 21LYL + 21MYM mosaicked). Per scene, SCL resampled (mode) onto the stack's 100 m block grid; clear = SCL 4, 5, 6, everything else not clear (cloud, shadow, cirrus, and also no data). Good view = clear fraction >= 0.80.
+
+| Area | Scenes | >= 80 % clear | Median clear fraction | Longest gap between >= 80 %-clear views |
+|---|---|---|---|---|
+| **60 x 60 km AOI** (360,000 blocks) | **32** | **19** | **0.886** | **20 days** (2026-09-19 to 2026-10-09) |
+| NISAR footprint (199,204 blocks, valid on all 9 passes) | 32 | 22 | 0.900 | 17 days (2026-09-22 to 2026-10-09) |
+| NISAR (L-band, same footprint) | 9 passes | 9 of 9 usable | n/a | 24 days (07-20 to 08-13, one missed pass) |
+
+Per-scene clear % over the AOI (date: %): 06-29 86.1 ; 07-01 99.9 ; 07-04 99.9 ; 07-09 92.2 ; 07-11 0.1 ; 07-14 99.5 ; 07-19 99.5 ; 07-24 99.8 ; 07-29 78.1 ; 07-31 45.3 ; 08-03 99.9 ; 08-08 99.7 ; 08-10 15.2 ; 08-13 99.9 ; 08-18 100.0 ; 08-20 99.2 ; 08-23 91.1 ; 08-28 99.9 ; 08-30 98.0 ; 09-02 83.5 ; 09-07 0.0 ; 09-09 0.3 ; 09-12 62.4 ; 09-17 76.3 ; 09-19 91.0 ; 09-22 77.7 ; 09-27 72.4 ; 09-29 0.0 ; 10-02 1.6 ; 10-07 59.5 ; 10-09 87.3 ; 10-12 89.9. Fully clouded scenes (clear < 2 %): 07-11, 09-07, 09-09, 09-29, 10-02.
+
+Reading, stated plainly: this window is the dry season, and Sentinel-2 saw this AOI well. 19 of 32 scenes were >= 80 % clear, and its longest gap between good views (20 days) is **shorter** than NISAR's longest gap between passes (24 days). So for June to October 2026 here, "optical goes blind" is not supported by the numbers; NISAR's advantage in this window is that every pass is usable (9 of 9, no cloud screening), not more frequent views. Clouding grows from September (4 of the 5 near-total cloud scenes fall 09-07..10-02). SCL alone is an upper bound on usable views: `s2_chips.py` found SCL misses smoke/haze (S Para 2026-10-12, AOT 0.17-0.25) and small cumulus. The wet season (roughly November to May, not in this window) was not measured.
+
+## First-switch map (descriptive)
+`python validation/first_switch.py --stack data/stack_big_t2f174.nc --big-dir web/data/explore/big`: for each lost block (PREREG_scale.md rule unchanged, valid on all 9 dates, whole 60 km map incl. the test window: 4,618 blocks), the first pass after 07-20 on which it is non-forest and stays non-forest through 10-12. Blocks: 08-13 427, 08-25 212, 09-06 328, 09-18 1,347, 09-30 2,304. Patches (earliest block date per patch; 2,999 patches): 08-13 358, 08-25 165, 09-06 253, 09-18 883, 09-30 1,340. Written to `web/data/explore/big/first_switch.webp` (legend in `big.json` under `first_switch`) and `first_switch_date` in `lost.geojson`. No new score or threshold. Half of the lost blocks switch only at 09-30, the last pass the rule allows, so most flags rest on two passes.
+
+Tests: `python -m pytest -q validation pipeline/load web/tools` -> 53 passed.

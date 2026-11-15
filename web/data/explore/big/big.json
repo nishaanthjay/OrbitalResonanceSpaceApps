@@ -196,5 +196,25 @@
     "2026-11-05"
    ]
   }
+ },
+ "first_switch": {
+  "file": "first_switch.webp",
+  "legend": {
+   "2026-08-13": "#fde047",
+   "2026-08-25": "#fb923c",
+   "2026-09-06": "#ef4444",
+   "2026-09-18": "#b91c1c",
+   "2026-09-30": "#5b0e4a"
+  },
+  "block_counts": {
+   "2026-08-13": 427,
+   "2026-08-25": 212,
+   "2026-09-06": 328,
+   "2026-09-18": 1347,
+   "2026-09-30": 2304
+  },
+  "lost_blocks": 4618,
+  "definition": "per lost block (PREREG_scale.md rule, valid on all 9 dates): the first pass after 07-20 on which it is non-forest and stays non-forest through 10-12. Descriptive only; no new score or threshold.",
+  "command": "python validation/first_switch.py --stack data/stack_big_t2f174.nc --big-dir web/data/explore/big"
  }
 }

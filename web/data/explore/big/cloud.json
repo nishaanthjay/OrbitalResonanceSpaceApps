@@ -1,0 +1,191 @@
+{
+ "source": "Sentinel-2 L2A SCL via Earth Search STAC (validation/cloud_blindness.json)",
+ "good_threshold": 0.8,
+ "nisar_passes": [
+  "2026-06-26",
+  "2026-07-08",
+  "2026-07-20",
+  "2026-08-13",
+  "2026-08-25",
+  "2026-09-06",
+  "2026-09-18",
+  "2026-09-30",
+  "2026-10-12"
+ ],
+ "scenes": [
+  {
+   "date": "2026-06-29",
+   "clear_fraction_aoi": 0.8608,
+   "clear_fraction_nisar_footprint": 0.9207
+  },
+  {
+   "date": "2026-07-01",
+   "clear_fraction_aoi": 0.9993,
+   "clear_fraction_nisar_footprint": 0.9992
+  },
+  {
+   "date": "2026-07-04",
+   "clear_fraction_aoi": 0.9993,
+   "clear_fraction_nisar_footprint": 0.9991
+  },
+  {
+   "date": "2026-07-09",
+   "clear_fraction_aoi": 0.9222,
+   "clear_fraction_nisar_footprint": 0.8973
+  },
+  {
+   "date": "2026-07-11",
+   "clear_fraction_aoi": 0.0006,
+   "clear_fraction_nisar_footprint": 0.0012
+  },
+  {
+   "date": "2026-07-14",
+   "clear_fraction_aoi": 0.9946,
+   "clear_fraction_nisar_footprint": 0.9988
+  },
+  {
+   "date": "2026-07-19",
+   "clear_fraction_aoi": 0.9947,
+   "clear_fraction_nisar_footprint": 0.9995
+  },
+  {
+   "date": "2026-07-24",
+   "clear_fraction_aoi": 0.9982,
+   "clear_fraction_nisar_footprint": 0.9976
+  },
+  {
+   "date": "2026-07-29",
+   "clear_fraction_aoi": 0.7814,
+   "clear_fraction_nisar_footprint": 0.8804
+  },
+  {
+   "date": "2026-07-31",
+   "clear_fraction_aoi": 0.4535,
+   "clear_fraction_nisar_footprint": 0.6579
+  },
+  {
+   "date": "2026-08-03",
+   "clear_fraction_aoi": 0.9992,
+   "clear_fraction_nisar_footprint": 0.9989
+  },
+  {
+   "date": "2026-08-08",
+   "clear_fraction_aoi": 0.9966,
+   "clear_fraction_nisar_footprint": 0.9988
+  },
+  {
+   "date": "2026-08-10",
+   "clear_fraction_aoi": 0.1519,
+   "clear_fraction_nisar_footprint": 0.1218
+  },
+  {
+   "date": "2026-08-13",
+   "clear_fraction_aoi": 0.9993,
+   "clear_fraction_nisar_footprint": 0.999
+  },
+  {
+   "date": "2026-08-18",
+   "clear_fraction_aoi": 0.9997,
+   "clear_fraction_nisar_footprint": 0.9995
+  },
+  {
+   "date": "2026-08-20",
+   "clear_fraction_aoi": 0.9922,
+   "clear_fraction_nisar_footprint": 0.9973
+  },
+  {
+   "date": "2026-08-23",
+   "clear_fraction_aoi": 0.9114,
+   "clear_fraction_nisar_footprint": 0.9895
+  },
+  {
+   "date": "2026-08-28",
+   "clear_fraction_aoi": 0.9989,
+   "clear_fraction_nisar_footprint": 0.999
+  },
+  {
+   "date": "2026-08-30",
+   "clear_fraction_aoi": 0.9797,
+   "clear_fraction_nisar_footprint": 0.9822
+  },
+  {
+   "date": "2026-09-02",
+   "clear_fraction_aoi": 0.835,
+   "clear_fraction_nisar_footprint": 0.9738
+  },
+  {
+   "date": "2026-09-07",
+   "clear_fraction_aoi": 0.0,
+   "clear_fraction_nisar_footprint": 0.0
+  },
+  {
+   "date": "2026-09-09",
+   "clear_fraction_aoi": 0.0032,
+   "clear_fraction_nisar_footprint": 0.0016
+  },
+  {
+   "date": "2026-09-12",
+   "clear_fraction_aoi": 0.6243,
+   "clear_fraction_nisar_footprint": 0.7026
+  },
+  {
+   "date": "2026-09-17",
+   "clear_fraction_aoi": 0.7635,
+   "clear_fraction_nisar_footprint": 0.8031
+  },
+  {
+   "date": "2026-09-19",
+   "clear_fraction_aoi": 0.9095,
+   "clear_fraction_nisar_footprint": 0.9031
+  },
+  {
+   "date": "2026-09-22",
+   "clear_fraction_aoi": 0.7766,
+   "clear_fraction_nisar_footprint": 0.8322
+  },
+  {
+   "date": "2026-09-27",
+   "clear_fraction_aoi": 0.7237,
+   "clear_fraction_nisar_footprint": 0.6791
+  },
+  {
+   "date": "2026-09-29",
+   "clear_fraction_aoi": 0.0,
+   "clear_fraction_nisar_footprint": 0.0
+  },
+  {
+   "date": "2026-10-02",
+   "clear_fraction_aoi": 0.0165,
+   "clear_fraction_nisar_footprint": 0.0063
+  },
+  {
+   "date": "2026-10-07",
+   "clear_fraction_aoi": 0.5946,
+   "clear_fraction_nisar_footprint": 0.4531
+  },
+  {
+   "date": "2026-10-09",
+   "clear_fraction_aoi": 0.873,
+   "clear_fraction_nisar_footprint": 0.8061
+  },
+  {
+   "date": "2026-10-12",
+   "clear_fraction_aoi": 0.8991,
+   "clear_fraction_nisar_footprint": 0.8416
+  }
+ ],
+ "summary": {
+  "aoi": {
+   "n_scenes": 32,
+   "n_ge_80pct_clear": 19,
+   "median_clear_fraction": 0.8860847222222222,
+   "longest_gap_days_between_good_views": 20
+  },
+  "nisar_footprint": {
+   "n_scenes": 32,
+   "n_ge_80pct_clear": 22,
+   "median_clear_fraction": 0.9002153571213429,
+   "longest_gap_days_between_good_views": 17
+  }
+ }
+}
