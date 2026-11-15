@@ -9,9 +9,15 @@ const FADE = 420; // ms cross-fade between radar passes
 const $ = (id) => document.getElementById(id);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const state = { manifest: null, loc: null, i: 0, layer: 'hv', series: null, playing: null, marker: null, mode: 'intro',
-  last: null, det: null, ref: null, hansen: null, metrics: null, big: null, bigMeta: null, lost: null, bigProt: null };
+  last: null, det: null, ref: null, hansen: null, metrics: null, big: null, bigMeta: null, lost: null, bigProt: null, frame: null, frameMeta: null, frameLost: null };
 const isBig = () => !!state.loc && state.loc.kind === 'big';
-const findLoc = (id) => (state.big && id === state.big.id ? state.big : state.manifest.locations.find((l) => l.id === id));
+const isFrame = () => !!state.loc && state.loc.kind === 'frame';
+const isForestLoc = () => isBig() || isFrame(); // forest-map locations (no radar layers, no pixel series)
+const findLoc = (id) => (state.big && id === state.big.id ? state.big : state.frame && id === state.frame.id ? state.frame
+  : state.manifest.locations.find((l) => l.id === id));
+const lostSet = () => (isFrame() ? state.frameLost : isBig() ? state.lost : null);
+const STATIC_LAYERS = { median: 'forest_median.webp', confidence: 'confidence.webp', persistence: 'persistence.webp' };
+const LAYERS_FOR = { big: ['forest', 'median', 'confidence', 'persistence'], frame: ['median'] };
 const COLORS = { early: '#b68b52', late: '#bd776a', ref: '#81989c' };
 const CHART = { hh: '#CED9DF', hv: '#93A889', grid: '#3E563E', text: '#7993A0', cur: '#93A889' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -35,7 +41,7 @@ function corners(b) { // b = W S E N
 }
 function hasImage(layer, i) { return !(layer.endsWith('chg') && i === 0); }
 function url(layer, i) {
-  if (layer === 'median') return `${DATA}${state.loc.id}/forest_median.webp`;
+  if (STATIC_LAYERS[layer]) return `${DATA}${state.loc.id}/${STATIC_LAYERS[layer]}`;
   return `${DATA}${state.loc.id}/${layer}_${state.loc.dates[i]}.webp`;
 }
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -71,14 +77,16 @@ function setText(el, text) { // a small roll when a label changes
   if (!reduced) el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
 }
 
-const LAYER_NAME = { hv: 'HV', hh: 'HH', composite: 'HH + HV', hvchg: 'HV change', hhchg: 'HH change', forest: 'forest map', median: 'forest map' };
+const LAYER_NAME = { hv: 'HV', hh: 'HH', composite: 'HH + HV', hvchg: 'HV change', hhchg: 'HH change', forest: 'forest map', median: 'forest map', confidence: 'confidence map', persistence: 'forest persistence map' };
+const STATIC_LABEL = { median: '9-pass median', confidence: 'confidence (9-pass median)', persistence: 'passes seen as forest' };
 function setImage(redraw = true) {
   const loc = state.loc, op = +$('opacity').value / 100, date = loc.dates[state.i];
-  if (isBig()) {
+  if (isForestLoc()) {
     show('radar', url(state.layer, state.i), op);
     show('chg', null);
-    setText($('datelabel'), state.layer === 'median' ? `9-pass median · ${loc.dates[0]} to ${loc.dates[loc.dates.length - 1]}` : `${date} · pass ${state.i + 1} of ${loc.dates.length}`);
-    setText($('hero-what'), state.layer === 'median' ? 'its 9-pass forest map' : `its forest map from ${date}`);
+    const st = STATIC_LABEL[state.layer];
+    setText($('datelabel'), st ? `${st} · ${loc.dates[0]} to ${loc.dates[loc.dates.length - 1]}` : `${date} · pass ${state.i + 1} of ${loc.dates.length}`);
+    setText($('hero-what'), st ? `its ${LAYER_NAME[state.layer]} from all 9 passes` : `its forest map from ${date}`);
   } else {
     const isChg = state.layer.endsWith('chg');
     // base radar image: the chosen layer, or HV under a change layer
@@ -92,6 +100,7 @@ function setImage(redraw = true) {
   $('card-radar').setAttribute('aria-current', String(exploring && !isBig() && state.layer === 'composite'));
   $('card-change').setAttribute('aria-current', String(exploring && !isBig() && state.layer === 'hvchg'));
   $('card-big').setAttribute('aria-current', String(exploring && isBig()));
+  if ($('card-frame')) $('card-frame').setAttribute('aria-current', String(exploring && isFrame()));
   $('date').value = state.i;
   document.querySelectorAll('.pass').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === state.i)));
   const on = document.querySelector('.pass[aria-pressed=true]');
@@ -102,7 +111,7 @@ function setImage(redraw = true) {
 }
 
 function preload() { // so the passes and play are smooth
-  if (isBig()) { state.loc.dates.forEach((_, i) => { const im = new Image(); im.src = url('forest', i); }); return; }
+  if (isForestLoc()) { if (isBig()) state.loc.dates.forEach((_, i) => { const im = new Image(); im.src = url('forest', i); }); return; }
   for (const layer of ['composite', 'hv', 'hh', 'hvchg', 'hhchg'])
     state.loc.dates.forEach((_, i) => { if (hasImage(layer, i)) { const im = new Image(); im.src = url(layer, i); } });
 }
@@ -171,8 +180,10 @@ async function go(target) {
   const first = state.manifest && state.manifest.locations[0];
   if (target === 'big' && state.big) {
     if (!isBig()) { $('loc').value = 'big'; await selectLoc('big'); }
+  } else if (target === 'frame' && state.frame) {
+    if (!isFrame()) { $('loc').value = 'frame'; await selectLoc('frame'); }
   } else if (['composite', 'hv', 'hh', 'hvchg', 'hhchg'].includes(target)) {
-    if (isBig() && first) { $('loc').value = first.id; await selectLoc(first.id); }
+    if (isForestLoc() && first) { $('loc').value = first.id; await selectLoc(first.id); }
     state.layer = target;
     document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === target; });
     if (state.mode === 'exploring') setImage();
@@ -187,8 +198,18 @@ function goTo(i) {
 
 function drawLegend() {
   const s = state.loc.stretch, L = state.layer, el = $('legend');
-  if (isBig()) {
-    el.innerHTML = `<div class="note keyrow" style="padding-left:0"><span class="sw" style="background:#2f6b4f"></span> forest (HV &ge; ${state.bigMeta.T_db.toFixed(2)} dB) <span class="sw" style="background:#b4401c"></span> non-forest. Transparent = outside the swath on at least one pass. 100 m blocks.</div>`;
+  if (isForestLoc()) {
+    const T = (isFrame() ? state.frameMeta : state.bigMeta).T_db.toFixed(2);
+    const fnf = `<span class="sw" style="background:#2f6b4f"></span> forest (HV &ge; ${T} dB) <span class="sw" style="background:#b4401c;margin-left:6px"></span> non-forest`;
+    let body = `${fnf}. Transparent = outside the swath on at least one pass. 100 m blocks.`;
+    if (L === 'confidence') {
+      const c = state.bigMeta.confidence || {};
+      body = `${fnf} <span class="sw" style="background:#8a9490;margin-left:6px"></span> uncertain: 9-pass median HV within &plusmn;${c.uncertain_band_db} dB of the threshold (${pct(c.share && c.share.uncertain)} of mapped blocks). The band is a display choice, not a tuned value.`;
+    } else if (L === 'persistence') {
+      const pc = state.bigMeta.persistence || {}, cols = pc.colors || {};
+      body = `<span class="ramp">${Object.keys(cols).map((k) => `<span class="sw" style="background:${cols[k]}" title="${k} of 9"></span>`).join('')}</span> 0 &rarr; 9 of the 9 passes classed forest. ${pct(pc.blocks && pc.blocks.share && pc.blocks.share['9'])} of blocks were forest on every pass, ${pct(pc.blocks && pc.blocks.share && pc.blocks.share['0'])} on none.`;
+    }
+    el.innerHTML = `<div class="note keyrow" style="padding-left:0">${body}</div>`;
     return;
   }
   const bar = (css, lo, hi, unit) => `<div class="legend" style="background:${css}"></div><div class="legend-lab"><span>${lo}</span><span>${hi}</span></div><div class="note">${unit}</div>`;
@@ -201,7 +222,7 @@ function drawLegend() {
 async function loadSeries() {
   const loc = state.loc;
   state.series = null;
-  if (loc.kind === 'big') return; // no per-pixel series file for the 60 km map; lost patches carry their own
+  if (loc.kind === 'big' || loc.kind === 'frame') return; // no per-pixel series file for the forest maps; lost patches carry their own
   try {
     const r = await fetch(`${DATA}${loc.id}/series.bin`);
     if (!r.ok) throw new Error('Series unavailable');
@@ -274,7 +295,7 @@ function placeMarker(lon, lat, fresh) {
 const KEY = `<b style="color:${CHART.hh}">HH</b> and <b style="color:${CHART.hv}">HV</b>`;
 function drawChart(lon, lat, fresh = true) {
   state.last = { kind: 'point', lon, lat };
-  if (isBig()) { $('chart').innerHTML = '<div class="hint">Click a red "forest lost" patch to see its HV series against the forest threshold.</div>'; return; }
+  if (isForestLoc()) { $('chart').innerHTML = `<div class="hint">Click a ${isFrame() ? 'magenta' : 'red'} "forest lost" patch to see its HV series against the forest threshold.</div>`; return; }
   const c = cellAt(lon, lat), el = $('chart');
   if (!c) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
   if (!state.series) { el.textContent = 'Pixel time series not available. Try a detection patch or reload.'; return; }
@@ -306,8 +327,9 @@ function drawDetection(f, lngLat, fresh = true) {
 // A clicked lost patch on the 60 km map: patch-mean HV from the stack (lost.geojson hv_series_db) vs the fixed threshold.
 function drawLost(f, lngLat, fresh = true) {
   state.last = { kind: 'lost', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
-  const p = f.properties, el = $('chart'), dates = state.loc.dates, T = state.bigMeta.T_db;
-  const title = `Lost patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_flagged || 'n/a')}${p.in_original_window ? ', inside the test window' : ''}`;
+  const p = f.properties, el = $('chart'), dates = state.loc.dates, T = (isFrame() ? state.frameMeta : state.bigMeta).T_db;
+  const cat = { alert_supported: 'alert-supported (a GLAD alert in the patch)', radar_only_unconfirmed: 'radar only, unconfirmed' }[p.category];
+  const title = `Lost patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_switch_date || p.first_flagged || 'n/a')}${cat ? `, ${cat}` : ''}${p.in_original_window ? ', inside the test window' : ''}`;
   const hv = Array.isArray(p.hv_series_db) && p.hv_series_db.length === dates.length ? p.hv_series_db.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null;
   if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hv_series_db must hold ${dates.length} numbers.</div>`; return; }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates, fresh)}
@@ -318,7 +340,7 @@ function redrawLast() { // same selection, new pass: redraw without the entrance
   const l = state.last;
   if (!l) return;
   if (l.kind === 'lost') {
-    const f = state.lost && state.lost.byId.get(l.id);
+    const ls = lostSet(), f = ls && ls.byId.get(l.id);
     if (f) drawLost(f, { lng: l.lon, lat: l.lat }, false);
     return;
   }
@@ -467,6 +489,18 @@ function applyVisibility() { // evidence overlays only while exploring: the intr
   bvis('prot-label', $('t-prot').checked);
   bvis('win-line', $('t-win').checked);
   bvis('win-label', $('t-win').checked);
+  if (map.getLayer('lost-img') && state.bigMeta && state.bigMeta.first_switch) {
+    const want = `${BIG}${$('t-fs').checked ? state.bigMeta.first_switch.file : state.bigMeta.layers.lost}`;
+    if (state.lostImgHref !== want) { state.lostImgHref = want; map.getSource('lost-img').updateImage({ url: want, coordinates: corners(state.bigMeta.bounds_lonlat) }); }
+  }
+  const frame = isFrame();
+  const fvis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on && ex && frame ? 'visible' : 'none'); };
+  fvis('flost-img', $('t-flost').checked && !$('t-ffs').checked);
+  fvis('ffs-img', $('t-flost').checked && $('t-ffs').checked);
+  fvis('flost-fill', $('t-flost').checked);
+  fvis('flost-line', $('t-flost').checked);
+  fvis('fout-line', $('t-fout').checked);
+  fvis('fout-label', $('t-fout').checked);
 }
 
 // ---------- 60 km forest map (web/data/explore/big/, written by web/tools/make_big.py and validation/protected_areas.py) ----------
@@ -511,7 +545,7 @@ function renderBigProtected(pj) {
 
 function watchlist() {
   return state.lost.features.map((f) => ({ id: f.properties.id, centroid_lon: f.properties.centroid_lon, centroid_lat: f.properties.centroid_lat,
-    area_ha: f.properties.area_ha, first_flagged: f.properties.first_flagged }));
+    area_ha: f.properties.area_ha, first_flagged: f.properties.first_flagged, category: f.properties.category ?? null }));
 }
 function saveFile(name, text, type) {
   const a = document.createElement('a'), u = URL.createObjectURL(new Blob([text], { type }));
@@ -525,7 +559,7 @@ function downloadWatchlist(kind) {
       features: rows.map((r) => ({ type: 'Feature', properties: r, geometry: { type: 'Point', coordinates: [r.centroid_lon, r.centroid_lat] } })) };
     saveFile('br163_forest_lost_watchlist.geojson', JSON.stringify(fc), 'application/geo+json');
   } else {
-    const head = ['id', 'centroid_lon', 'centroid_lat', 'area_ha', 'first_flagged'];
+    const head = ['id', 'centroid_lon', 'centroid_lat', 'area_ha', 'first_flagged', 'category'];
     saveFile('br163_forest_lost_watchlist.csv', [head.join(','), ...rows.map((r) => head.map((k) => r[k] ?? '').join(','))].join('\n') + '\n', 'text/csv');
   }
 }
@@ -545,7 +579,7 @@ async function loadBig() {
     state.lost = { features: feats, byId: new Map(feats.map((f) => [f.properties.id, f])) };
     map.addSource('lostp', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
     map.addLayer({ id: 'lost-fill', type: 'fill', source: 'lostp', layout: { visibility: 'none' }, paint: { 'fill-color': '#b4401c', 'fill-opacity': 0.01 } });
-    map.addLayer({ id: 'lost-line', type: 'line', source: 'lostp', layout: { visibility: 'none' }, minzoom: 12, paint: { 'line-color': '#f3b49b', 'line-width': 0.8 } });
+    map.addLayer({ id: 'lost-line', type: 'line', source: 'lostp', layout: { visibility: 'none' }, minzoom: 12, paint: { 'line-color': ['match', ['get', 'category'], 'alert_supported', '#fdd663', '#f3b49b'], 'line-width': ['match', ['get', 'category'], 'alert_supported', 1.6, 0.8] } });
     $('dl-geojson').disabled = false; $('dl-csv').disabled = false;
     $('dl-note').textContent = `${feats.length.toLocaleString()} patches; fields: id, centroid lon/lat, area_ha, first_flagged (${meta.first_flagged_definition}). Unverified radar flags.`;
   }
@@ -563,8 +597,149 @@ async function loadBig() {
   map.addLayer({ id: 'win-label', type: 'symbol', source: 'win-pt', layout: { visibility: 'none', 'text-field': ['get', 't'], 'text-size': 12, 'text-anchor': 'bottom', 'text-offset': [0, -0.3], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#091008', 'text-halo-width': 1.5 } });
   renderBigResults(meta);
   renderBigProtected(pj);
+  if (meta.first_switch) legendRow($('fs-legend'), Object.entries(meta.first_switch.legend).map(([d, col]) => [col, d.slice(5)]));
+  renderBigExtras(meta, await getJSON(`${BIG}cloud.json`));
   $('dl-geojson').onclick = () => downloadWatchlist('geojson');
   $('dl-csv').onclick = () => downloadWatchlist('csv');
+}
+
+// ---------- 60 km map: credibility pack (big.json) and optical-vs-radar timeline (cloud.json); numbers read from the files ----------
+function kvList(rows) {
+  const dl = mk('dl', undefined, 'kv');
+  rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
+  return dl;
+}
+function renderBigExtras(meta, cloud) {
+  const cm = meta.class_metrics && meta.class_metrics.median;
+  const cls = $('big-classes'); cls.replaceChildren();
+  if (cm) {
+    const c = cm.confusion;
+    cls.append(kvList([
+      ['Forest: precision / recall', `${pct(cm.forest_precision)} / ${pct(cm.forest_recall)}`],
+      ['Non-forest: precision / recall', `${pct(cm.nonforest_precision)} / ${pct(cm.nonforest_recall)}`],
+      ['Map forest, Hansen forest / non-forest', `${int(c.map_forest.hansen_forest)} / ${int(c.map_forest.hansen_nonforest)} blocks`],
+      ['Map non-forest, Hansen forest / non-forest', `${int(c.map_nonforest.hansen_forest)} / ${int(c.map_nonforest.hansen_nonforest)} blocks`],
+    ]), mk('p', `${meta.class_metrics.scope}. ${meta.class_metrics.reference}.`, 'note'));
+  } else cls.append(mk('span', 'pending', 'tag'));
+
+  const lc = meta.lost_categories, cats = $('big-cats'); cats.replaceChildren();
+  if (lc && lc.patches) {
+    const a = lc.patches.alert_supported, r = lc.patches.radar_only_unconfirmed;
+    cats.append(kvList([
+      ['Alert-supported (GLAD-L or GLAD-S2 in the patch)', `${int(a.patches)} patches · ${int(a.ha)} ha`],
+      ['Radar only, unconfirmed', `${int(r.patches)} patches · ${int(r.ha)} ha`],
+    ]), mk('p', 'Radar-only patches are unconfirmed radar change, not deforestation. Alerts dated 2026-06-26 to 2026-11-05; whole 60 km map incl. the test window.', 'note'));
+  } else cats.append(mk('span', 'pending', 'tag'));
+
+  const wp = meta.watch_priorities, list = $('big-watch'); list.replaceChildren();
+  if (wp && Array.isArray(wp.items)) {
+    $('big-watch-note').textContent = 'The 20 largest lost patches. Distance = to land already non-forest at the start (100 m = touching). Places to check first, not confirmed clearing. Click one to fly there.';
+    wp.items.forEach((it) => {
+      const li = mk('li'), b = mk('button', undefined, 'watch-item'); b.type = 'button';
+      b.append(mk('b', `${it.area_ha} ha`), mk('span', `${it.category === 'alert_supported' ? 'alert-supported' : 'radar only'} · from ${it.first_switch_date} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test window' : ''}`));
+      b.onclick = () => openLost(it.id);
+      li.append(b); list.append(li);
+    });
+  }
+  renderCloud(cloud);
+}
+async function openLost(id) {
+  if (!isBig()) { $('loc').value = 'big'; await selectLoc('big'); }
+  setMode('exploring');
+  const f = state.lost && state.lost.byId.get(id);
+  if (!f) return;
+  const p = f.properties, d = 0.006;
+  focusBounds([p.centroid_lon - d, p.centroid_lat - d, p.centroid_lon + d, p.centroid_lat + d]);
+  drawLost(f, { lng: p.centroid_lon, lat: p.centroid_lat });
+}
+function renderCloud(c) {
+  const box = $('big-cloud'); box.replaceChildren();
+  if (!c || !Array.isArray(c.scenes) || !c.scenes.length) { box.append(mk('span', 'pending', 'tag')); return; }
+  const passes = c.nisar_passes, good = c.good_threshold, W = 340, H = 150, ml = 30, mr = 8, mt = 22, mb = 22;
+  const t0 = Date.parse(passes[0]), t1 = Date.parse(passes[passes.length - 1]);
+  const X = (d) => ml + (Date.parse(d) - t0) / (t1 - t0) * (W - ml - mr), Y = (f) => mt + (1 - f) * (H - mt - mb);
+  let g = '';
+  for (const f of [0, 0.5, 1]) g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(f)}" y2="${Y(f)}" stroke="${CHART.grid}" stroke-opacity=".5"/><text x="${ml - 4}" y="${Y(f) + 4}" fill="${CHART.text}" font-size="10" text-anchor="end">${f * 100}%</text>`;
+  g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(good)}" y2="${Y(good)}" stroke="#fdd663" stroke-dasharray="3 3" stroke-opacity=".8"/>`;
+  g += passes.map((d) => `<line x1="${X(d)}" x2="${X(d)}" y1="4" y2="14" stroke="${CHART.hv}" stroke-width="2"/>`).join('');
+  g += c.scenes.map((sc) => { const f = sc.clear_fraction_aoi; return `<circle cx="${X(sc.date)}" cy="${Y(f)}" r="3.2" fill="${f >= good ? '#CED9DF' : '#5d6b62'}"><title>${sc.date}: ${(100 * f).toFixed(1)}% clear</title></circle>`; }).join('');
+  g += [0, 3, 6, 8].map((i) => `<text x="${X(passes[i])}" y="${H - 6}" fill="${CHART.text}" font-size="10" text-anchor="${i === 8 ? 'end' : 'middle'}">${passes[i].slice(5)}</text>`).join('');
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sentinel-2 clear fraction per scene and NISAR pass dates">${g}</svg>`;
+  const s = c.summary && c.summary.aoi;
+  const gaps = passes.slice(1).map((d, i) => (Date.parse(d) - Date.parse(passes[i])) / 864e5);
+  const wrap = mk('div'); wrap.innerHTML = svg; box.append(wrap);
+  box.append(mk('p', `Ticks on top: the 9 NISAR passes, all usable (L-band is not stopped by cloud; longest gap ${Math.max(...gaps)} days). Dots: Sentinel-2 scenes, share of the 60 km box clear in its scene classification; light = at least ${good * 100}% clear.`, 'note'));
+  if (s) box.append(kvList([
+    ['Sentinel-2 scenes, 06-26 to 10-12', `${int(s.n_scenes)}, of which ${int(s.n_ge_80pct_clear)} at least 80% clear`],
+    ['Median clear share per scene', pct(s.median_clear_fraction)],
+    ['Longest gap between clear Sentinel-2 views', `${s.longest_gap_days_between_good_views} days`],
+  ]));
+  box.append(mk('p', 'This window is the dry season and Sentinel-2 saw this area well: optical does not go blind here between June and October. NISAR\'s edge in this window is that every pass is usable with no cloud screening. Cloud builds from September; the wet season (about November to May) was not measured. Scene classification misses haze and small clouds, so clear shares are upper bounds. validation/cloud_blindness.json.', 'note'));
+}
+
+// ---------- full NISAR frame (web/data/explore/frame/, frame.json + layers; scores copied there from validation/frame_metrics.json) ----------
+const FRAME = `${DATA}frame/`;
+function legendRow(el, items) {
+  el.replaceChildren();
+  items.forEach(([col, label]) => { const sw = mk('span', undefined, 'sw'); sw.style.background = col; sw.style.marginLeft = '6px'; el.append(sw, document.createTextNode(label)); });
+}
+async function loadFrame() {
+  const meta = await getJSON(`${FRAME}frame.json`);
+  if (!meta || !Array.isArray(meta.dates) || !Array.isArray(meta.bounds_lonlat_wsen)) return;
+  state.frameMeta = meta;
+  const b = meta.bounds_lonlat_wsen, c = corners(b);
+  state.frame = { id: 'frame', kind: 'frame', name: 'Full NISAR frame, ~60,000 km² (forest map)', dates: meta.dates, bounds_lonlat: b,
+    notes: 'The whole radar frame (track 2, frame 174, ascending), 100 m blocks, the same fixed HV threshold and loss rule as the 60 km map. Only the 9-pass median map is shown at this size. Out-of-sample; agreement with Hansen/GLAD is a reference, not ground truth.' };
+  $('loc').append(new Option(`${state.frame.name} (${meta.dates.length} dates)`, 'frame'));
+  const raster = { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' };
+  map.addSource('flost-img', { type: 'image', url: `${FRAME}${meta.layers.lost}`, coordinates: c });
+  map.addLayer({ id: 'flost-img', type: 'raster', source: 'flost-img', layout: { visibility: 'none' }, paint: raster });
+  map.addSource('ffs-img', { type: 'image', url: `${FRAME}${meta.layers.first_switch}`, coordinates: c });
+  map.addLayer({ id: 'ffs-img', type: 'raster', source: 'ffs-img', layout: { visibility: 'none' }, paint: raster });
+  const outl = { type: 'FeatureCollection', features: Object.entries(meta.outlines || {}).map(([k, g]) => ({ type: 'Feature', properties: { name: k === 'window_20km' ? 'test window' : '60 km map' }, geometry: g })) };
+  map.addSource('fout', { type: 'geojson', data: outl });
+  map.addLayer({ id: 'fout-line', type: 'line', source: 'fout', layout: { visibility: 'none' }, paint: { 'line-color': '#fdd663', 'line-width': 1.4, 'line-dasharray': [3, 2] } });
+  const pts = { type: 'FeatureCollection', features: outl.features.map((f) => { const r = f.geometry.coordinates[0]; return { type: 'Feature', properties: f.properties, geometry: { type: 'Point', coordinates: [Math.min(...r.map((q) => q[0])), Math.max(...r.map((q) => q[1]))] } }; }) };
+  map.addSource('fout-pt', { type: 'geojson', data: pts });
+  map.addLayer({ id: 'fout-label', type: 'symbol', source: 'fout-pt', layout: { visibility: 'none', 'text-field': ['get', 'name'], 'text-size': 11, 'text-anchor': 'bottom-left', 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#091008', 'text-halo-width': 1.5 } });
+  legendRow($('ffs-legend'), (meta.first_switch_legend || []).map((l) => [l.colour, l.date.slice(5)]));
+  renderFrameResults(meta);
+  if ($('card-frame')) { $('thumb-frame').src = `${FRAME}${meta.layers.median}`; $('card-frame').hidden = false; }
+}
+let frameLostLoading = null;
+function loadFrameLost() { // 9 MB of patches: fetched only when the frame is opened
+  if (frameLostLoading) return frameLostLoading;
+  frameLostLoading = (async () => {
+    const gj = await getJSON(`${FRAME}${state.frameMeta.layers.lost_patches}`);
+    if (!gj || !Array.isArray(gj.features)) return;
+    const feats = gj.features.filter((f) => f && f.geometry && f.properties && Number.isInteger(f.properties.id));
+    state.frameLost = { features: feats, byId: new Map(feats.map((f) => [f.properties.id, f])) };
+    map.addSource('flostp', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
+    map.addLayer({ id: 'flost-fill', type: 'fill', source: 'flostp', layout: { visibility: 'none' }, paint: { 'fill-color': '#ff2bd6', 'fill-opacity': 0.01 } });
+    map.addLayer({ id: 'flost-line', type: 'line', source: 'flostp', layout: { visibility: 'none' }, minzoom: 11, paint: { 'line-color': ['match', ['get', 'category'], 'alert_supported', '#fdd663', '#ffb3ef'], 'line-width': 0.8 } });
+    applyVisibility();
+  })();
+  return frameLostLoading;
+}
+function renderFrameResults(meta) {
+  const box = $('frame-results'), sc = meta.scores || {};
+  box.replaceChildren();
+  const fm = (sc.a_forest_map || {}).median || {}, bl = sc.blocks || {}, lr = sc.loss_rule || {}, al = sc.b_alerts || {};
+  const rows = [
+    ['Area scored (60 km map and test window excluded)', `${int(bl.scored)} blocks · ${typeof bl.scored_km2 === 'number' ? Math.round(bl.scored_km2).toLocaleString() : 'n/a'} km²`],
+    ['Forest map (9-pass median) agreeing with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} all-forest baseline`],
+    ['Kappa', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available'],
+    ['Forest: precision / recall', `${pct(fm.forest_precision)} / ${pct(fm.forest_recall)}`],
+    ['Non-forest: precision / recall', `${pct(fm.nonforest_precision)} / ${pct(fm.nonforest_recall)}`],
+    ['Lost blocks (class-switch rule)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
+  ];
+  for (const src of ['GLAD-L', 'GLAD-S2']) {
+    const a = al[src];
+    if (a) rows.push([`Lost blocks with a ${src} alert`, `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control`]);
+  }
+  box.append(kvList(rows));
+  const n = meta.counts || {}, pg = n.patches_in_geojson || {};
+  $('frame-note').textContent = `Map shows ${int(pg.patches)} lost patches of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} alert-supported, ${int(pg.radar_only_unconfirmed)} radar only); smaller patches are in the lost-block image but not clickable. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
 }
 
 // ---------- setup ----------
@@ -584,17 +759,20 @@ async function selectLoc(id) {
   state.i = state.loc.dates.length - 1;
   state.last = null;
   slots.radar.href = slots.chg.href = null;
-  const sp = state.loc.id === 'spara', big = isBig();
-  $('extras').hidden = !sp; $('extras-off').hidden = sp || big; $('big-extras').hidden = !big;
-  $('radar-layers').hidden = big; $('big-layers').hidden = !big; $('big-panel').hidden = !big;
-  state.layer = big ? 'forest' : (['forest', 'median'].includes(state.layer) ? 'hv' : state.layer);
+  const sp = state.loc.id === 'spara', big = isBig(), frame = isFrame(), forest = big || frame;
+  $('extras').hidden = !sp; $('extras-off').hidden = sp || forest; $('big-extras').hidden = !big; $('frame-extras').hidden = !frame;
+  $('radar-layers').hidden = forest; $('big-layers').hidden = !forest; $('big-panel').hidden = !big; $('frame-panel').hidden = !frame;
+  const allowed = forest ? LAYERS_FOR[state.loc.kind] : null;
+  document.querySelectorAll('#big-layers input[name=layer]').forEach((r) => { r.closest('label').hidden = !!allowed && !allowed.includes(r.value); });
+  state.layer = forest ? allowed[0] : (['forest', 'median', 'confidence', 'persistence'].includes(state.layer) ? 'hv' : state.layer);
+  if (frame) loadFrameLost();
   document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; });
   applyVisibility();
-  $('chart').innerHTML = big ? '<div class="hint">Click a red "forest lost" patch on the 60 km map to see its HV series.</div>' : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
+  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} "forest lost" patch to see its HV series.</div>` : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
   drawPasses();
   drawStrip();
-  $('about').textContent = big ? `${state.loc.name}. ${state.loc.notes}` : `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
+  $('about').textContent = forest ? `${state.loc.name}. ${state.loc.notes}` : `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
   const b = state.loc.bounds_lonlat;
   if (map.getSource('boundary')) map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...corners(b), corners(b)[0]]] } });
   fit(state.mode === 'intro' ? 0 : 1100);
@@ -635,6 +813,7 @@ map.on('load', async () => {
     map.addLayer({ id: 'boundary', type: 'line', source: 'boundary', paint: { 'line-color': '#93A889', 'line-opacity': 0.7, 'line-width': 1.2, 'line-dasharray': [4, 3] } });
     story();
     try { await loadBig(); } catch (e) { console.warn('60 km forest map not loaded', e); }
+    try { await loadFrame(); } catch (e) { console.warn('frame forest map not loaded', e); }
     try { await loadExtras(); } catch (e) { ['det', 'ref', 'han'].forEach((k) => pending(k, true)); }
     await selectLoc(first.id);
     ['loc', 'date', 'opacity', 'optical', 'play', 'boundary', 'reset-map'].forEach((id) => { if ($(id)) $(id).disabled = false; });
@@ -658,15 +837,16 @@ $('passes').onkeydown = (e) => {
 $('opacity').oninput = () => setImage(false);
 $('optical').onchange = (e) => map.setLayoutProperty('esri', 'visibility', e.target.checked ? 'visible' : 'none');
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.onchange = () => { state.layer = r.value; setImage(); }));
-['det', 'ref', 'han', 'lost', 'prot', 'win'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
+['det', 'ref', 'han', 'lost', 'prot', 'win', 'fs', 'flost', 'ffs', 'fout'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
 map.on('click', (e) => {
   if (!state.loc) return;
   setMode('exploring');
-  if (isBig()) {
-    if (state.lost && map.getLayer('lost-fill') && $('t-lost').checked) {
+  if (isForestLoc()) {
+    const ls = lostSet(), layer = isFrame() ? 'flost-fill' : 'lost-fill', on = isFrame() ? $('t-flost').checked : $('t-lost').checked;
+    if (ls && map.getLayer(layer) && on) {
       const r = 4;
-      const hits = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: ['lost-fill'] })
-        .map((h) => state.lost.byId.get(h.properties.id)).filter(Boolean);
+      const hits = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: [layer] })
+        .map((h) => ls.byId.get(h.properties.id)).filter(Boolean);
       if (hits.length) { hits.sort((a, b) => b.properties.area_ha - a.properties.area_ha); drawLost(hits[0], e.lngLat); return; }
     }
     drawChart(e.lngLat.lng, e.lngLat.lat);
@@ -703,4 +883,5 @@ $('play').onclick = () => {
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.disabled = true));
 $('boundary').onchange = applyVisibility;
 $('reset-map').onclick = () => fit();
-map.on('error', () => { $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });
+map.on('error', (e) => { if (/abort/i.test(String(e && e.error && (e.error.name + ' ' + e.error.message)))) return; // a newer image replaced this one
+  $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });
