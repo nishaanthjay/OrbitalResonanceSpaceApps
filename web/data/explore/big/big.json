@@ -322,9 +322,27 @@
   }
  },
  "confidence": {
+  "file": "confidence.webp",
   "uncertain_band_db": 0.5,
-  "status": "pending",
-  "note": "needs block HV from data/stack_big_t2f174.nc (run with --stack); +/-0.5 dB is a display choice"
+  "status": "computed",
+  "definition": "9-pass median HV within +/-0.5 dB of T_db = uncertain; otherwise the median map's class",
+  "note": "the +/-0.5 dB band is a display choice, not a tuned or scored value",
+  "colors": {
+   "forest": "#2f6b4f",
+   "non_forest": "#b4401c",
+   "uncertain": "#8a9490"
+  },
+  "scope": "whole 60 km map incl. the original window, native blocks valid on all 9 passes",
+  "blocks": {
+   "forest": 130603,
+   "nonforest": 41362,
+   "uncertain": 27239
+  },
+  "share": {
+   "forest": 0.655624385052509,
+   "nonforest": 0.2076363928435172,
+   "uncertain": 0.13673922210397382
+  }
  },
  "lost_categories": {
   "definition": "alert_supported: at least one block of the patch holds a GLAD-L or GLAD-S2 alert pixel dated 2026-06-26 .. 2026-11-05 (PREREG_scale.md precision window, scale.py matching); radar_only_unconfirmed: none. Radar-only patches are unconfirmed radar change, not deforestation.",
