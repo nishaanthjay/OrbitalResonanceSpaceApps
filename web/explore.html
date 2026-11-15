@@ -3,16 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore real NISAR radar observations of the Amazon forest edge. Compare acquisitions, inspect potential disturbances, and understand the evidence.">
+  <meta name="description" content="NISAR L-band radar sees through cloud. A fixed forest map of the whole Amazon radar frame, radar flags that overlap optical alerts far more often than random forest, and an honest account of what is still unconfirmed.">
   <meta name="theme-color" content="#091008">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OrbitalResonance">
+  <meta property="og:title" content="The Next Frontier: NISAR radar at the Amazon forest edge">
+  <meta property="og:description" content="NISAR L-band radar sees through cloud. A fixed forest map of the whole Amazon radar frame, radar flags that overlap optical alerts far more often than random forest, and an honest account of what is still unconfirmed.">
+  <meta property="og:url" content="https://sars-deforest.vercel.app/">
+  <meta property="og:image" content="https://sars-deforest.vercel.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The NISAR radar forest map over the BR-163 frontier, Par&aacute;, Brazil">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Next Frontier: NISAR radar at the Amazon forest edge">
+  <meta name="twitter:description" content="NISAR L-band radar sees through cloud. A fixed forest map of the whole Amazon radar frame, radar flags that overlap optical alerts far more often than random forest, and an honest account of what is still unconfirmed.">
+  <meta name="twitter:image" content="https://sars-deforest.vercel.app/og.png">
   <title>The Next Frontier · Forest Observatory</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261115-honest-1">
-  <link rel="stylesheet" href="cinema.css?v=20261115-honest-1">
-  <link rel="stylesheet" href="environment.css?v=phase2-4">
+  <link rel="stylesheet" href="observatory.css?v=20261115-final-1">
+  <link rel="stylesheet" href="cinema.css?v=20261115-final-1">
+  <link rel="stylesheet" href="environment.css?v=20261115-final-1">
 </head>
 <body data-environment-registry="data/environment/access-connected.json">
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -70,7 +84,7 @@
     <button class="card" data-go="composite" id="card-radar"><span class="thumb"><img id="thumb-radar" alt=""></span><span><b>Through the clouds</b><small>Radar composite, HH + HV</small></span></button>
     <button class="card" data-go="hvchg" id="card-change"><span class="thumb"><img id="thumb-change" alt=""></span><span><b>What changed</b><small>HV change vs earlier passes</small></span></button>
     <button class="card" data-go="big" id="card-big" hidden><span class="thumb"><img id="thumb-big" alt=""></span><span><b>Forest map, 60 km</b><small>BR-163 frontier at scale</small></span></button>
-    <button class="card" data-go="frame" id="card-frame" hidden><span class="thumb"><img id="thumb-frame" alt=""></span><span><b>Whole radar frame</b><small>~60,000 km&sup2; forest map</small></span></button>
+    <button class="card" data-go="frame" id="card-frame" hidden><span class="thumb"><img id="thumb-frame" alt=""></span><span><b>Whole radar frame</b><small id="card-frame-sub">Forest map, full frame</small></span></button>
     <button class="play" id="play" aria-label="Play through the passes">
       <span class="ico">
         <svg class="ring" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="22"/></svg>
@@ -131,7 +145,7 @@
           <div class="note keyrow" id="han-legend"></div>
         </div>
         <div id="big-extras" hidden>
-          <label class="check"><input type="checkbox" id="t-lost" checked> Flagged forest-to-cleared switches, June to October (unconfirmed)</label>
+          <label class="check"><input type="checkbox" id="t-lost" checked> Flagged forest-to-non-forest switches, June to October (unconfirmed)</label>
           <div class="note keyrow"><span class="sw" style="background:#b4401c"></span> 100 m blocks: forest on &ge; 2 of 06-26/07-08/07-20, non-forest on 09-30 and 10-12. Click a patch for its HV series.</div>
           <label class="check"><input type="checkbox" id="t-fs"> Colour flags by the pass they first switched</label>
           <div class="note keyrow" id="fs-legend"></div>
@@ -142,8 +156,8 @@
           <div class="note keyrow"><span class="sw ref" style="border-style:dashed;border-color:#fdd663"></span> original 20 km window, excluded from scale scores</div>
         </div>
         <div id="frame-extras" hidden>
-          <label class="check"><input type="checkbox" id="t-flost" checked> Flagged forest-to-cleared switches, June to October (unconfirmed)</label>
-          <div class="note keyrow"><span class="sw" style="background:#ff2bd6"></span> 100 m blocks, same rule as the 60 km map. Click a patch (&ge; 3 ha) for its HV series.</div>
+          <label class="check"><input type="checkbox" id="t-flost" checked> Flagged forest-to-non-forest switches, June to October (unconfirmed)</label>
+          <div class="note keyrow"><span class="sw" style="background:#ff2bd6"></span> 100 m blocks, same rule as the 60 km map. Click a patch (&ge; <span id="frame-min-ha">3</span> ha) for its HV series.</div>
           <label class="check"><input type="checkbox" id="t-ffs"> Colour flags by the pass they first switched</label>
           <div class="note keyrow" id="ffs-legend"></div>
           <label class="check"><input type="checkbox" id="t-fout" checked> 60 km map and test window outlines</label>
@@ -279,14 +293,15 @@
 <!-- ================= detection ================= -->
 
 <section id="environment" class="section">
-  <div class="section-head"><div><p class="eyebrow">Environmental evidence</p><h2>Investigate the signal, then the context</h2></div><p>Rainfall, regional soil moisture and thermal anomalies can help investigate radar ambiguity. They do not establish what caused a change. Only retrieved, quality-screened measurements are plotted.</p></div>
+  <div class="section-head"><div><p class="eyebrow">Environmental evidence</p><h2>Investigate the signal, then the context</h2></div><p>Thermal anomalies can help investigate radar ambiguity. They do not establish what caused a change. Only retrieved, quality-screened measurements are plotted.</p></div>
   <div class="env-tools"><label>Context acquisition date<select id="env-date" disabled aria-label="Environmental context date"></select></label><button id="invest-example" disabled type="button">Explore a real disturbance</button><label><input id="env-fire-toggle" type="checkbox" disabled> FIRMS overlay, ±7 days (retrospective)</label></div>
-  <p id="env-load-status" class="note" role="status">The example is the first item in the existing area-ranked watchlist, not a representative validation sample. Rainfall windows use complete UTC days before the selected date.</p>
+  <p id="env-load-status" class="note" role="status">The example is the first item in the existing area-ranked watchlist, not a representative validation sample.</p>
   <div class="env-list">
-    <article class="env-dataset"><p class="eyebrow">Precipitation / IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking dataset</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>3-, 7- and 14-day totals require every daily observation. Gaps remain unavailable. Regional 0.1° rainfall is not a patch measurement.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
-    <article class="env-dataset"><p class="eyebrow">Soil moisture / SMAP</p><h3>Regional moisture context</h3><p id="env-smap-state" class="env-state" role="status">Checking dataset</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is a 9 km modeled assimilation product. NSIDC reports a geolocation issue from May 14 to July 28, 2026; affected dates need verified reprocessing.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
+    <article class="env-dataset" hidden><p class="eyebrow">Precipitation / IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking dataset</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>3-, 7- and 14-day totals require every daily observation. Gaps remain unavailable. Regional 0.1° rainfall is not a patch measurement.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
+    <article class="env-dataset" hidden><p class="eyebrow">Soil moisture / SMAP</p><h3>Regional moisture context</h3><p id="env-smap-state" class="env-state" role="status">Checking dataset</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is a 9 km modeled assimilation product. NSIDC reports a geolocation issue from May 14 to July 28, 2026; affected dates need verified reprocessing.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
     <article class="env-dataset"><p class="eyebrow">Active fire / FIRMS</p><h3>Nearby thermal anomalies</h3><p id="env-fire-state" class="env-state" role="status">Checking dataset</p><p id="env-fire-reason"></p><p>VIIRS anomalies have nominal 375 m footprints. The investigation checks within 5 km of the patch centroid and ±7 days, using acquisition timestamps and original confidence codes. A nearby anomaly does not identify a disturbance as fire-caused.</p><a href="https://firms.modaps.eosdis.nasa.gov/api/area/" target="_blank" rel="noopener">FIRMS access and metadata</a></article>
   </div>
+  <p class="note env-planned">Rainfall (NASA GPM IMERG) and soil moisture (NASA SMAP) context: not retrieved for this submission; planned next step (see <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/web/tools/ENVIRONMENT.md" target="_blank" rel="noopener">web/tools/ENVIRONMENT.md</a>).</p>
   <details class="evidence-policy"><summary>How the evidence categories are assigned</summary><p>Existing class-switch patches marked alert_supported retain the repository's GLAD-L / GLAD-S2 overlap category and pre-registered June 26–November 5 matching window. Other patches remain insufficient evidence for confirmation. No optical interpretation is inferred from regional clear fraction. No wet/dry anomaly is assigned without an independent climatology. No calibrated confidence probability is available.</p><p>New environmental context is limited to the 60 km southern Pará box. Full-frame patches outside that box have unavailable context. Environment processing is separate from the frozen detection and validation rules.</p></details>
 </section>
 <dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Disturbance investigation</h2><button id="invest-close" type="button" aria-label="Close investigation">Close</button></header><div class="invest-body"><section><p class="eyebrow">Evidence assessment</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>Radar evidence</h3><div id="invest-radar" class="invest-series"></div><p>ΔHV is relative to the first exported acquisition, not the detector's multi-date baseline. The original interactive time-series chart remains in the map panel.</p></section><section><h3>Dated Sentinel-2 context</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Environmental context</h3><div id="invest-environment"></div></section></div></dialog>
@@ -351,7 +366,7 @@
     <article class="panel glass reveal">
       <h3>Forest map vs Hansen</h3>
       <div id="val-forest"><span class="tag">pending</span></div>
-      <h3>Flagged forest-to-cleared blocks vs GLAD alerts</h3>
+      <h3>Flagged forest-to-non-forest blocks vs GLAD alerts</h3>
       <p class="note">Share of flagged blocks that overlap a GLAD alert (&plusmn;24 days), against the same number of randomly drawn stable-forest blocks. Enrichment shows the flags are not random; it is not accuracy, and most flags have no alert.</p>
       <div class="table-scroll" id="val-enrich"><span class="tag">pending</span></div>
       <h3 id="results-h">First attempt: 1 dB change detector (20 km window, did not work)</h3>
@@ -384,16 +399,16 @@
 
 <footer>
   <a class="brand" href="#explore" data-go="intro">Next <span>Frontier</span></a>
-  <div><p>NASA Space Apps 2026 · Dancing with the SARs</p><p>Independent challenge project. No NASA endorsement is implied.</p></div>
+  <div><p>OrbitalResonance &middot; NASA Space Apps 2026 &middot; Dancing with the SARs &middot; The Next Frontier</p><p>Independent challenge project; no NASA endorsement implied.</p></div>
   <nav aria-label="Research links"><a href="#sources">Data credits</a><a href="#method">Methodology</a><a href="#impact">Limitations</a></nav>
-  <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps">GitHub repository</a>
+  <nav aria-label="Project links"><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps" target="_blank" rel="noopener">GitHub repository</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md" target="_blank" rel="noopener">Validation results</a></nav>
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=phase2-4"></script>
-<script src="observatory.js?v=20261115-honest-1"></script>
-<script src="cinema.js?v=phase2-4"></script>
-<script src="evidence-core.js?v=phase2-4"></script>
-<script src="environment.js?v=phase2-4"></script>
+<script src="explore.js?v=20261115-final-1"></script>
+<script src="observatory.js?v=20261115-final-1"></script>
+<script src="cinema.js?v=20261115-final-1"></script>
+<script src="evidence-core.js?v=20261115-final-1"></script>
+<script src="environment.js?v=20261115-final-1"></script>
 </body>
 </html>

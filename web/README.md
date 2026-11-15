@@ -54,3 +54,33 @@ npx vercel deploy --prod --yes
 `data/environment/access.json` contains an actual NASA access audit, not environmental measurements: IMERG and SMAP catalog discovery succeeded, but science-file requests returned HTTP 401. No FIRMS key was supplied. Charts and fire controls stay unavailable until quality-screened files are explicitly registered. No sample measurements are shipped. See [tools/ENVIRONMENT.md](tools/ENVIRONMENT.md) for account setup, schemas, quality notices, processing and registration.
 
 The new map hooks are `evidence:selection` and `evidence:map-date`. Tour hooks reveal the investigation only during its evidence step and close it on completion. Existing cinematic features and frozen scientific rules remain in place. Run `node --test web/tools/test_evidence.cjs web/tools/test_environment_ui.cjs` from the repository root, plus `python -m unittest discover -s web/tools -p test_environment_data.py -v`.
+
+## Final QA
+
+Run 2026-11-15 against `npx http-server -p 8000` in `web/`, headless Chrome (Playwright), desktop 1366x820, mobile 375x812 (touch), and desktop with `prefers-reduced-motion: reduce`. A check is PASS only if it ran without a timeout, a console error, a page error or a failed request (cancelled map-tile requests, `ERR_ABORTED`, are not counted).
+
+| Check | Desktop | Mobile | Reduced motion |
+|---|---|---|---|
+| Globe intro plays, "Skip intro" works | PASS | PASS | PASS (intro is not played, hero shows at once) |
+| Hero, then headline strip, in that order; hero text contrast 6.1:1 | PASS | PASS | PASS |
+| "Explore the radar" opens the controls; "Replay intro" (brand link) returns to the intro; Tour starts and stops | PASS | PASS | PASS |
+| All 4 locations open (S Para, Rondonia, 60 km, full frame) | PASS | PASS | PASS |
+| Every visible layer toggle flips on and off, on each location | PASS | PASS | PASS |
+| Date slider on each location | PASS | PASS | PASS |
+| Play passes | PASS | PASS (in the hero strip; while exploring on a phone the strip is hidden by design and the top tick rail picks the pass, tapped: PASS) | PASS |
+| Click a detection (20 km), a flagged patch (60 km and full frame), empty map | PASS | PASS | PASS |
+| Frontier clock play | PASS | PASS | PASS |
+| Optical vs radar for 07-08, 08-13, 10-12 (same size and position as the radar map) and the swipe | PASS | PASS | PASS |
+| Threat board fly-to; compare swipe | PASS | PASS | PASS |
+| Environment: FIRMS overlay toggle; rainfall and soil-moisture panels hidden, one "not retrieved" line shown; no "pending" or HTTP text | PASS | PASS | PASS |
+| Downloads: watchlist GeoJSON, watchlist CSV, data report | PASS | PASS | PASS |
+| No horizontal overflow | PASS | PASS | PASS |
+| No console errors, no failed requests (favicon 404 is gone) | PASS | PASS | PASS |
+| Every image has alt text; every external link has `rel="noopener"`; favicon and `og.png` are served | PASS | PASS | PASS |
+| No visible "pending" tag where the data exists | PASS | PASS | PASS |
+
+Not tested: a real phone, Safari, Firefox, or the deployed site (this pass is local only). The globe intro and 3D view need WebGL, run here on a software renderer, so frame rate was not judged.
+
+First-load transfer (12 s after load, desktop, uncompressed local server, so Vercel will send less): local files 20,701 KB before this pass, 17,890 KB after (about 2.8 MB less); external (basemap, fonts, library) about 1.2 to 1.3 MB either way. `environment/firms.geojson` (1.2 MB) now loads only when the Evidence section is near the viewport or an investigation opens; `reference_alerts.geojson` (1.6 MB) loads the first time the GLAD-L toggle is switched on; the full-frame `lost.geojson` (9 MB) was already loaded only when the full frame is opened. Still loaded at start: `spara/series.bin` (1.8 MB), the 60 km `lost.geojson` (1.8 MB, used by the threat board and watchlist) and the 9 radar composites (about 4.5 MB).
+
+Left as it was (listed, not changed): the hero line "Clouds hide the Amazon from optical satellites for much of the rainy season" is a general statement, not measured here (the page itself says the wet season was not tested); method constants written in the page text (+/-24 days, 5 km and +/-7 days for FIRMS, 375 m VIIRS footprint, the 0.5 dB confidence band, the rule "forest on 2 of the first 3 passes and non-forest on the last 2", "20 largest patches") are not read from a data file; "2082 events of any size" comes from the text in `metrics.json` and is printed without a thousands separator; the hand-check line is still marked HUMAN-RELABEL because no `validation/labels_human*.csv` exists.
