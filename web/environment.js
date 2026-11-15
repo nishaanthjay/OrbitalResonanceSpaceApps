@@ -3,6 +3,12 @@
 (() => {
   const E=EvidenceCore, id=s=>document.getElementById(s), node=(t,text,cls)=>{const n=document.createElement(t);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
   const fetchJSON=async p=>{try{const r=await fetch(p);return r.ok?await r.json():null;}catch{return null;}};
+  let firePromise=null;
+  function ensureFire(){ // firms.geojson (1.2 MB) is fetched only when the section is near the viewport or an investigation opens
+    if(firePromise)return firePromise;
+    firePromise=(async()=>{const f=data.access?.datasets?.firms?.file==='firms.geojson'?await fetchJSON('data/environment/firms.geojson'):null;data.fire=E.validFire(f);data.fireTried=true;renderEnvironment();})();
+    return firePromise;
+  }
   const configuredRegistry=document.body?.dataset?.environmentRegistry;
   const registry=/^data\/environment\/[\w.-]+\.json$/.test(configuredRegistry||'')?configuredRegistry:'data/environment/access.json';
   const data={access:null,imerg:null,smap:null,fire:null,optical:null,big:null}, dates=[];
@@ -24,7 +30,7 @@
     timeline(id('env-imerg-chart'),data.imerg?.observations,'mm/day');timeline(id('env-smap-chart'),data.smap?.observations.filter(r=>data.smap.provenance.geolocation_reprocessing_verified===true||r.date<'2026-05-14'||r.date>'2026-07-28'),'m³/m³');
     const rain=id('env-rain-detail');rain.replaceChildren();if(data.imerg){facts(rain,[3,7,14].map(n=>{const r=E.rain(data.imerg.observations,date,n);return [`Previous ${n} complete UTC days`,r.value===null?`Not available (${r.complete_days}/${n} days present)`:`${nf(r.value)} mm`];}));}
     const sm=data.smap&&E.smapAt(data.smap,date);id('env-soil-detail').textContent=sm?`${nf(sm.value)} m³/m³ on ${sm.date}, nearest daily regional value within ±3 days. A 9 km modeled product, not local patch moisture.`:'No accepted soil-moisture observation matched within ±3 days. Dates affected by the May–July geolocation issue are withheld unless reprocessing is documented.';
-    id('env-fire-state').textContent=data.fire?'Available, complete downloaded date coverage':data.access?.datasets?.firms?.status_label||'Not available';id('env-fire-reason').textContent=data.fire?`${data.fire.features.length} observations in the downloaded region and period. ${data.fire.provenance?.processing_note||''} Confidence is the provider code, not a clearing probability.`:data.access?.datasets?.firms?.reason||'No validated historical FIRMS observations are installed.';
+    id('env-fire-state').textContent=data.fire?'Available, complete downloaded date coverage':!data.fireTried?'Checking dataset':data.access?.datasets?.firms?.status_label||'Not available';id('env-fire-reason').textContent=data.fire?`${data.fire.features.length.toLocaleString('en-US')} VIIRS detections in the downloaded region and period. ${data.fire.provenance?.processing_note||''} Confidence is the provider code, not a clearing probability.`:!data.fireTried?'':data.access?.datasets?.firms?.reason||'No validated historical FIRMS observations are installed.';
     id('env-fire-toggle').disabled=!data.fire;updateFireMap();if(selected)renderInvestigation(false);
   }
   function updateFireMap(){
@@ -52,14 +58,14 @@
     const details=node('details'),summary=node('summary','HH/HV values and changes from the first available acquisition'),table=node('table'),head=node('tr');['NISAR date','HH dB','HV dB','ΔHV dB'].forEach(t=>head.append(node('th',t)));table.append(head);const hv=p.hv_series_db,hh=p.hh_series_db;ds.forEach((date,i)=>{const tr=node('tr'),v=hv?.[i],base=hv?.[0];[date,nf(hh?.[i]),nf(v),nf(Number.isFinite(v)&&Number.isFinite(base)?v-base:null)].forEach(v=>tr.append(node('td',String(v))));table.append(tr);});details.append(summary,table);radar.append(details);
     if(images){const box=id('invest-optical');box.replaceChildren();const token=++opticalVersion,pair=E.opticalPair(data.optical,...point,first);box.append(opticalFigure(pair.before,'Before',point,f,token),opticalFigure(pair.after,'After',point,f,token));id('invest-optical-note').textContent='Nearest available scene strictly before / on-or-after the first-change date, within 30 days. Crop: 3.2 km square on the exported EPSG:3857 grid; imagery is resampled to about 100 m. White outline: radar patch. No cloud masking or patch-level visual label exists. Optical support: unassessed; an independent reviewer must examine the dates and local clouds.';}
     const env=id('invest-environment');env.replaceChildren();env.append(node('p',`Context date: ${d}. Environmental correlations do not establish causes.`));
-    if(data.imerg&&E.covered(...point,data.imerg.bbox_wsen)){facts(env,[3,7,14].map(n=>{const r=E.rain(data.imerg.observations,d,n);return [`Rainfall, previous ${n} UTC days`,r.value===null?'Not available: incomplete window':`${nf(r.value)} mm (regional)`];}));}else env.append(node('p','Rainfall: not available for this patch and date.'));
-    const sm=data.smap&&E.covered(...point,data.smap.bbox_wsen)&&E.smapAt(data.smap,d);env.append(node('p',sm?`Regional SMAP: ${nf(sm.value)} m³/m³ on ${sm.date}. Not a patch measurement.`:'SMAP: no accepted regional match.'));
+    if(data.imerg&&E.covered(...point,data.imerg.bbox_wsen)){facts(env,[3,7,14].map(n=>{const r=E.rain(data.imerg.observations,d,n);return [`Rainfall, previous ${n} UTC days`,r.value===null?'Not available: incomplete window':`${nf(r.value)} mm (regional)`];}));}
+    if(data.smap){const sm=E.covered(...point,data.smap.bbox_wsen)&&E.smapAt(data.smap,d);env.append(node('p',sm?`Regional SMAP: ${nf(sm.value)} m³/m³ on ${sm.date}. Not a patch measurement.`:'SMAP: no accepted regional match.'));}
     const near=E.firesNear(data.fire,point,d);env.append(node('p',near===null?'FIRMS proximity: unavailable or incomplete ±7-day coverage.':`${near.length} thermal anomalies within 5 km of the patch centroid and ±7 days (retrospective search). Proximity does not imply causation.`));
     if(near?.length){const list=node('ul',undefined,'fire-meta');near.forEach(o=>{const q=o.feature.properties;list.append(node('li',`${q.acquired_at_utc} · ${nf(o.distance_km)} km from centroid · confidence ${q.confidence} · ${q.instrument||'VIIRS'} · FRP ${nf(q.frp_mw)} MW`));});env.append(list);}
     env.append(node('p','Wet/dry anomaly: not assessed. No long-term rainfall or soil-moisture climatology is installed. Moisture remains a possible confounder, not an assigned cause.'));
   }
   function select(event){
-    const s=event.detail;if(!s?.feature?.properties)return;selected=s;
+    const s=event.detail;if(!s?.feature?.properties)return;selected=s;if(ready)ensureFire();
     if(document.body?.classList?.contains('touring')&&!s.allowTour)return;
     const d=s.feature.properties.first_switch_date||s.feature.properties.first_date||s.feature.properties.first_flagged;if(dates.includes(d))id('env-date').value=d;renderEnvironment();renderInvestigation(true);lastFocus=document.activeElement;if(!dialog.open)dialog.show();id('invest-title').focus({preventScroll:true});
   }
@@ -75,7 +81,7 @@
   id('invest-example').onclick=async()=>{if(!ready||typeof state==='undefined'||!state.bigMeta)return;const item=state.bigMeta.watch_priorities?.items?.[0];if(!item)return;id('invest-example').disabled=true;try{document.getElementById('explore').scrollIntoView({behavior:'instant'});await openLost(item.id);}finally{id('invest-example').disabled=false;}};
   Promise.all([registry,'data/explore/optical/optical.json','data/explore/big/big.json'].map(fetchJSON)).then(async([access,optical,big])=>{
     const load=(key,file)=>access?.datasets?.[key]?.file===file?fetchJSON('data/environment/'+file):Promise.resolve(null);
-    const [rain,soil,fire]=await Promise.all([load('imerg','imerg.json'),load('smap','smap.json'),load('firms','firms.geojson')]);
-    data.access=access;data.imerg=E.validSeries(rain,'imerg');data.smap=E.validSeries(soil,'smap');data.fire=E.validFire(fire);data.optical=E.validOptical(optical);data.big=big;dates.push(...(big?.dates||[]));id('env-date').replaceChildren(...dates.map(d=>new Option(d,d)));id('env-date').disabled=!dates.length;if(dates.length)id('env-date').value=dates.at(-1);ready=true;renderEnvironment();if(selected)renderInvestigation(true);if(typeof state!=='undefined')id('invest-example').disabled=!state.bigMeta?.watch_priorities?.items?.length;
+    const [rain,soil]=await Promise.all([load('imerg','imerg.json'),load('smap','smap.json')]);
+    data.access=access;data.imerg=E.validSeries(rain,'imerg');data.smap=E.validSeries(soil,'smap');data.optical=E.validOptical(optical);data.big=big;dates.push(...(big?.dates||[]));id('env-date').replaceChildren(...dates.map(d=>new Option(d,d)));id('env-date').disabled=!dates.length;if(dates.length)id('env-date').value=dates.at(-1);ready=true;renderEnvironment();if('IntersectionObserver' in window){new IntersectionObserver((e,o)=>{if(e.some(x=>x.isIntersecting)){ensureFire();o.disconnect();}},{rootMargin:'600px'}).observe(id('environment'));}else ensureFire();if(selected)renderInvestigation(true);if(typeof state!=='undefined')id('invest-example').disabled=!state.bigMeta?.watch_priorities?.items?.length;
   }).catch(()=>{id('env-load-status').textContent='Environmental evidence could not initialize. Radar and optical exploration remain available.';});
 })();

@@ -22,3 +22,6 @@
 @media(max-width:900px){.env-list{grid-template-columns:1fr}.env-dataset{padding:18px 0}.env-tools{align-items:start}.invest-head{padding:16px}.invest-body{padding:0 16px 20px}#investigation{top:75px;max-height:calc(100dvh - 90px)}}
 @media(max-width:420px){.invest-optical{grid-template-columns:1fr}.invest-body dl{grid-template-columns:1fr}.invest-body dd{margin-bottom:7px}}
 @media(prefers-reduced-motion:reduce){#investigation *{animation:none!important;transition:none!important}}
+
+.env-dataset[hidden]{display:none}
+.env-planned{margin:.8rem 0 0}
