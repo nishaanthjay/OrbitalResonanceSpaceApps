@@ -134,7 +134,7 @@ function drawStrip() {
 function padding() {
   const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight, mob = W <= 900;
   return mob ? { top: 110, left: 16, right: 16, bottom: Math.round(H * (state.mode === 'intro' ? 0.5 : 0.58)) }
-    : { top: 80, right: 60, bottom: 150, left: state.mode === 'intro' ? Math.round(W * 0.22) : 76 + 372 + 40 };
+    : { top: 80, right: 60, bottom: 150, left: state.mode === 'intro' ? Math.round(W * 0.16) : 76 + 372 + 40 };
 }
 function fit(duration = 1300) {
   if (!state.loc) return;
@@ -142,7 +142,7 @@ function fit(duration = 1300) {
   const cam = map.cameraForBounds([[b[0], b[1]], [b[2], b[3]]], { padding: padding() });
   if (!cam) return;
   // intro on a wide screen: zoom past the fit so the radar bleeds off the right edge like a photograph
-  map.easeTo({ ...cam, zoom: cam.zoom + (state.mode === 'intro' && !mob && !isBig() ? 1 : 0), duration: reduced ? 0 : duration, easing: easeInOut });
+  map.easeTo({ ...cam, zoom: cam.zoom + (state.mode === 'intro' && !mob && !isBig() ? 1.15 : 0), duration: reduced ? 0 : duration, easing: easeInOut });
 }
 function focusBounds(b) { // b = W S E N of a patch: zoom to it, clear of the panel
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: padding(), maxZoom: 15, duration: reduced ? 0 : 1100, easing: easeInOut });
@@ -151,12 +151,13 @@ function focusBounds(b) { // b = W S E N of a patch: zoom to it, clear of the pa
 const HANDLERS = ['scrollZoom', 'dragPan', 'dragRotate', 'touchZoomRotate', 'doubleClickZoom', 'keyboard', 'boxZoom'];
 function setInteractive(on) { HANDLERS.forEach((h) => map[h][on ? 'enable' : 'disable']()); }
 setInteractive(false);
+map.getCanvas().style.cursor = 'pointer';
 
 function setMode(mode) {
   if (state.mode === mode) return;
   state.mode = mode;
   document.body.classList.toggle('exploring', mode === 'exploring');
-  map.getCanvas().style.cursor = mode === 'exploring' ? 'crosshair' : '';
+  map.getCanvas().style.cursor = mode === 'exploring' ? 'crosshair' : 'pointer'; // intro: a click opens the explorer
   setInteractive(mode === 'exploring');
   if (!state.loc) return;
   applyVisibility();
