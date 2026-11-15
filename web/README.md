@@ -13,7 +13,9 @@ cd web && npx http-server -p 8000   # open http://localhost:8000/explore.html (f
   - `detections.geojson`: 157 patches (id, first_date, stage early/late, area_ha, split, hh_series_db, hv_series_db). Drawn from their `first_date` on, coloured by stage. Clicking one draws its 9-value HH/HV series (full precision, 5x5 multilook patch means) with the title "Detection <id>: <area_ha> ha, first seen <first_date>, <split> half" (`buffer` reads "buffer strip"); a detection click takes priority over the plain map click, which keeps the `series.bin` chart.
   - `reference_alerts.geojson`: GLAD-L event outlines, drawn from their `date` on.
   - `explore/spara/hansen_loss.webp` + `hansen_loss.json`: Hansen loss 2021 to 2025 as an image on the radar image's corners (same grid), legend colours from the json.
-  - `metrics.json`: Results panel. Agreement is shown only if `agreement.split === "holdout"`, under the fixed caption "Agreement with GLAD-L alerts on the held-out south half: a reference, not ground truth." Shows precision_like, recall_like, n_detections, n_reference; `hand_labeled: null` shows "Hand-checked precision: pending". Missing or non-numeric fields are listed by name; a `reference_source` other than GLAD-L is flagged.
+  - `metrics.json`: the failed first attempt (1 dB detector) in the Validation section (`#results`, rendered by `observatory.js`): agreement shown only if `agreement.split === "holdout"` (counts = precision_like x n_detections, recall_like x n_reference). The hand-check line (`#hand-check`, marked `HUMAN-RELABEL` in `explore.html`) is computed from `hand_labeled`: usable = n_sample - n_unsure, cleared = precision x usable; it names the AI labeller until an independent human re-label replaces it.
+  - `explore/headline.json`: numbers that exist only in `validation/` (20 km holdout and Rondonia forest-map counts from `fnf_metrics.json`, `T_db`, tune blocks, the 92.5 % GLAD-L-on-prior-clearing row and detector diagnostics from `results_final.md`), each with its source file and field path. Never hand-type numbers into the HTML; add them here with their source.
+  - Headline facts band (`#facts`), "The forest map at three scales" (`#scales`), validation tables (`#val-forest`, `#val-enrich`), limitations and the story (`#story`) are rendered by `observatory.js` from `headline.json`, `big/big.json`, `frame/frame.json`, `big/cloud.json` and `metrics.json` at load, independent of the map's `load` event. Non-forest precision / recall = tn/(tn+fn), tn/(tn+fp) from the confusion counts.
 - If a file fails to load, only that item shows "pending" (its checkbox is disabled); everything else keeps working. File text is rendered as plain text, never HTML.
 - Not read by the page: `summary.json`, `locations.json`, and the COGs in `data/<id>/`.
 
@@ -33,6 +35,8 @@ Presentation only, on top of `explore.js` (it uses its globals; `explore.js` exp
 - **Threat board** (`#threats`): the FUNAI areas from `big/big_protected.json`, ranked by lost hectares, with the outside-all-areas rate for comparison. Also the 20 `watch_priorities` from `big.json`, each with a 3.2 km mini time-lapse cut from the per-pass forest maps (patch outlined) and fly-to.
 - **Tour** (header button): about 60 s through the above for the screen recording. Captions take their numbers from the data files. Stop with the button or Esc.
 - Location switcher: the panel's location menu and the hero cards list S Para 20 km, the 60 km map and the full frame. Each appears only when its files load.
+
+- **Optical vs radar** (`#optical-radar`): if `explore/optical/optical.json` is missing (it is today; the 404 on that probe is expected), the Sentinel-2 image half and the two-satellite framing are hidden and only the cloud timeline shows, titled "Cloud over the same 60 km, June to October".
 
 ## Deploying
 ```bash
