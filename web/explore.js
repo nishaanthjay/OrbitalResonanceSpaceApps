@@ -80,6 +80,7 @@ function setText(el, text) { // a small roll when a label changes
 const LAYER_NAME = { hv: 'HV', hh: 'HH', composite: 'HH + HV', hvchg: 'HV change', hhchg: 'HH change', forest: 'forest map', median: 'forest map', confidence: 'confidence map', persistence: 'forest persistence map' };
 const STATIC_LABEL = { median: '9-pass median', confidence: 'confidence (9-pass median)', persistence: 'passes seen as forest' };
 function setImage(redraw = true) {
+  if (state.loc) document.dispatchEvent(new CustomEvent('evidence:map-date',{detail:{date:state.loc.dates[state.i]}}));
   const loc = state.loc, op = +$('opacity').value / 100, date = loc.dates[state.i];
   if (isForestLoc()) {
     show('radar', url(state.layer, state.i), op);
@@ -309,6 +310,7 @@ function drawChart(lon, lat, fresh = true) {
 // A clicked detection: the series are patch means of the 5x5-multilooked full-precision stack (detections.geojson).
 const SPLIT_NAME = { tune: 'tune half', holdout: 'holdout half', buffer: 'buffer strip' };
 function drawDetection(f, lngLat, fresh = true) {
+  if (fresh) document.dispatchEvent(new CustomEvent('evidence:selection',{detail:{feature:f,kind:'det',point:[lngLat.lng,lngLat.lat],dates:state.loc.dates}}));
   state.last = { kind: 'det', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates;
   const title = `Detection ${esc(p.id)}: ${esc(p.area_ha)} ha, first seen ${esc(p.first_date)}, ${esc(SPLIT_NAME[p.split] || p.split)}`;
@@ -324,6 +326,7 @@ function drawDetection(f, lngLat, fresh = true) {
 }
 // A clicked lost patch on the 60 km map: patch-mean HV from the stack (lost.geojson hv_series_db) vs the fixed threshold.
 function drawLost(f, lngLat, fresh = true) {
+  if (fresh) document.dispatchEvent(new CustomEvent('evidence:selection',{detail:{feature:f,kind:'lost',point:[lngLat.lng,lngLat.lat],dates:state.loc.dates}}));
   state.last = { kind: 'lost', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates, T = (isFrame() ? state.frameMeta : state.bigMeta).T_db;
   const cat = { alert_supported: 'alert-supported (a GLAD alert in the patch)', radar_only_unconfirmed: 'radar only, unconfirmed' }[p.category];

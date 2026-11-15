@@ -302,8 +302,9 @@
     const o = optFor(d), cmp = $('ovr');
     const ns = nearestScene(d), gapDays = ns ? Math.round(Math.abs(Date.parse(ns.date) - Date.parse(d)) / DAY) : null;
     if (o && o.file) {
+      $('ovr-optical').onerror = () => { cmp.classList.add('no-opt'); $('ovr-status').hidden = false; $('ovr-status').textContent = 'Sentinel-2 image failed to load. Choose another acquisition.'; };
       $('ovr-optical').src = `${OPT}${o.file}`;
-      $('ovr-opt-label').textContent = `${o.date || ''}${Number.isFinite(o.cloud_pct) ? ` · ${o.cloud_pct.toFixed(0)}% cloud` : ''}`;
+      $('ovr-opt-label').textContent = `${o.date || ''}${Number.isFinite(o.clear_fraction) ? ` · ${(100*o.clear_fraction).toFixed(1)}% of box clear` : Number.isFinite(o.cloud_pct) ? ` · ${o.cloud_pct.toFixed(0)}% cloud` : ''}`;
       cmp.classList.remove('no-opt');
       $('ovr-status').hidden = true;
     } else {
@@ -469,48 +470,52 @@
     $('tour').hidden = false;
     const steps = [
       async () => {
-        caption('NISAR, the NASA-ISRO L-band radar, maps this Amazon frontier every 12 days, cloud or not.', 1, 8);
+        caption('NISAR L-band radar observations of this Amazon frontier: nine exported passes, with a 24-day maximum gap. Cloud does not obscure the radar signal.', 1, 9);
         toTop(); setMode('intro'); set3D(false, 0);
         if (!reduced) { map.jumpTo(START()); spin(); await flyIn(); } else await wait(4000, tok);
         await wait(1200, tok);
       },
       async () => {
-        caption('The 20 km test window, radar composite: 9 passes from June to October 2026.', 2, 8);
+        caption('The 20 km test window, radar composite: 9 passes from June to October 2026.', 2, 9);
         await go('composite'); await wait(1200, tok); playPasses(true); await wait(6500, tok); playPasses(false);
       },
       async () => {
         if (!meta) return;
-        caption(`60 km, out of sample: one fixed threshold. The forest map agrees with Hansen on ${pct(fm && fm.oa)} of blocks, against ${pct(fm && fm.all_forest_baseline)} for "all forest". A reference, not ground truth.`, 3, 8);
+        caption(`60 km, out of sample: one fixed threshold. The forest map agrees with Hansen on ${pct(fm && fm.oa)} of blocks, against ${pct(fm && fm.all_forest_baseline)} for "all forest". A reference, not ground truth.`, 3, 9);
         await go('big'); state.layer = 'forest';
         document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === 'forest'; });
         setImage(); await wait(1400, tok); playPasses(true); await wait(6500, tok); playPasses(false);
       },
       async () => {
         if (!meta) return;
-        caption('Blocks flagged as switching from forest to non-forest rise as columns: height is patch area, colour is the pass they first switched. Unconfirmed radar change.', 4, 8);
+        caption('Blocks flagged as switching from forest to non-forest rise as columns: height is patch area, colour is the pass they first switched. Unconfirmed radar change.', 4, 9);
         set3D(true, 2000); await wait(2200, tok);
         if (!reduced) map.easeTo({ bearing: map.getBearing() + 70, duration: 6500, easing: (t) => t });
         await wait(6800, tok); set3D(false, 1200); await wait(1300, tok);
       },
       async () => {
         if (!top) return;
-        caption(`Place to check first: ${top.area_ha} ha, ${top.category === 'alert_supported' ? 'with a GLAD alert' : 'radar only, unconfirmed'}, non-forest from ${top.first_switch_date}. A flag to check, not confirmed clearing.`, 5, 8);
+        caption(`Place to check first: ${top.area_ha} ha, ${top.category === 'alert_supported' ? 'with a GLAD alert' : 'radar only, unconfirmed'}, non-forest from ${top.first_switch_date}. A flag to check, not confirmed clearing.`, 5, 9);
         await openLost(top.id); await wait(7000, tok);
       },
       async () => {
         if (!fr) return;
         const f = fr.scores && fr.scores.a_forest_map && fr.scores.a_forest_map.median, km = fr.scores && fr.scores.blocks && fr.scores.blocks.scored_km2;
-        caption(`The whole radar frame: ${km ? `${Math.round(km).toLocaleString()} km²` : 'scored area'} scored once, ${pct(f && f.oa)} agreement with Hansen against ${pct(f && f.all_forest_baseline)} for "all forest".`, 6, 8);
+        caption(`The whole radar frame: ${km ? `${Math.round(km).toLocaleString()} km²` : 'scored area'} scored once, ${pct(f && f.oa)} agreement with Hansen against ${pct(f && f.all_forest_baseline)} for "all forest".`, 6, 9);
         await go('frame'); await wait(7000, tok);
       },
       async () => {
-        caption('The frontier clock: the 60 km forest map redrawn from each pass, with its forest share.', 7, 8);
+        caption('The frontier clock: the 60 km forest map redrawn from each pass, with its forest share.', 7, 9);
         setMode('intro'); await wait(300, tok); scrollToId('frontier'); await wait(1200, tok);
         clockStop(); clockShow(0); clockPlay(); await wait(7200, tok); clockStop();
       },
       async () => {
-        caption('Where to look first: flagged blocks inside Indigenous lands and the largest flagged patches, pass by pass. It does not stop deforestation; it shows where to check.', 8, 8);
+        caption('Where to look first: flagged blocks inside Indigenous lands and the largest flagged patches, pass by pass. It does not stop deforestation; it shows where to check.', 8, 9);
         scrollToId('threats'); await wait(8000, tok);
+      },
+      async () => {
+        caption('Investigate evidence before assigning a cause: dated optical context, alert agreement, and explicit rainfall, soil moisture and fire availability. Regional context is not patch-level confirmation.', 9, 9);
+        scrollToId('environment'); document.dispatchEvent(new Event('evidence:tour')); await wait(7500, tok);
       },
     ];
     try {
@@ -526,6 +531,7 @@
     playPasses(false); clockStop();
     if (three.on) set3D(false, 600);
     body.classList.remove('touring');
+    document.dispatchEvent(new Event('evidence:tour-end'));
     $('tour-btn').setAttribute('aria-pressed', 'false');
     $('tour').hidden = true;
     if (finished) { toTop(); setMode('intro'); }
