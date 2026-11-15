@@ -1,4 +1,6 @@
-# web — Front end (Pro #2)
+# Amazon Forest Watch: The Next Frontier (web front end, Pro #2)
+
+Amazon Forest Watch is a web map that shows the Amazon forest as seen by the NISAR radar satellite, which sees through clouds. It marks possible clearings to check (not confirmed) and compares them with other forest maps and alerts. All visitor-facing text follows the plain-language rules and glossary in [`tools/PLAIN_LANGUAGE.md`](tools/PLAIN_LANGUAGE.md) (tooltips and the Glossary drawer: `glossary.js`, `glossary.css`).
 
 **Owner:** Front end. One page: `explore.html` + `explore.js` (the radar explorer). Static site, no build step.
 **Live site:** https://sars-deforest.vercel.app (Vercel Hobby; `vercel.json` serves `explore.html` at `/`). Deployed from this folder by `vercel deploy --prod`; Git auto-deploy is disconnected, so a push does not update the site.
