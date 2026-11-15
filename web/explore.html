@@ -71,7 +71,7 @@
   <div class="hero">
     <p class="eyebrow" id="place">Novo Progresso, Par&aacute; &middot; BR-163</p>
     <h1><span class="ln"><span>The Next</span></span><span class="ln"><span>Frontier.</span></span></h1>
-    <p class="lede">Clouds hide the Amazon from optical satellites for much of the rainy season. NISAR's L-band radar sees through them. Behind this text: <em id="hero-what">its HV image</em>, the forest bright and cleared land dark. An honest test of what it can and cannot catch.</p>
+    <p class="lede">For much of the rainy season, optical satellites can't see the Amazon through the clouds. NISAR's L-band radar can. The image behind this text is <em id="hero-what">its HV image</em>: forest shows up bright and cleared land dark. We tested what it catches and what it misses, and we report both.</p>
     <div class="actions">
       <button class="cta" data-go="explore">Explore the radar
         <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
@@ -167,12 +167,12 @@
 
       <section>
         <h2><span class="n">3</span>What happened here</h2>
-        <div id="chart"><div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div></div>
+        <div id="chart"><div class="hint">Click anywhere on the map to see HH and HV at that spot on every date, with stable forest next to it.</div></div>
       </section>
 
       <section id="big-panel" hidden>
         <h2>BR-163 frontier, 60 km <span class="tag">out-of-sample</span></h2>
-        <p class="note" id="big-caption">Threshold fixed on a 10 km strip, tested here unchanged. Agreement with Hansen/GLAD, a reference, not ground truth.</p>
+        <p class="note" id="big-caption">We set the threshold on a 10 km strip and used it here without changing it. Hansen and GLAD are a reference to compare against, not ground truth.</p>
         <div id="big-results"><span class="tag">pending</span></div>
         <h3>Flagged blocks inside protected areas and Indigenous lands</h3>
         <div id="big-protected"><span class="tag">pending</span></div>
@@ -190,7 +190,7 @@
       </section>
       <section id="frame-panel" hidden>
         <h2>Full NISAR frame <span class="tag">out-of-sample</span></h2>
-        <p class="note">The same fixed threshold and class-switch rule over the whole radar frame (track 2, frame 174), scored once against Hansen and GLAD, rules pre-registered in validation/PREREG_frame.md. A reference, not ground truth.</p>
+        <p class="note">Same fixed threshold and class-switch rule, run on the whole radar frame (track 2, frame 174). We wrote the rules down first in validation/PREREG_frame.md and scored it once against Hansen and GLAD. Those are a reference, not ground truth.</p>
         <div id="frame-results"><span class="tag">pending</span></div>
         <p class="note" id="frame-note"></p>
       </section>
@@ -210,7 +210,7 @@
 
 <!-- ================= frontier clock ================= -->
 <section id="frontier" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">02 / Frontier clock</p><h2>Nine passes over one forest edge</h2></div><p>The 60 km forest map, redrawn from each NISAR pass with one fixed HV threshold, nothing tuned per pass. Green is forest, rust is non-forest; transparent is outside the swath on that pass.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">02 / Frontier clock</p><h2>Nine passes over one forest edge</h2></div><p>This is the 60 km forest map, redrawn for each NISAR pass with the same HV threshold every time. Nothing is tuned per pass. Green is forest and rust is non-forest. Transparent means the swath didn't cover that spot on that pass.</p></div>
   <div class="clock reveal">
     <div class="clock-stage">
       <div class="clock-imgs" id="clock-imgs"></div>
@@ -231,7 +231,7 @@
 
 <!-- ================= optical vs radar ================= -->
 <section id="optical-radar" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">03 / Optical vs radar</p><h2>Same forest, nearby acquisition dates</h2></div><p>Sentinel-2 sees colour but not through cloud; NISAR's L-band sees forest structure through it. Pick a pass to set the Sentinel-2 scene nearest in time beside the radar forest map.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">03 / Optical vs radar</p><h2>Same forest, nearby acquisition dates</h2></div><p>Sentinel-2 sees colour, but cloud blocks it. NISAR's L-band sees forest structure through the cloud. Pick a pass and the closest Sentinel-2 scene in time shows up next to the radar forest map.</p></div>
   <div class="compare-layout reveal">
     <div id="ovr" class="comparison no-opt" style="--split:50%">
       <div class="compare-image after-image"><img id="ovr-radar" alt="NISAR forest map for the selected pass"></div>
@@ -254,18 +254,18 @@
 
 <!-- ================= threat board ================= -->
 <section id="threats" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">04 / Threat board</p><h2>Where to look first</h2></div><p>Flagged blocks inside Indigenous lands, and the 20 largest flagged patches on the 60 km map with their pass-by-pass history. Radar flags to check, not confirmed clearing; some are likely seasonal drying.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">04 / Threat board</p><h2>Where to look first</h2></div><p>Here are the flagged blocks inside Indigenous lands, plus the 20 biggest flagged patches on the 60 km map and how each one looked pass by pass. These are radar flags to go check. None of them is confirmed clearing, and some are probably just the forest drying out for the season.</p></div>
   <div class="threat-grid">
     <article class="panel glass reveal"><div class="panel-heading"><h3>Protected areas</h3><span>FUNAI boundaries</span></div><div id="threat-areas"><span class="tag">pending</span></div></article>
     <article class="panel glass reveal"><div class="panel-heading"><h3>Places to check first</h3><span id="tl-date"></span></div>
       <div id="threat-clusters" class="clusters"><span class="tag">pending</span></div>
-      <p class="note">Each tile is a 3.2 km square of the per-pass forest map around the patch (outlined), cycling through the 9 passes. Ranked by area. Distance is to land already non-forest at the start; 100 m means touching.</p></article>
+      <p class="note">Each tile shows a 3.2 km square of the forest map around the patch (outlined) and cycles through the 9 passes. Biggest patches come first. Distance is measured to land that was already non-forest at the start, so 100 m means the patch touches it.</p></article>
   </div>
 </section>
 
 <!-- ================= compare ================= -->
 <section id="compare" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">05 / Compare</p><h2>Compare radar acquisitions</h2></div><p>Slide between actual radar acquisitions on the same geographic grid. A change in backscatter is evidence to investigate, not proof of clearing.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">05 / Compare</p><h2>Compare radar acquisitions</h2></div><p>Slide between two real radar acquisitions on the same grid. If the backscatter changes, that's a reason to look closer. It isn't proof of clearing.</p></div>
   <div class="compare-layout reveal">
   <div id="comparison" class="comparison" style="--split:50%">
     <div class="compare-image after-image"><img id="after-image" alt="Later dated NISAR radar acquisition"></div>
@@ -285,7 +285,7 @@
   </div>
       <div class="compare-footer"><span>Drag the divider or use the arrow keys</span><span>Same bounds and display stretch for both dates</span></div>
       <p id="compare-note" class="note"></p>
-      <p class="note">Dated Sentinel-2 imagery is available in Optical and the disturbance investigation panel. This slider compares NISAR acquisitions. The map's Esri basemap remains undated context.</p>
+      <p class="note">This slider only compares NISAR acquisitions. For dated Sentinel-2 images, use the Optical section or the disturbance investigation panel. The Esri basemap on the map has no date, so treat it as background.</p>
     </aside>
   </div>
 </section>
@@ -293,25 +293,25 @@
 <!-- ================= detection ================= -->
 
 <section id="environment" class="section">
-  <div class="section-head"><div><p class="eyebrow">Environmental evidence</p><h2>Investigate the signal, then the context</h2></div><p>Thermal anomalies can help investigate radar ambiguity. They do not establish what caused a change. Only retrieved, quality-screened measurements are plotted.</p></div>
+  <div class="section-head"><div><p class="eyebrow">Environmental evidence</p><h2>Investigate the signal, then the context</h2></div><p>When the radar signal is unclear, fire detections can help you dig in. They can't tell you what caused a change. We only plot measurements we actually downloaded and quality-checked.</p></div>
   <div class="env-tools"><label>Context acquisition date<select id="env-date" disabled aria-label="Environmental context date"></select></label><button id="invest-example" disabled type="button">Explore a real disturbance</button><label><input id="env-fire-toggle" type="checkbox" disabled> FIRMS overlay, ±7 days (retrospective)</label></div>
-  <p id="env-load-status" class="note" role="status">The example is the first item in the existing area-ranked watchlist, not a representative validation sample.</p>
+  <p id="env-load-status" class="note" role="status">The example is just the top patch on the watchlist, which is sorted by area. It isn't a representative sample for validation.</p>
   <div class="env-list">
-    <article class="env-dataset" hidden><p class="eyebrow">Precipitation / IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking dataset</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>3-, 7- and 14-day totals require every daily observation. Gaps remain unavailable. Regional 0.1° rainfall is not a patch measurement.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
-    <article class="env-dataset" hidden><p class="eyebrow">Soil moisture / SMAP</p><h3>Regional moisture context</h3><p id="env-smap-state" class="env-state" role="status">Checking dataset</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is a 9 km modeled assimilation product. NSIDC reports a geolocation issue from May 14 to July 28, 2026; affected dates need verified reprocessing.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
-    <article class="env-dataset"><p class="eyebrow">Active fire / FIRMS</p><h3>Nearby thermal anomalies</h3><p id="env-fire-state" class="env-state" role="status">Checking dataset</p><p id="env-fire-reason"></p><p>VIIRS anomalies have nominal 375 m footprints. The investigation checks within 5 km of the patch centroid and ±7 days, using acquisition timestamps and original confidence codes. A nearby anomaly does not identify a disturbance as fire-caused.</p><a href="https://firms.modaps.eosdis.nasa.gov/api/area/" target="_blank" rel="noopener">FIRMS access and metadata</a></article>
+    <article class="env-dataset" hidden><p class="eyebrow">Precipitation / IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking dataset</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>A 3-, 7- or 14-day total needs every daily value, so any gap leaves that total blank. The rainfall is regional at 0.1°, not measured at the patch.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
+    <article class="env-dataset" hidden><p class="eyebrow">Soil moisture / SMAP</p><h3>Regional moisture context</h3><p id="env-smap-state" class="env-state" role="status">Checking dataset</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is modeled, at 9 km. NSIDC reports a geolocation problem from May 14 to July 28, 2026, and those dates need confirmed reprocessing before we can use them.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
+    <article class="env-dataset"><p class="eyebrow">Active fire / FIRMS</p><h3>Nearby thermal anomalies</h3><p id="env-fire-state" class="env-state" role="status">Checking dataset</p><p id="env-fire-reason"></p><p>Each VIIRS detection covers about 375 m. We look within 5 km of the patch centre and ±7 days, using the acquisition times and the provider's own confidence codes. A fire nearby doesn't mean fire caused the disturbance.</p><a href="https://firms.modaps.eosdis.nasa.gov/api/area/" target="_blank" rel="noopener">FIRMS access and metadata</a></article>
   </div>
-  <p class="note env-planned">Rainfall (NASA GPM IMERG) and soil moisture (NASA SMAP) context: not retrieved for this submission; planned next step (see <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/web/tools/ENVIRONMENT.md" target="_blank" rel="noopener">web/tools/ENVIRONMENT.md</a>).</p>
-  <details class="evidence-policy"><summary>How the evidence categories are assigned</summary><p>Existing class-switch patches marked alert_supported retain the repository's GLAD-L / GLAD-S2 overlap category and pre-registered June 26–November 5 matching window. Other patches remain insufficient evidence for confirmation. No optical interpretation is inferred from regional clear fraction. No wet/dry anomaly is assigned without an independent climatology. No calibrated confidence probability is available.</p><p>New environmental context is limited to the 60 km southern Pará box. Full-frame patches outside that box have unavailable context. Environment processing is separate from the frozen detection and validation rules.</p></details>
+  <p class="note env-planned">Rainfall (NASA GPM IMERG) and soil moisture (NASA SMAP) context: we didn't get this data for the submission. It's the next thing we plan to add (see <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/web/tools/ENVIRONMENT.md" target="_blank" rel="noopener">web/tools/ENVIRONMENT.md</a>).</p>
+  <details class="evidence-policy"><summary>How the evidence categories are assigned</summary><p>Class-switch patches marked alert_supported keep the label they already had: they overlap a GLAD-L or GLAD-S2 alert inside the June 26–November 5 window we fixed in advance. Every other patch stays at insufficient evidence for confirmation. We don't read anything into the optical images from the regional clear fraction. We don't call a date wet or dry without an independent climatology, and we have none. There is no calibrated confidence probability.</p><p>The environmental context only covers the 60 km southern Pará box, so full-frame patches outside it have none. This processing is kept apart from the detection and validation rules, which are frozen.</p></details>
 </section>
-<dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Disturbance investigation</h2><button id="invest-close" type="button" aria-label="Close investigation">Close</button></header><div class="invest-body"><section><p class="eyebrow">Evidence assessment</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>Radar evidence</h3><div id="invest-radar" class="invest-series"></div><p>ΔHV is relative to the first exported acquisition, not the detector's multi-date baseline. The original interactive time-series chart remains in the map panel.</p></section><section><h3>Dated Sentinel-2 context</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Environmental context</h3><div id="invest-environment"></div></section></div></dialog>
+<dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Disturbance investigation</h2><button id="invest-close" type="button" aria-label="Close investigation">Close</button></header><div class="invest-body"><section><p class="eyebrow">Evidence assessment</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>Radar evidence</h3><div id="invest-radar" class="invest-series"></div><p>ΔHV here is measured against the first exported acquisition, not the multi-date baseline the detector uses. The interactive time-series chart is still in the map panel.</p></section><section><h3>Dated Sentinel-2 context</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Environmental context</h3><div id="invest-environment"></div></section></div></dialog>
 
 <section id="detection" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">06 / Investigate</p><h2>Inspect potential disturbances</h2></div><p>Potential disturbances from a JJ-FAST-inspired method. Open a patch to see it on the map with its HH and HV history next to stable radar forest.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">06 / Investigate</p><h2>Inspect potential disturbances</h2></div><p>These are possible disturbances found with a method based on JJ-FAST. Open a patch to see it on the map, with its HH and HV history drawn next to stable radar forest.</p></div>
   <div id="method" class="method-sequence">
-    <article class="glass reveal"><span>01 / Observation</span><h3>Observe the canopy</h3><p>L-band radar measures backscatter: microwave energy returned from the landscape. HH and HV describe different transmit/receive polarizations.</p></article>
-    <article class="glass reveal"><span>02 / Detection</span><h3>Identify a change</h3><p>An HH rise can indicate an early-stage disturbance; an HV drop can indicate a late stage. Rain, fire and flooding can also change the signal.</p></article>
-    <article class="glass reveal"><span>03 / Validation</span><h3>Check the evidence</h3><p>Compare patches with GLAD-L reference alerts and inspect the time series. Potential radar disturbance is distinct from confirmed deforestation.</p></article>
+    <article class="glass reveal"><span>01 / Observation</span><h3>Observe the canopy</h3><p>L-band radar measures backscatter, the microwave energy that bounces back off the ground and trees. HH and HV are two ways of sending and receiving that signal (two polarizations).</p></article>
+    <article class="glass reveal"><span>02 / Detection</span><h3>Identify a change</h3><p>HH going up can mean a disturbance has just started. HV going down can mean it's further along. But rain, fire and flooding change the signal too.</p></article>
+    <article class="glass reveal"><span>03 / Validation</span><h3>Check the evidence</h3><p>Check patches against GLAD-L alerts and look at the time series. A possible disturbance on radar is not the same thing as confirmed deforestation.</p></article>
   </div>
   <div class="detection-grid">
     <article class="panel glass reveal">
@@ -326,13 +326,13 @@
     <article class="panel glass reveal">
       <p class="eyebrow">Backscatter history / dB</p>
       <h3>Reading a patch's time series</h3>
-      <p>Selecting a patch opens it on the radar map, zoomed to its outline, with its HH and HV series in the controls panel.</p>
+      <p>Pick a patch and the radar map zooms to its outline. Its HH and HV series show up in the controls panel.</p>
       <ul class="series-key">
         <li><i class="k-hh"></i><span><b>HH</b> solid line: the selected spot or patch.</span></li>
-        <li><i class="k-hv"></i><span><b>HV</b> solid line: clearing usually shows as HV falling away from forest.</span></li>
+        <li><i class="k-hv"></i><span><b>HV</b> solid line: when land is cleared, HV usually drops away from the forest line.</span></li>
         <li><i class="k-ref"></i><span><b>Dashed</b> lines: stable radar forest, for scale.</span></li>
       </ul>
-      <p class="note">Display-derived pixel values can clip at the stretch limits; patch series use the full-precision stack.</p>
+      <p class="note">Pixel values come from the display layers, so they can hit the stretch limits. Patch series use the full-precision stack instead.</p>
       <a class="text-link" href="#explore" data-go="explore">Open the map</a>
     </article>
   </div>
@@ -340,7 +340,7 @@
 
 <!-- ================= analysis ================= -->
 <section id="analysis" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">07 / Understand</p><h2>The forest map at three scales</h2></div><p>The same radar forest map, scored against the Hansen forest map (an optical product ending in 2025: a reference, not ground truth). Each row was scored once, with rules written down before scoring.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">07 / Understand</p><h2>The forest map at three scales</h2></div><p>Same radar forest map, compared with the Hansen forest map. Hansen is an optical product that ends in 2025, so it's a reference, not ground truth. We wrote the rules down before scoring, and scored each row once.</p></div>
   <article class="panel glass reveal">
     <p class="lead-line" id="scales-threshold"></p>
     <div class="table-scroll"><table class="scales" id="scales"><tbody><tr><td>Data pending</td></tr></tbody></table></div>
@@ -352,8 +352,8 @@
       <p class="note" id="detector-intro"></p>
       <div id="analysis-metrics" class="metric-grid"><p>Data pending</p></div>
       <div class="analysis-grid">
-        <article class="panel glass"><h3>First-observed patch area</h3><p class="note">Hectares by first detection date, from summary.json. Patches are counted once, on their first date.</p><div id="area-chart">Not available</div></article>
-        <article class="panel glass"><h3>Forest-mask and alert context</h3><p>The detector looked only at forest that Hansen had never mapped as cleared, so by design it could not fire on previously cleared land.</p><p class="note">Use the map overlays (southern Par&aacute; location) to compare its patches with GLAD-L events and Hansen forest loss 2021&ndash;2025.</p><a class="text-link" href="#explore" data-go="explore">Explore contextual layers</a></article>
+        <article class="panel glass"><h3>First-observed patch area</h3><p class="note">Hectares per first detection date, from summary.json. Each patch is counted once, on the date it first shows up.</p><div id="area-chart">Not available</div></article>
+        <article class="panel glass"><h3>Forest-mask and alert context</h3><p>The detector only looked at forest Hansen had never mapped as cleared. So it couldn't fire on land that had been cleared before. That was on purpose.</p><p class="note">Use the map overlays (southern Par&aacute; location) to compare its patches with GLAD-L events and Hansen forest loss 2021&ndash;2025.</p><a class="text-link" href="#explore" data-go="explore">Explore contextual layers</a></article>
       </div>
     </div>
   </details>
@@ -361,13 +361,13 @@
 
 <!-- ================= validation ================= -->
 <section id="impact" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">08 / Validate</p><h2>Validation and limitations</h2></div><p>Agreement with Hansen and GLAD is a comparison with other products, not independently verified accuracy. Flagged blocks are unconfirmed radar change.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">08 / Validate</p><h2>Validation and limitations</h2></div><p>Agreeing with Hansen and GLAD means we match other products. It doesn't mean our accuracy has been checked independently. Flagged blocks are radar change nobody has confirmed yet.</p></div>
   <div class="analysis-grid">
     <article class="panel glass reveal">
       <h3>Forest map vs Hansen</h3>
       <div id="val-forest"><span class="tag">pending</span></div>
       <h3>Flagged forest-to-non-forest blocks vs GLAD alerts</h3>
-      <p class="note">Share of flagged blocks that overlap a GLAD alert (&plusmn;24 days), against the same number of randomly drawn stable-forest blocks. Enrichment shows the flags are not random; it is not accuracy, and most flags have no alert.</p>
+      <p class="note">How many flagged blocks overlap a GLAD alert (&plusmn;24 days), compared with the same number of stable-forest blocks picked at random. Enrichment tells you the flags aren't random. It isn't accuracy, and most flags have no alert at all.</p>
       <div class="table-scroll" id="val-enrich"><span class="tag">pending</span></div>
       <h3 id="results-h">First attempt: 1 dB change detector (20 km window, did not work)</h3>
       <div id="results"><span class="tag">pending</span></div>
@@ -380,16 +380,16 @@
     <article class="panel glass reveal">
       <h3>Limitations</h3>
       <ul class="limits" id="limits">
-        <li>Dry season only (June to October 2026). The wet season, when cloud is heaviest, was not tested.</li>
+        <li>We only have the dry season (June to October 2026). We didn't test the wet season, which is when cloud is worst.</li>
         <li id="lim-seasonal">Flags compare the last two passes with the first three, so many are likely seasonal drying rather than clearing.</li>
-        <li>NISAR L2 GCOV is a provisional product; display layers are compressed.</li>
-        <li>Hansen and GLAD are optical reference products, not ground truth.</li>
-        <li>Selective logging, fire and flooding are not handled.</li>
-        <li>The first attempt, a 1 dB change detector, failed (details above and in the analysis section).</li>
+        <li>NISAR L2 GCOV is still a provisional product, and the display layers are compressed.</li>
+        <li>Hansen and GLAD come from optical satellites. We use them as a reference, but they aren't ground truth.</li>
+        <li>We don't handle selective logging, fire or flooding.</li>
+        <li>Our first try, a 1 dB change detector, failed. Details are above and in the analysis section.</li>
       </ul>
       <p class="note">We do not claim this stops deforestation, saves carbon, or works everywhere.</p>
       <h3>Where it could go next</h3>
-      <p>Wet-season and multi-year passes, a seasonal correction, a method that also watches already-cleared pasture, and independent human labels.</p>
+      <p>Passes from the wet season and from more than one year. A correction for the seasons. A method that also watches pasture that's already been cleared. And labels from people who weren't part of the project.</p>
     </article>
   </div>
   <details class="story-panel glass reveal" id="findings"><summary>The story in six steps</summary><div class="story" id="story"><p class="note">Loading&hellip;</p></div></details>
