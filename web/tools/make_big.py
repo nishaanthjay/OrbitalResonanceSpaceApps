@@ -58,8 +58,20 @@ def save_webp(img: np.ndarray, path: str) -> int:
     return os.path.getsize(path)
 
 
-def patches(lost: np.ndarray, hv: np.ndarray, transform, crs: str, block_ha: float, in_orig: np.ndarray) -> dict:
+def first_flagged(forest: np.ndarray, first: int = 3) -> np.ndarray:
+    """Per block, index of the earliest pass k >= `first` (08-13 onward) from which it is non-forest on every pass
+    k..last; -1 if none. For a lost block this is at most 7 (09-30), because the rule needs 09-30 and 10-12 non-forest."""
+    stay = np.flip(np.logical_and.accumulate(np.flip(~forest, axis=0), axis=0), axis=0)  # non-forest from k to the end
+    out = np.full(forest.shape[1:], -1, int)
+    for k in range(forest.shape[0] - 1, first - 1, -1):
+        out[stay[k]] = k
+    return out
+
+
+def patches(lost: np.ndarray, hv: np.ndarray, transform, crs: str, block_ha: float, in_orig: np.ndarray,
+            dates: list[str] | None = None, T: float | None = None) -> dict:
     lab, n = ndimage.label(lost, structure=np.ones((3, 3), int))
+    ff = first_flagged(hv >= T) if T is not None else None
     to_ll = Transformer.from_crs(crs, 4326, always_xy=True).transform
     lin = 10.0 ** (hv / 10.0)
     feats = []
@@ -70,10 +82,16 @@ def patches(lost: np.ndarray, hv: np.ndarray, transform, crs: str, block_ha: flo
             p = shape(g)
             geom = p if geom is None else geom.union(p)
         series = 10.0 * np.log10(lin[:, m].mean(axis=1))
-        feats.append({"type": "Feature", "geometry": mapping(shp_transform(to_ll, geom)),
-                      "properties": {"id": i, "area_ha": round(float(m.sum() * block_ha), 2), "n_blocks": int(m.sum()),
-                                     "hv_series_db": [round(float(v), 2) for v in series],
-                                     "in_original_window": bool(in_orig[m].any())}})
+        g_ll = shp_transform(to_ll, geom)
+        c = g_ll.centroid
+        props = {"id": i, "area_ha": round(float(m.sum() * block_ha), 2), "n_blocks": int(m.sum()),
+                 "centroid_lon": round(c.x, 5), "centroid_lat": round(c.y, 5),
+                 "hv_series_db": [round(float(v), 2) for v in series],
+                 "in_original_window": bool(in_orig[m].any())}
+        if ff is not None and dates is not None:
+            k = int(ff[m][ff[m] >= 0].min()) if (ff[m] >= 0).any() else -1
+            props["first_flagged"] = dates[k] if k >= 0 else None
+        feats.append({"type": "Feature", "geometry": mapping(g_ll), "properties": props})
     return {"type": "FeatureCollection", "features": feats}
 
 
@@ -122,7 +140,7 @@ def main() -> None:
     lon, lat = Transformer.from_crs(crs, 4326, always_xy=True).transform(xx, yy)
     W, S, E, N = scale.ORIGINAL_BBOX
     in_orig = (lon >= W) & (lon <= E) & (lat >= S) & (lat <= N)
-    gj = patches(lost, hv, src_tf, crs, d * d / 1e4, in_orig)
+    gj = patches(lost, hv, src_tf, crs, d * d / 1e4, in_orig, dates, T)
     with open(f"{a.out_dir}/lost.geojson", "w") as f:
         json.dump(gj, f, separators=(",", ":"))
     sizes["lost.geojson"] = os.path.getsize(f"{a.out_dir}/lost.geojson")
@@ -139,6 +157,7 @@ def main() -> None:
         "layers": {"forest": [f"forest_{x}.webp" for x in dates], "median": "forest_median.webp",
                    "lost": "lost.webp", "lost_patches": "lost.geojson"},
         "n_lost_patches": len(gj["features"]),
+        "first_flagged_definition": "per block: the earliest pass from 08-13 on from which the block is non-forest on every pass through 10-12; patch value = the earliest over its blocks",
         "scores": {"scope": "big AOI, valid on all 9 dates, original window excluded",
                    "blocks": met["blocks"], "forest_map_vs_hansen": met["a_forest_map"]["median"],
                    "forest_map_per_date": met["a_forest_map"]["per_date"], "loss_rule": met["loss_rule"],

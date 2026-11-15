@@ -1,0 +1,83 @@
+{
+ "command": "python validation/protected_areas.py --stack data/stack_big_t2f174.nc --funai data/protected/funai_tis_clip.json --out-geojson web/data/explore/big/protected.geojson --out-json web/data/explore/big/big_protected.json",
+ "rule": "lost block (scale.lost_rule, valid on all 9 dates) whose centre lies inside the official polygon",
+ "block_ha": 1.0,
+ "aoi_lonlat_wsen": [
+  -54.97248781479294,
+  -8.472220758307648,
+  -54.42479198632091,
+  -7.9265545252076075
+ ],
+ "total_lost_blocks": 4618,
+ "total_lost_blocks_scored": 2816,
+ "areas": [
+  {
+   "name": "TI Baú",
+   "kind": "Indigenous land (Terra Indigena)",
+   "source": "FUNAI tis_poligonais",
+   "official_id": 6101,
+   "etnia_nome": "Kayapó",
+   "fase_ti": "Regularizada",
+   "modalidade_ti": "Tradicionalmente ocupada",
+   "uf_sigla": "PA",
+   "superficie_perimetro_ha": 1540930.1555,
+   "data_atualizacao": "01/09/2026",
+   "valid_blocks_inside": 82423,
+   "lost_blocks_inside": 1133,
+   "lost_ha_inside": 1133.0,
+   "scored_valid_blocks_inside": 75922,
+   "scored_lost_blocks_inside": 1077,
+   "scored_lost_ha_inside": 1077.0,
+   "lost_share_of_valid_blocks": 0.01374616308554651
+  },
+  {
+   "name": "TI Menkragnoti",
+   "kind": "Indigenous land (Terra Indigena)",
+   "source": "FUNAI tis_poligonais",
+   "official_id": 28701,
+   "etnia_nome": "Kayapó",
+   "fase_ti": "Regularizada",
+   "modalidade_ti": "Tradicionalmente ocupada",
+   "uf_sigla": "PA,MT",
+   "superficie_perimetro_ha": 4914254.8206,
+   "data_atualizacao": "26/01/2021",
+   "valid_blocks_inside": 46841,
+   "lost_blocks_inside": 546,
+   "lost_ha_inside": 546.0,
+   "scored_valid_blocks_inside": 37786,
+   "scored_lost_blocks_inside": 476,
+   "scored_lost_ha_inside": 476.0,
+   "lost_share_of_valid_blocks": 0.011656454815225977
+  }
+ ],
+ "outside_all_areas": {
+  "valid_blocks": 69940,
+  "lost_blocks": 2939,
+  "lost_share_of_valid_blocks": 0.042021732913926226
+ },
+ "sources": {
+  "funai": {
+   "url": "https://geoserver.funai.gov.br/geoserver/Funai/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=Funai%3Atis_poligonais&outputFormat=application%2Fjson&srsName=EPSG:4326&bbox=-54.98,-8.48,-54.42,-7.92,EPSG:4326",
+   "read": "2026-11-14 in a browser (scripted requests get HTTP 403)",
+   "server_timestamp": "2026-11-15T01:18:26.747Z",
+   "features_in_query_box": 2,
+   "clipped_file_sha256": "9e1407890c62fae49f603ccf806cc13ae86dd79caabd412adde6c22694bdcf72",
+   "clip_box_wsen": [
+    -55,
+    -8.5,
+    -54.4,
+    -7.9
+   ],
+   "licence": "FUNAI geoprocessing page: may be reproduced provided the source is cited"
+  },
+  "cnuc": {
+   "url": "https://geoservicos.inde.gov.br/geoserver/MMA/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=MMA:cnuc_26_07_31&outputFormat=application/json&srsName=EPSG:4326&bbox=-54.98,-8.48,-54.42,-7.92,EPSG:4326",
+   "features_in_query_box": 0,
+   "fetched": "at run time"
+  }
+ },
+ "display_file": {
+  "simplify_deg": 0.0002,
+  "note": "protected.geojson is clipped to the AOI box and simplified for display; counts use unsimplified polygons"
+ }
+}
