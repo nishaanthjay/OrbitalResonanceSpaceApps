@@ -155,6 +155,36 @@ function fit(duration = 1300) {
 function focusBounds(b) { // b = W S E N of a patch: zoom to it, clear of the panel
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: padding(), maxZoom: 15, duration: reduced ? 0 : 1100, easing: easeInOut });
 }
+// ---------- a selected patch: bright outline above every layer, camera fitted to the free part of the map ----------
+function featureBounds(f) { // [W, S, E, N] of any Polygon / MultiPolygon
+  let w = 180, s = 90, e = -180, n = -90;
+  const walk = (a) => { if (typeof a[0] === 'number') { w = Math.min(w, a[0]); e = Math.max(e, a[0]); s = Math.min(s, a[1]); n = Math.max(n, a[1]); } else a.forEach(walk); };
+  walk(f.geometry.coordinates);
+  return [w, s, e, n];
+}
+function panelInsets() { // px of the map hidden by the left rail and, if open, the investigation panel (+ 40 px breathing room)
+  const cr = map.getContainer().getBoundingClientRect();
+  if (cr.width <= 900) return padding(); // phones: the panel is a sheet over the map; keep the standard fit
+  const dlg = $('investigation');
+  const right = dlg && dlg.open ? Math.max(60, cr.right - dlg.getBoundingClientRect().left + 40) : 60;
+  return { top: 90, bottom: 110, left: 76 + 40, right: Math.round(right) };
+}
+function ensureSelLayers() {
+  if (!map.getSource('sel')) map.addSource('sel', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  if (!map.getLayer('sel-halo')) map.addLayer({ id: 'sel-halo', type: 'line', source: 'sel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.65 } });
+  if (!map.getLayer('sel-line')) map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffe14d', 'line-width': 3.5 } });
+  map.moveLayer('sel-halo'); map.moveLayer('sel-line'); // layers added later (frame patches, 3D columns) must not cover it
+}
+function focusSelected(f) {
+  if (!f || !f.geometry) return;
+  ensureSelLayers();
+  map.getSource('sel').setData({ type: 'Feature', geometry: f.geometry, properties: {} });
+  const b = featureBounds(f);
+  // fitBounds ignored the zoom cap here, so: zoom = fit zoom capped at 14, centre = the patch, shifted by `offset` so it sits in the middle of the free map area
+  const ins = panelInsets(), cam = map.cameraForBounds([[b[0], b[1]], [b[2], b[3]]], { padding: ins });
+  map.easeTo({ center: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], zoom: Math.min(cam ? cam.zoom : 14, 14), offset: [(ins.left - ins.right) / 2, (ins.top - ins.bottom) / 2], duration: reduced ? 0 : 900, easing: easeInOut });
+}
+function clearSelected() { if (map.getSource('sel')) map.getSource('sel').setData({ type: 'FeatureCollection', features: [] }); }
 // in the intro the map is a picture you scroll past; it only takes gestures once you are exploring
 const HANDLERS = ['scrollZoom', 'dragPan', 'dragRotate', 'touchZoomRotate', 'doubleClickZoom', 'keyboard', 'boxZoom'];
 function setInteractive(on) { HANDLERS.forEach((h) => map[h][on ? 'enable' : 'disable']()); }

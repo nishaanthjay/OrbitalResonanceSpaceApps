@@ -22,7 +22,8 @@
   nav.addEventListener('pointerleave', () => { hovered = null; glide(); });
   nav.addEventListener('focusout', e => { if (!nav.contains(e.relatedTarget)) { hovered = null; glide(); } });
   const trackSection = () => {
-    let s = null; for (const sec of sections) if (sec.getBoundingClientRect().top <= innerHeight * 0.35) s = sec;
+    // the nav order is not the page order (Evidence sits above Detection): pick the section that passed the line most recently, not the last one in nav order
+    let s = null, best = -Infinity; for (const sec of sections) { const t = sec.getBoundingClientRect().top; if (t <= innerHeight * 0.35 && t > best) { s = sec; best = t; } }
     const a = navLinks[sections.indexOf(s)] || null;
     if (a !== current) {
       navLinks.forEach(l => { l.classList.toggle('active', l === a); if (l === a) l.setAttribute('aria-current', 'location'); else l.removeAttribute('aria-current'); });

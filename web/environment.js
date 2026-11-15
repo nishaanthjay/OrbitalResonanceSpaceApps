@@ -41,14 +41,21 @@
   }
   const toMerc=(lon,lat)=>[6378137*lon*Math.PI/180,6378137*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
   function opticalFigure(row,title,point,feature,token){
-    const figure=node('figure'),canvas=node('canvas');canvas.width=240;canvas.height=240;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',`${title} Sentinel-2 crop at selected patch`);figure.append(canvas);
-    if(!row){figure.append(node('figcaption',`${title}: no dated scene within 30 days on the appropriate side of the first-change date.`));return figure;}
-    figure.append(node('figcaption',`${title}: ${row.date}. 60 km box clear fraction ${(100*row.clear_fraction).toFixed(1)}%; local cloud fraction is not measured. Acquisition ${row.scene_id}.`));
+    const figure=node('figure'),canvas=node('canvas'),S=420;canvas.width=S;canvas.height=S;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',`${title} Sentinel-2 crop at selected patch`);
+    if(!row){figure.append(node('p',`${title}: no dated scene within 30 days on the appropriate side of the first-change date.`,'invest-cloudy'));return figure;}
+    const cap=node('figcaption'),head=node('strong',`${title} · ${row.date} · ${(100*row.clear_fraction).toFixed(0)}% of the 60 km area clear`);
+    cap.append(head,node('span',`The clear share is for the whole 60 km area, not this spot. Photo ID ${row.scene_id}.`));figure.append(canvas,cap);
     const image=new Image();image.onload=()=>{
       if(token!==opticalVersion)return;const ctx=canvas.getContext('2d'),grid=data.optical.grid,b=grid.bounds,[x,y]=toMerc(...point),scale=(b[2]-b[0])/image.naturalWidth,crop=3200/scale,px=(x-b[0])/scale,py=(b[3]-y)/((b[3]-b[1])/image.naturalHeight),sx=px-crop/2,sy=py-crop/2;
-      ctx.fillStyle='#193426';ctx.fillRect(0,0,240,240);ctx.drawImage(image,sx,sy,crop,crop,0,0,240,240);ctx.strokeStyle='#e5e9df';ctx.lineWidth=1.2;
+      ctx.drawImage(image,sx,sy,crop,crop,0,0,S,S);
+      // read the pixels before drawing the background: share of this crop that has data, and share of that which looks like cloud (bright, nearly colourless)
+      const d=ctx.getImageData(0,0,S,S).data;let n=0,w=0,total=0;for(let i=0;i<d.length;i+=16){total++;if(d[i+3]<200)continue;n++;const r=d[i],g=d[i+1],bl=d[i+2],mx=Math.max(r,g,bl),mn=Math.min(r,g,bl);if(mn>150&&mx-mn<45)w++;}
+      if(n<0.2*total){canvas.replaceWith(node('p',`This spot is outside the ${row.date} photo, so there is no picture of it.`,'invest-cloudy'));return;}
+      if(w/n>=0.5){canvas.replaceWith(node('p',`Mostly cloud over this spot on ${row.date}: this photo cannot show the ground here.`,'invest-cloudy'));return;}
+      ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#193426';ctx.fillRect(0,0,S,S);ctx.globalCompositeOperation='source-over';
+      ctx.strokeStyle='#ffe14d';ctx.lineWidth=2;
       const polygons=feature.geometry.type==='Polygon'?[feature.geometry.coordinates]:feature.geometry.type==='MultiPolygon'?feature.geometry.coordinates:[];
-      for(const poly of polygons)for(const ring of poly){ctx.beginPath();ring.forEach(([lon,lat],i)=>{const [mx,my]=toMerc(lon,lat),cx=((mx-b[0])/scale-sx)/crop*240,cy=((b[3]-my)/((b[3]-b[1])/image.naturalHeight)-sy)/crop*240;i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy);});ctx.closePath();ctx.stroke();}
+      for(const poly of polygons)for(const ring of poly){ctx.beginPath();ring.forEach(([lon,lat],i)=>{const [mx,my]=toMerc(lon,lat),cx=((mx-b[0])/scale-sx)/crop*S,cy=((b[3]-my)/((b[3]-b[1])/image.naturalHeight)-sy)/crop*S;i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy);});ctx.closePath();ctx.stroke();}
     };image.onerror=()=>{if(token===opticalVersion)figure.append(node('p','The optical image didn\'t load. The acquisition details alone aren\'t enough to say what the image shows.','invest-status'));};image.src='data/explore/optical/'+row.file;return figure;
   }
   function renderInvestigation(images=true){
@@ -68,7 +75,9 @@
     const s=event.detail;if(!s?.feature?.properties)return;selected=s;if(ready)ensureFire();
     if(document.body?.classList?.contains('touring')&&!s.allowTour)return;
     const d=s.feature.properties.first_switch_date||s.feature.properties.first_date||s.feature.properties.first_flagged;if(dates.includes(d))id('env-date').value=d;renderEnvironment();renderInvestigation(true);lastFocus=document.activeElement;if(!dialog.open)dialog.show();id('invest-title').focus({preventScroll:true});
+    if(!document.body.classList.contains('touring')){document.body.classList.add('investigating');if(typeof focusSelected==='function')focusSelected(s.feature);}
   }
+  dialog.addEventListener('close',()=>{document.body.classList.remove('investigating');if(typeof clearSelected==='function')clearSelected();});
   document.addEventListener('evidence:selection',select);
   document.addEventListener('evidence:tour',()=>{if(selected)select({detail:{...selected,allowTour:true}});});
   document.addEventListener('evidence:tour-end',()=>{if(dialog.open)dialog.close();});
