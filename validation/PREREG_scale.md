@@ -49,4 +49,4 @@ A block is **lost** if it is forest on >= 2 of the first 3 passes (06-26, 07-08,
 `pipeline/load/load_big.py` (stack), `data/stack_big_t2f174.nc` (gitignored), `data/forest_mask_big_t2f174.tif`, `validation/scale.py` (+ test), `validation/scale_metrics.json`, results section "Forest map at scale" in `validation/results_final.md`, web files in `web/data/explore/big/`.
 
 ## Deviations
-(none yet)
+- Implementation detail recorded after the single run (no change to any rule): alerts were read with `fetch_alerts.py`'s reader, tile naming and date encodings directly from the rasters inside `validation/scale.py` (writing GLAD-S2 rows as JSON for 60 km would be gigabytes). GLAD-L was read from `alert26` / `alertDate26` only: `alert25` holds 2025 dates, all outside both date windows.

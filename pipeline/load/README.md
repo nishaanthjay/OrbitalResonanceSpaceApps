@@ -25,3 +25,12 @@ Only one track / frame / direction / mode is combined, and every date must share
 - `time_window.py URL LON LAT`: CRS, spacing, and a timed 1000x1000 HH/HV read.
 - `valid_map.py URL W S E N` / `common_valid.py`: where the swath has data in the bbox (one date / all dates).
 - `check_units.py`: value histogram (validity floor) and rtcGammaToSigmaFactor range per date. `factor_db.py`: factor change between dates in dB.
+
+## 60 km forest map (validation/PREREG_scale.md)
+- `freq_compare.py`: frequencyB HV vs 4x4-averaged frequencyA HV on a window (decided freqA: 0.720 dB median |diff|).
+- `load_big.py`: streams a large freqA window in row strips and writes 5x5 linear block means (100 m) as the stack pixels (`attrs["multilook"] = 5`). `forest_mask.py --subdivide 5` builds the Hansen mask on the 20 m grid behind those blocks.
+```bash
+cd pipeline/load && python load_big.py --x0 62370 --y0 9121770 --nx 3000 --ny 3000 --block 5 --start 2026-06-20 --end 2026-10-20 \
+  --track 2 --frame 174 --direction ASCENDING --mode 20+5 --tile big_t2f174 --out-dir ../../data   # ~6 min, 12.6 MB
+python pipeline/load/forest_mask.py --stack data/stack_big_t2f174.nc --out data/forest_mask_big_t2f174.tif --subdivide 5
+```
