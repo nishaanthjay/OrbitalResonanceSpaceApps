@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="NISAR L-band radar sees through cloud. A fixed forest map of the whole Amazon radar frame, radar flags that overlap optical alerts far more often than random forest, and an honest account of what is still unconfirmed.">
+  <meta name="description" content="Amazon Forest Watch: NASA-ISRO's NISAR radar sees the Amazon through clouds. See a forest map of one whole radar image, possible clearings to check, and what is still not confirmed.">
   <meta name="theme-color" content="#091008">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="OrbitalResonance">
-  <meta property="og:title" content="The Next Frontier: NISAR radar at the Amazon forest edge">
-  <meta property="og:description" content="NISAR L-band radar sees through cloud. A fixed forest map of the whole Amazon radar frame, radar flags that overlap optical alerts far more often than random forest, and an honest account of what is still unconfirmed.">
+  <meta property="og:site_name" content="Amazon Forest Watch">
+  <meta property="og:title" content="Amazon Forest Watch · The Next Frontier">
+  <meta property="og:description" content="NASA-ISRO's NISAR radar sees the Amazon through clouds. A forest map of one whole radar image, possible clearings to check, and an honest list of what is not confirmed.">
   <meta property="og:url" content="https://sars-deforest.vercel.app/">
   <meta property="og:image" content="https://sars-deforest.vercel.app/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="The NISAR radar forest map over the BR-163 frontier, Par&aacute;, Brazil">
+  <meta property="og:image:alt" content="Radar forest map from the NISAR satellite over the BR-163 highway, Par&aacute;, Brazil">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="The Next Frontier: NISAR radar at the Amazon forest edge">
-  <meta name="twitter:description" content="NISAR L-band radar sees through cloud. A fixed forest map of the whole Amazon radar frame, radar flags that overlap optical alerts far more often than random forest, and an honest account of what is still unconfirmed.">
+  <meta name="twitter:title" content="Amazon Forest Watch · The Next Frontier">
+  <meta name="twitter:description" content="NASA-ISRO's NISAR radar sees the Amazon through clouds. A forest map of one whole radar image, possible clearings to check, and an honest list of what is not confirmed.">
   <meta name="twitter:image" content="https://sars-deforest.vercel.app/og.png">
-  <title>The Next Frontier · Forest Observatory</title>
+  <title>Amazon Forest Watch · The Next Frontier</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,19 +33,21 @@
 <a class="skip" href="#explore">Skip to forest map</a>
 
 <header class="top">
-  <a class="brand" href="#explore" data-go="intro">Next <span>Frontier</span></a>
+  <a class="brand" href="#explore" data-go="intro">Amazon Forest <span>Watch</span></a>
   <nav class="glass" aria-label="Main navigation">
     <span id="nav-blob" aria-hidden="true"></span>
-    <a href="#explore" data-go="explore">Explore</a>
-    <a href="#frontier">Clock</a>
-    <a href="#optical-radar">Optical</a>
-    <a href="#threats">Threats</a>
+    <a href="#explore" data-go="explore">Map</a>
+    <a href="#frontier">Over time</a>
+    <a href="#optical-radar">Photos vs radar</a>
+    <a href="#threats">Where to look</a>
     <a href="#compare">Compare</a>
-    <a href="#detection">Detection</a>
-    <a href="#environment">Evidence</a>
-    <a href="#impact">Validation</a>
+    <a href="#detection">Spots to check</a>
+    <a href="#environment">Fires &amp; weather</a>
+    <a href="#impact">How good is it</a>
+    <a href="#limits">Limits</a>
     <a class="ext" href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a>
   </nav>
+  <button type="button" class="glossary-link" data-open-glossary aria-label="Glossary">Glossary</button>
   <button class="tour-btn glass" id="tour-btn" type="button" aria-pressed="false" aria-controls="tour"><svg width="10" height="12" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z" fill="currentColor"/></svg>Tour</button>
 </header>
 
@@ -71,21 +73,21 @@
 
   <div class="hero">
     <p class="eyebrow" id="place">Novo Progresso, Par&aacute; &middot; BR-163</p>
-    <h1><span class="ln"><span>The Next</span></span><span class="ln"><span>Frontier.</span></span></h1>
-    <p class="lede">For much of the rainy season, optical satellites can't see the Amazon through the clouds. NISAR's L-band radar can. The image behind this text is <em id="hero-what">its HV image</em>: forest shows up bright and cleared land dark. We tested what it catches and what it misses, and we report both.</p>
+    <h1><span class="ln"><span>Amazon Forest Watch</span></span><span class="ln"><span>The Next Frontier.</span></span></h1>
+    <p class="lede">For much of the rainy season, clouds hide the Amazon from photo satellites. NISAR<button type="button" class="tip" data-tip="nisar">?</button>, a radar satellite, sees through them<button type="button" class="tip" data-tip="lband">?</button>. Behind this text is NISAR's view: <em id="hero-what">its tree-signal image</em>. Forest looks bright and cleared land looks dark. We tested what it catches and what it misses, and we show you both.</p>
     <div class="actions">
-      <button class="cta" data-go="explore">Explore the radar
+      <button class="cta" data-go="explore">Explore the map
         <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
-      <a class="ghost" href="#method">Read the method</a>
+      <a class="ghost" href="#method">How it works</a>
     </div>
-    <p class="caption">Research prototype &middot; NISAR L2 GCOV provisional</p>
+    <p class="caption">Research prototype &middot; data: NISAR L2 GCOV (provisional)<button type="button" class="tip" data-tip="gcov">?</button></p>
   </div>
 
   <div class="strip glass">
-    <button class="card" data-go="composite" id="card-radar"><span class="thumb"><img id="thumb-radar" alt=""></span><span><b>Through the clouds</b><small>Radar composite, HH + HV</small></span></button>
-    <button class="card" data-go="hvchg" id="card-change"><span class="thumb"><img id="thumb-change" alt=""></span><span><b>What changed</b><small>HV change vs earlier passes</small></span></button>
-    <button class="card" data-go="big" id="card-big" hidden><span class="thumb"><img id="thumb-big" alt=""></span><span><b>Forest map, 60 km</b><small>BR-163 frontier at scale</small></span></button>
-    <button class="card" data-go="frame" id="card-frame" hidden><span class="thumb"><img id="thumb-frame" alt=""></span><span><b>Whole radar frame</b><small id="card-frame-sub">Forest map, full frame</small></span></button>
+    <button class="card" data-go="composite" id="card-radar"><span class="thumb"><img id="thumb-radar" alt=""></span><span><b>Through the clouds</b><small>Colour mix of both radar signals</small></span></button>
+    <button class="card" data-go="hvchg" id="card-change"><span class="thumb"><img id="thumb-change" alt=""></span><span><b>What changed</b><small>Tree signal vs earlier passes</small></span></button>
+    <button class="card" data-go="big" id="card-big" hidden><span class="thumb"><img id="thumb-big" alt=""></span><span><b>Forest map, 60 km</b><small>The wider BR-163 area</small></span></button>
+    <button class="card" data-go="frame" id="card-frame" hidden><span class="thumb"><img id="thumb-frame" alt=""></span><span><b>Whole radar image</b><small id="card-frame-sub">Forest map of the full image</small></span></button>
     <button class="play" id="play" aria-label="Play through the passes">
       <span class="ico">
         <svg class="ring" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="22"/></svg>
@@ -100,11 +102,11 @@
     <p class="cine-name" id="cine-name"></p>
     <button class="mini cine-skip" id="cine-skip" type="button">Skip intro</button>
   </div>
-  <div id="legend-3d" class="legend-3d glass" hidden><span class="l3-k">3D columns</span><span>Flagged patches (unconfirmed). Height = patch area. Colour = first pass non-forest:</span><span class="l3-ramp" id="legend-3d-ramp"></span></div>
+  <div id="legend-3d" class="legend-3d glass" hidden><span class="l3-k">3D columns</span><span>Possible clearings (not confirmed). Taller = bigger patch. Colour = first pass it looked cleared:</span><span class="l3-ramp" id="legend-3d-ramp"></span></div>
 
-  <div id="map-status" class="map-status glass" role="status">Loading map and radar observations&hellip;</div>
+  <div id="map-status" class="map-status glass" role="status">Loading the map and radar images&hellip;</div>
 
-  <aside id="side" class="glass" aria-label="Observation controls">
+  <aside id="side" class="glass" aria-label="Map controls">
     <div class="side-scroll">
       <div class="side-head">
         <button class="back" data-go="intro"><svg width="12" height="10" viewBox="0 0 12 10" aria-hidden="true"><path d="M11 5H2M5 1L1 5l4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Intro</button>
@@ -117,82 +119,82 @@
       <section>
         <h2><span class="n">1</span>What the radar sees</h2>
         <div id="radar-layers" class="choices">
-          <label class="choice"><input type="radio" name="layer" value="composite"><b>Composite</b><small>R = HH, G = HV, B = HH&minus;HV</small></label>
-          <label class="choice"><input type="radio" name="layer" value="hv" checked><b>HV only</b><small>forest bright, cleared land dark</small></label>
-          <label class="choice"><input type="radio" name="layer" value="hh"><b>HH only</b><small>surface and structure</small></label>
-          <label class="choice"><input type="radio" name="layer" value="hvchg"><b>HV change</b><small>this pass vs all earlier passes</small></label>
-          <label class="choice"><input type="radio" name="layer" value="hhchg"><b>HH change</b><small>this pass vs all earlier passes</small></label>
+          <label class="choice"><input type="radio" name="layer" value="composite"><b>Colour mix <button type="button" class="tip" data-tip="composite">?</button></b><small>red = ground signal, green = tree signal</small></label>
+          <label class="choice"><input type="radio" name="layer" value="hv" checked><b>Tree signal <button type="button" class="tip" data-tip="hv">?</button></b><small>forest bright, cleared land dark</small></label>
+          <label class="choice"><input type="radio" name="layer" value="hh"><b>Ground signal <button type="button" class="tip" data-tip="hh">?</button></b><small>ground and tree trunks</small></label>
+          <label class="choice"><input type="radio" name="layer" value="hvchg"><b>Tree signal: what changed <button type="button" class="tip" data-tip="change">?</button></b><small>this pass vs the average of earlier passes</small></label>
+          <label class="choice"><input type="radio" name="layer" value="hhchg"><b>Ground signal: what changed</b><small>this pass vs the average of earlier passes</small></label>
         </div>
         <div id="big-layers" class="choices" hidden>
-          <label class="choice"><input type="radio" name="layer" value="forest"><b>Forest map on this pass</b><small>one fixed HV threshold</small></label>
-          <label class="choice"><input type="radio" name="layer" value="median"><b>9-pass median</b><small>forest map from all passes</small></label>
-          <label class="choice"><input type="radio" name="layer" value="confidence"><b>Confidence</b><small>grey where the median is within &plusmn;0.5 dB of the threshold</small></label>
-          <label class="choice"><input type="radio" name="layer" value="persistence"><b>Passes seen as forest</b><small>0 to 9 of the 9 passes</small></label>
+          <label class="choice"><input type="radio" name="layer" value="forest"><b>Forest map, this pass</b><small>one fixed brightness cut-off <button type="button" class="tip" data-tip="threshold">?</button></small></label>
+          <label class="choice"><input type="radio" name="layer" value="median"><b>Typical forest map <button type="button" class="tip" data-tip="median">?</button></b><small>made from all 9 passes</small></label>
+          <label class="choice"><input type="radio" name="layer" value="confidence"><b>Unsure squares <button type="button" class="tip" data-tip="confidence">?</button></b><small>grey where the echo is within &plusmn;0.5 dB of the cut-off, so it could go either way</small></label>
+          <label class="choice"><input type="radio" name="layer" value="persistence"><b>Passes seen as forest <button type="button" class="tip" data-tip="persistence">?</button></b><small>0 to 9 of the 9 passes</small></label>
         </div>
         <div id="legend"></div>
-        <div class="row" style="margin-top:12px"><label class="note" for="opacity">Opacity</label><input type="range" id="opacity" min="0" max="100" value="100"></div>
-        <label class="check"><input type="checkbox" id="optical"> Optical imagery underneath (Esri, not the same date)</label>
-        <label class="check"><input type="checkbox" id="boundary" checked> Radar coverage boundary</label>
+        <div class="row" style="margin-top:12px"><label class="note" for="opacity">Radar image strength</label><input type="range" id="opacity" min="0" max="100" value="100"></div>
+        <label class="check"><input type="checkbox" id="optical"> Photo map underneath (Esri, not the same date) <button type="button" class="tip" data-tip="basemap">?</button></label>
+        <label class="check"><input type="checkbox" id="boundary" checked> Edge of the radar image</label>
       </section>
 
       <section>
         <h2><span class="n">2</span>Evidence on the map</h2>
         <div id="extras">
-          <label class="check"><input type="checkbox" id="t-det" disabled> Our detections <span class="tag" id="p-det" hidden>pending</span></label>
-          <div class="note keyrow"><span class="sw" style="background:#b68b52"></span> early (HH rise) <span class="sw" style="background:#bd776a"></span> late (HV drop) &middot; shown from the date they first appear. Click one for its HH and HV series.</div>
-          <label class="check"><input type="checkbox" id="t-ref" disabled> GLAD-L alert events <span class="tag" id="p-ref" hidden>pending</span></label>
+          <label class="check"><input type="checkbox" id="t-det" disabled> Our radar detections (not confirmed) <span class="tag" id="p-det" hidden>not available</span></label>
+          <div class="note keyrow"><span class="sw" style="background:#b68b52"></span> early sign: ground signal goes up <button type="button" class="tip" data-tip="early">?</button> <span class="sw" style="background:#bd776a"></span> later sign: tree signal goes down <button type="button" class="tip" data-tip="late">?</button> &middot; each shows from the date it first appears. Click one to see its signals over time.</div>
+          <label class="check"><input type="checkbox" id="t-ref" disabled> Deforestation alerts (GLAD-L) <button type="button" class="tip" data-tip="glad">?</button> <span class="tag" id="p-ref" hidden>not available</span></label>
           <div class="note keyrow"><span class="sw ref"></span> outline, shown from the alert's first date</div>
-          <label class="check"><input type="checkbox" id="t-han" disabled> Hansen forest loss 2021&ndash;2025 <span class="tag" id="p-han" hidden>pending</span></label>
+          <label class="check"><input type="checkbox" id="t-han" disabled> Forest loss on the Hansen map, 2021&ndash;2025 <button type="button" class="tip" data-tip="hansen">?</button> <span class="tag" id="p-han" hidden>not available</span></label>
           <div class="note keyrow" id="han-legend"></div>
         </div>
         <div id="big-extras" hidden>
-          <label class="check"><input type="checkbox" id="t-lost" checked> Flagged forest-to-non-forest switches, June to October (unconfirmed)</label>
-          <div class="note keyrow"><span class="sw" style="background:#b4401c"></span> 100 m blocks: forest on &ge; 2 of 06-26/07-08/07-20, non-forest on 09-30 and 10-12. Click a patch for its HV series.</div>
-          <label class="check"><input type="checkbox" id="t-fs"> Colour flags by the pass they first switched</label>
+          <label class="check"><input type="checkbox" id="t-lost" checked> Possible clearings, June to October (not confirmed) <button type="button" class="tip" data-tip="flag">?</button></label>
+          <div class="note keyrow"><span class="sw" style="background:#b4401c"></span> 100 m squares <button type="button" class="tip" data-tip="block">?</button>: forest on at least 2 of 06-26/07-08/07-20, open land on 09-30 and 10-12. Click a patch to see its tree signal over time.</div>
+          <label class="check"><input type="checkbox" id="t-fs"> Colour by the pass it first changed</label>
           <div class="note keyrow" id="fs-legend"></div>
-          <div class="note keyrow"><span class="sw ref" style="border-color:#fdd663"></span> alert-supported patch <span class="sw ref" style="border-color:#f3b49b;margin-left:6px"></span> radar only, unconfirmed (outlines from zoom 12)</div>
-          <label class="check"><input type="checkbox" id="t-prot" checked> Protected areas &amp; Indigenous lands <span class="tag" id="p-prot" hidden>pending</span></label>
+          <div class="note keyrow"><span class="sw ref" style="border-color:#fdd663"></span> matches an alert <button type="button" class="tip" data-tip="alertsupported">?</button> <span class="sw ref" style="border-color:#f3b49b;margin-left:6px"></span> radar only, not confirmed <button type="button" class="tip" data-tip="radaronly">?</button> (outlines show from zoom level 12)</div>
+          <label class="check"><input type="checkbox" id="t-prot" checked> Protected areas &amp; Indigenous lands <button type="button" class="tip" data-tip="funai">?</button> <span class="tag" id="p-prot" hidden>not available</span></label>
           <div class="note keyrow"><span class="sw ref" style="border-color:#e8d48a"></span> official boundaries (FUNAI; MMA CNUC has none in this area)</div>
-          <label class="check"><input type="checkbox" id="t-win" checked> Test window outline</label>
-          <div class="note keyrow"><span class="sw ref" style="border-style:dashed;border-color:#fdd663"></span> original 20 km window, excluded from scale scores</div>
+          <label class="check"><input type="checkbox" id="t-win" checked> Test area outline <button type="button" class="tip" data-tip="window">?</button></label>
+          <div class="note keyrow"><span class="sw ref" style="border-style:dashed;border-color:#fdd663"></span> the first 20 km test area, left out of the bigger scores</div>
         </div>
         <div id="frame-extras" hidden>
-          <label class="check"><input type="checkbox" id="t-flost" checked> Flagged forest-to-non-forest switches, June to October (unconfirmed)</label>
-          <div class="note keyrow"><span class="sw" style="background:#ff2bd6"></span> 100 m blocks, same rule as the 60 km map. Click a patch (&ge; <span id="frame-min-ha">3</span> ha) for its HV series.</div>
-          <label class="check"><input type="checkbox" id="t-ffs"> Colour flags by the pass they first switched</label>
+          <label class="check"><input type="checkbox" id="t-flost" checked> Possible clearings, June to October (not confirmed) <button type="button" class="tip" data-tip="flag">?</button></label>
+          <div class="note keyrow"><span class="sw" style="background:#ff2bd6"></span> 100 m squares, same rule as the 60 km map. Click a patch (at least <span id="frame-min-ha">3</span> ha) to see its tree signal over time.</div>
+          <label class="check"><input type="checkbox" id="t-ffs"> Colour by the pass it first changed</label>
           <div class="note keyrow" id="ffs-legend"></div>
-          <label class="check"><input type="checkbox" id="t-fout" checked> 60 km map and test window outlines</label>
+          <label class="check"><input type="checkbox" id="t-fout" checked> Outlines of the 60 km map and test area</label>
         </div>
-        <p class="note" id="extras-off" hidden>Detections, alerts and Hansen loss are computed for S Para only.</p>
+        <p class="note" id="extras-off" hidden>Detections, alerts and Hansen loss are only computed for the Novo Progresso test area.</p>
       </section>
 
       <section>
         <h2><span class="n">3</span>What happened here</h2>
-        <div id="chart"><div class="hint">Click anywhere on the map to see HH and HV at that spot on every date, with stable forest next to it.</div></div>
+        <div id="chart"><div class="hint">Click anywhere on the map. You'll see the tree and ground signals at that spot on every date, next to forest that didn't change.</div></div>
       </section>
 
       <section id="big-panel" hidden>
-        <h2>BR-163 frontier, 60 km <span class="tag">out-of-sample</span></h2>
-        <p class="note" id="big-caption">We set the threshold on a 10 km strip and used it here without changing it. Hansen and GLAD are a reference to compare against, not ground truth.</p>
-        <div id="big-results"><span class="tag">pending</span></div>
-        <h3>Flagged blocks inside protected areas and Indigenous lands</h3>
-        <div id="big-protected"><span class="tag">pending</span></div>
-        <div class="row wrap"><button id="dl-geojson" class="mini" type="button" disabled>Watchlist (GeoJSON)</button><button id="dl-csv" class="mini" type="button" disabled>Watchlist (CSV)</button></div>
+        <h2>BR-163 frontier, 60 km <span class="tag">tested on an area it had never seen</span> <button type="button" class="tip" data-tip="holdout">?</button></h2>
+        <p class="note" id="big-caption">We set the brightness cut-off <button type="button" class="tip" data-tip="threshold">?</button> on a 10 km strip, then used it here unchanged. Hansen and GLAD are other maps to compare with, not the final word.</p>
+        <div id="big-results"><span class="tag">loading</span></div>
+        <h3>Possible clearings inside protected areas and Indigenous lands</h3>
+        <div id="big-protected"><span class="tag">loading</span></div>
+        <div class="row wrap"><button id="dl-geojson" class="mini" type="button" disabled>Download list of spots (GeoJSON)</button><button id="dl-csv" class="mini" type="button" disabled>Download list of spots (CSV)</button></div>
         <p class="note" id="dl-note"></p>
-        <h3>Forest and non-forest, class by class</h3>
-        <div id="big-classes"><span class="tag">pending</span></div>
-        <h3>Flagged patches: alert-supported or radar only</h3>
-        <div id="big-cats"><span class="tag">pending</span></div>
+        <h3>Forest and open land: how often we agree with Hansen</h3>
+        <div id="big-classes"><span class="tag">loading</span></div>
+        <h3>Possible clearings: matching an alert, or radar only</h3>
+        <div id="big-cats"><span class="tag">loading</span></div>
         <h3>Top 20 places to check first</h3>
         <p class="note" id="big-watch-note"></p>
         <ol id="big-watch" class="watch"></ol>
-        <h3>Optical vs radar over the same 60 km</h3>
-        <div id="big-cloud"><span class="tag">pending</span></div>
+        <h3>Photos vs radar over the same 60 km</h3>
+        <div id="big-cloud"><span class="tag">loading</span></div>
       </section>
       <section id="frame-panel" hidden>
-        <h2>Full NISAR frame <span class="tag">out-of-sample</span></h2>
-        <p class="note">Same fixed threshold and class-switch rule, run on the whole radar frame (track 2, frame 174). We wrote the rules down first in validation/PREREG_frame.md and scored it once against Hansen and GLAD. Those are a reference, not ground truth.</p>
-        <div id="frame-results"><span class="tag">pending</span></div>
+        <h2>Whole radar image <button type="button" class="tip" data-tip="frame">?</button> <span class="tag">tested on an area it had never seen</span> <button type="button" class="tip" data-tip="holdout">?</button></h2>
+        <p class="note">Same brightness cut-off and same rule for possible clearings, run on the whole radar image (track 2, frame 174). We wrote the rules down first <button type="button" class="tip" data-tip="prereg">?</button> (validation/PREREG_frame.md). Then we compared once with Hansen and GLAD. Those are other maps to compare with, not the final word.</p>
+        <div id="frame-results"><span class="tag">loading</span></div>
         <p class="note" id="frame-note"></p>
       </section>
 
@@ -205,13 +207,13 @@
 </section>
 
 <!-- ================= headline facts: every value read at runtime (observatory.js) from big.json, frame.json, cloud.json ================= -->
-<section class="facts-band" aria-label="Headline results">
-  <div class="headline" id="facts"><p class="note">Loading results&hellip;</p></div>
+<section class="facts-band" aria-label="Main results">
+  <div class="headline" id="facts"><p class="note">Loading the results&hellip;</p></div>
 </section>
 
 <!-- ================= frontier clock ================= -->
 <section id="frontier" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">02 / Frontier clock</p><h2>Nine passes over one forest edge</h2></div><p>This is the 60 km forest map, redrawn for each NISAR pass with the same HV threshold every time. Nothing is tuned per pass. Green is forest and rust is non-forest. Transparent means the swath didn't cover that spot on that pass.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">02 / Over time</p><h2>Nine passes over one forest edge</h2></div><p>This is the 60 km forest map, redrawn for each NISAR pass<button type="button" class="tip" data-tip="pass">?</button>. Every pass uses the same tree-signal<button type="button" class="tip" data-tip="hv">?</button> cut-off<button type="button" class="tip" data-tip="threshold">?</button>. Nothing is adjusted for a single pass. Green is forest and rust is open land. See-through spots were outside the strip the satellite saw<button type="button" class="tip" data-tip="swath">?</button> on that pass.</p></div>
   <div class="clock reveal">
     <div class="clock-stage">
       <div class="clock-imgs" id="clock-imgs"></div>
@@ -232,15 +234,15 @@
 
 <!-- ================= optical vs radar ================= -->
 <section id="optical-radar" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">03 / Optical vs radar</p><h2>Same forest, nearby acquisition dates</h2></div><p>Sentinel-2 sees colour, but cloud blocks it. NISAR's L-band sees forest structure through the cloud. Pick a pass and the closest Sentinel-2 scene in time shows up next to the radar forest map.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">03 / Photos vs radar</p><h2>Same forest, nearby dates</h2></div><p>The Sentinel-2 photo satellite<button type="button" class="tip" data-tip="sentinel2">?</button> sees colour, but cloud blocks it. NISAR's long-wave radar sees the forest through cloud<button type="button" class="tip" data-tip="lband">?</button>. Pick a pass to see the closest Sentinel-2 photo next to the radar forest map.</p></div>
   <div class="compare-layout reveal">
     <div id="ovr" class="comparison no-opt" style="--split:50%">
       <div class="compare-image after-image"><img id="ovr-radar" alt="NISAR forest map for the selected pass"></div>
-      <div class="compare-image before-image"><img id="ovr-optical" alt="Sentinel-2 true-colour scene nearest the selected pass"></div>
+      <div class="compare-image before-image"><img id="ovr-optical" alt="Sentinel-2 colour photo closest in time to the selected pass"></div>
       <div class="compare-label before-label glass">Sentinel-2 <span id="ovr-opt-label"></span></div>
       <div class="compare-label after-label glass">NISAR <span id="ovr-rad-label"></span></div>
       <div class="divider-line" aria-hidden="true"><span class="glass"><svg width="18" height="10" viewBox="0 0 18 10"><path d="M5 1L1 5l4 4M13 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span></div>
-      <input id="ovr-swipe" class="swipe" type="range" min="0" max="100" value="50" aria-label="Optical and radar divider position">
+      <input id="ovr-swipe" class="swipe" type="range" min="0" max="100" value="50" aria-label="Photo and radar divider position">
       <p id="ovr-status" class="compare-status glass" role="status">Loading&hellip;</p>
     </div>
     <aside class="compare-side panel glass">
@@ -255,38 +257,38 @@
 
 <!-- ================= threat board ================= -->
 <section id="threats" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">04 / Threat board</p><h2>Where to look first</h2></div><p>Here are the flagged blocks inside Indigenous lands, plus the 20 biggest flagged patches on the 60 km map and how each one looked pass by pass. These are radar flags to go check. None of them is confirmed clearing, and some are probably just the forest drying out for the season.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">04 / Where to look</p><h2>Where to look first</h2></div><p>Here are the flagged squares inside Indigenous lands. Next to them are the 20 biggest flagged patches on the 60 km map, pass by pass. Each one is a possible clearing (not confirmed)<button type="button" class="tip" data-tip="flag">?</button> to go and check. Some are probably just the forest drying out for the season.</p></div>
   <div class="threat-grid">
-    <article class="panel glass reveal"><div class="panel-heading"><h3>Protected areas</h3><span>FUNAI boundaries</span></div><div id="threat-areas"><span class="tag">pending</span></div></article>
+    <article class="panel glass reveal"><div class="panel-heading"><h3>Protected areas</h3><span>Official FUNAI boundaries<button type="button" class="tip" data-tip="funai">?</button></span></div><div id="threat-areas"><span class="tag">pending</span></div></article>
     <article class="panel glass reveal"><div class="panel-heading"><h3>Places to check first</h3><span id="tl-date"></span></div>
       <div id="threat-clusters" class="clusters"><span class="tag">pending</span></div>
-      <p class="note">Each tile shows a 3.2 km square of the forest map around the patch (outlined) and cycles through the 9 passes. Biggest patches come first. Distance is measured to land that was already non-forest at the start, so 100 m means the patch touches it.</p></article>
+      <p class="note">Each tile shows a 3.2 km square of the forest map around the patch (outlined). It plays through the 9 passes. Biggest patches come first. Distance is to land that was already open at the start, so 100 m means the patch touches it.</p></article>
   </div>
 </section>
 
 <!-- ================= compare ================= -->
 <section id="compare" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">05 / Compare</p><h2>Compare radar acquisitions</h2></div><p>Slide between two real radar acquisitions on the same grid. If the backscatter changes, that's a reason to look closer. It isn't proof of clearing.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">05 / Compare</p><h2>Compare two radar passes</h2></div><p>Slide between two real radar passes over exactly the same area. Pick the tree signal<button type="button" class="tip" data-tip="hv">?</button>, the ground signal<button type="button" class="tip" data-tip="hh">?</button> or a colour mix of both<button type="button" class="tip" data-tip="composite">?</button>. If the radar echo<button type="button" class="tip" data-tip="backscatter">?</button> changes, that's a reason to look closer. It isn't proof of clearing.</p></div>
   <div class="compare-layout reveal">
   <div id="comparison" class="comparison" style="--split:50%">
-    <div class="compare-image after-image"><img id="after-image" alt="Later dated NISAR radar acquisition"></div>
-    <div class="compare-image before-image"><img id="before-image" alt="Earlier dated NISAR radar acquisition"></div>
+    <div class="compare-image after-image"><img id="after-image" alt="Later NISAR radar image"></div>
+    <div class="compare-image before-image"><img id="before-image" alt="Earlier NISAR radar image"></div>
     <div class="compare-label before-label glass">Before <span id="before-label"></span></div>
     <div class="compare-label after-label glass">After <span id="after-label"></span></div>
     <div class="divider-line" aria-hidden="true"><span class="glass"><svg width="18" height="10" viewBox="0 0 18 10"><path d="M5 1L1 5l4 4M13 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span></div>
     <input id="swipe" type="range" min="0" max="100" value="50" aria-label="Before and after divider position">
-    <p id="compare-status" class="compare-status glass" role="status">Loading available acquisitions&hellip;</p>
+    <p id="compare-status" class="compare-status glass" role="status">Loading radar images&hellip;</p>
   </div>
     <aside class="compare-side panel glass">
       <div class="compare-toolbar">
-    <label>Study area<span class="select"><select id="compare-loc" disabled aria-label="Comparison study area"></select></span></label>
-    <label>Radar layer<span class="select"><select id="compare-layer"><option value="composite">Composite · HH / HV / HH−HV</option><option value="hv">HV backscatter</option><option value="hh">HH backscatter</option><option value="hvchg">HV change preview</option><option value="hhchg">HH change preview</option></select></span></label>
+    <label>Area<span class="select"><select id="compare-loc" disabled aria-label="Area to compare"></select></span></label>
+    <label>Radar view<span class="select"><select id="compare-layer"><option value="composite">Colour mix of both signals</option><option value="hv">Tree signal</option><option value="hh">Ground signal</option><option value="hvchg">Tree signal change (preview)</option><option value="hhchg">Ground signal change (preview)</option></select></span></label>
     <label>Before<span class="select"><select id="before-date" disabled></select></span></label>
     <label>After<span class="select"><select id="after-date" disabled></select></span></label>
   </div>
-      <div class="compare-footer"><span>Drag the divider or use the arrow keys</span><span>Same bounds and display stretch for both dates</span></div>
+      <div class="compare-footer"><span>Drag the divider or use the arrow keys</span><span>Both dates use the same area and brightness range<button type="button" class="tip" data-tip="stretch">?</button></span></div>
       <p id="compare-note" class="note"></p>
-      <p class="note">This slider only compares NISAR acquisitions. For dated Sentinel-2 images, use the Optical section or the disturbance investigation panel. The Esri basemap on the map has no date, so treat it as background.</p>
+      <p class="note">This slider only compares NISAR radar images. For dated Sentinel-2 photos, use "Photos vs radar" or the patch check panel. The background photo map<button type="button" class="tip" data-tip="basemap">?</button> has no date, so treat it as background only.</p>
     </aside>
   </div>
 </section>
@@ -294,46 +296,46 @@
 <!-- ================= detection ================= -->
 
 <section id="environment" class="section">
-  <div class="section-head"><div><p class="eyebrow">Environmental evidence</p><h2>Investigate the signal, then the context</h2></div><p>When the radar signal is unclear, fire detections can help you dig in. They can't tell you what caused a change. We only plot measurements we actually downloaded and quality-checked.</p></div>
-  <div class="env-tools"><label>Context acquisition date<select id="env-date" disabled aria-label="Environmental context date"></select></label><button id="invest-example" disabled type="button">Explore a real disturbance</button><label><input id="env-fire-toggle" type="checkbox" disabled> FIRMS overlay, ±7 days (retrospective)</label></div>
-  <p id="env-load-status" class="note" role="status">The example is just the top patch on the watchlist, which is sorted by area. It isn't a representative sample for validation.</p>
+  <div class="section-head"><div><p class="eyebrow">Fires &amp; weather</p><h2>Check the signal, then what else was going on</h2></div><p>When the radar signal is unclear, NASA fire detections<button type="button" class="tip" data-tip="firms">?</button> can help you dig deeper. They can't tell you what caused a change. We only show data we actually downloaded and checked.</p></div>
+  <div class="env-tools"><label>Radar pass date<select id="env-date" disabled aria-label="Date to check fires and weather"></select></label><button id="invest-example" disabled type="button">Explore a real disturbance</button><label><input id="env-fire-toggle" type="checkbox" disabled> Show NASA fire detections, ±7 days (looked up afterwards)</label></div>
+  <p id="env-load-status" class="note" role="status">The example is simply the biggest patch on the watchlist. It was picked by size, so it isn't a representative sample for testing the method.</p>
   <div class="env-list">
-    <article class="env-dataset" hidden><p class="eyebrow">Precipitation / IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking dataset</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>A 3-, 7- or 14-day total needs every daily value, so any gap leaves that total blank. The rainfall is regional at 0.1°, not measured at the patch.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
-    <article class="env-dataset" hidden><p class="eyebrow">Soil moisture / SMAP</p><h3>Regional moisture context</h3><p id="env-smap-state" class="env-state" role="status">Checking dataset</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is modeled, at 9 km. NSIDC reports a geolocation problem from May 14 to July 28, 2026, and those dates need confirmed reprocessing before we can use them.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
-    <article class="env-dataset"><p class="eyebrow">Active fire / FIRMS</p><h3>Nearby thermal anomalies</h3><p id="env-fire-state" class="env-state" role="status">Checking dataset</p><p id="env-fire-reason"></p><p>Each VIIRS detection covers about 375 m. We look within 5 km of the patch centre and ±7 days, using the acquisition times and the provider's own confidence codes. A fire nearby doesn't mean fire caused the disturbance.</p><a href="https://firms.modaps.eosdis.nasa.gov/api/area/" target="_blank" rel="noopener">FIRMS access and metadata</a></article>
+    <article class="env-dataset" hidden><p class="eyebrow">Rainfall / NASA IMERG</p><h3>Rain before each radar pass</h3><p id="env-imerg-state" class="env-state" role="status">Checking data</p><p id="env-imerg-reason"></p><div id="env-imerg-chart" class="env-chart"></div><div id="env-rain-detail"></div><p>A 3-, 7- or 14-day total needs a value for every day, so one missing day leaves that total blank. The rainfall is for the wider region (0.1° squares), not measured at the patch.</p><a href="https://gpm.nasa.gov/data/directory" target="_blank" rel="noopener">NASA data and access</a></article>
+    <article class="env-dataset" hidden><p class="eyebrow">Soil moisture / NASA SMAP</p><h3>How wet the soil was in the region</h3><p id="env-smap-state" class="env-state" role="status">Checking data</p><p id="env-smap-reason"></p><div id="env-smap-chart" class="env-chart"></div><p id="env-soil-detail"></p><p>SMAP L4 is partly computed by a model, in 9 km squares. NSIDC reports a location error from May 14 to July 28, 2026. We can't use those dates until the fix is confirmed.</p><a href="https://nsidc.org/data/spl4smgp/versions/8" target="_blank" rel="noopener">NSIDC product and quality notice</a></article>
+    <article class="env-dataset"><p class="eyebrow">Fires / NASA FIRMS</p><h3>Hot spots nearby</h3><p id="env-fire-state" class="env-state" role="status">Checking data</p><p id="env-fire-reason"></p><p>Each NASA fire detection<button type="button" class="tip" data-tip="firms">?</button> covers about 375 m. We look within 5 km of the patch centre and ±7 days. We use the detection times and the provider's own confidence codes. A fire nearby doesn't mean fire caused the change.</p><a href="https://firms.modaps.eosdis.nasa.gov/api/area/" target="_blank" rel="noopener">FIRMS access and metadata</a></article>
   </div>
-  <p class="note env-planned">Rainfall (NASA GPM IMERG) and soil moisture (NASA SMAP) context: we didn't get this data for the submission. It's the next thing we plan to add (see <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/web/tools/ENVIRONMENT.md" target="_blank" rel="noopener">web/tools/ENVIRONMENT.md</a>).</p>
-  <details class="evidence-policy"><summary>How the evidence categories are assigned</summary><p>Class-switch patches marked alert_supported keep the label they already had: they overlap a GLAD-L or GLAD-S2 alert inside the June 26–November 5 window we fixed in advance. Every other patch stays at insufficient evidence for confirmation. We don't read anything into the optical images from the regional clear fraction. We don't call a date wet or dry without an independent climatology, and we have none. There is no calibrated confidence probability.</p><p>The environmental context only covers the 60 km southern Pará box, so full-frame patches outside it have none. This processing is kept apart from the detection and validation rules, which are frozen.</p></details>
+  <p class="note env-planned">Rainfall (NASA rainfall data<button type="button" class="tip" data-tip="imerg">?</button>) and soil moisture (NASA soil-moisture data<button type="button" class="tip" data-tip="smap">?</button>) were not retrieved for this submission. They're the next thing we plan to add (see <a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/web/tools/ENVIRONMENT.md" target="_blank" rel="noopener">web/tools/ENVIRONMENT.md</a>).</p>
+  <details class="evidence-policy"><summary>How we sort the evidence</summary><p>Possible clearings that match an alert<button type="button" class="tip" data-tip="alertsupported">?</button> keep the label they already had. They overlap a GLAD-L or GLAD-S2 deforestation alert<button type="button" class="tip" data-tip="glad">?</button> between June 26 and November 5. We fixed that window in advance. Every other patch stays at "not enough evidence to confirm". We don't judge the photos from the regional share of clear sky. Calling a date wet or dry needs long-term records of normal weather, and we have none. There is no calibrated confidence probability (no "X% sure").</p><p>The fire and weather context only covers the 60 km southern Pará box. Patches elsewhere in the full radar image have none. This part is kept apart from the detection and testing rules, which are frozen.</p></details>
 </section>
-<dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Disturbance investigation</h2><button id="invest-close" type="button" aria-label="Close investigation">Close</button></header><div class="invest-body"><section><p class="eyebrow">Evidence assessment</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>Radar evidence</h3><div id="invest-radar" class="invest-series"></div><p>ΔHV here is measured against the first exported acquisition, not the multi-date baseline the detector uses. The interactive time-series chart is still in the map panel.</p></section><section><h3>Dated Sentinel-2 context</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Environmental context</h3><div id="invest-environment"></div></section></div></dialog>
+<dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Check a possible clearing</h2><button id="invest-close" type="button" aria-label="Close this panel">Close</button></header><div class="invest-body"><section><p class="eyebrow">What the evidence says</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>What the radar saw</h3><div id="invest-radar" class="invest-series"></div><p>Here the change in tree signal<button type="button" class="tip" data-tip="hv">?</button> is measured from the first pass only. The detector compares with the average of several earlier passes instead. The full interactive chart is in the map panel.</p></section><section><h3>Sentinel-2 photos<button type="button" class="tip" data-tip="sentinel2">?</button>, before and after</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Fires and weather nearby</h3><div id="invest-environment"></div></section></div></dialog>
 
 <section id="detection" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">06 / Investigate</p><h2>Inspect potential disturbances</h2></div><p>These are possible disturbances found with a method based on JJ-FAST. Open a patch to see it on the map, with its HH and HV history drawn next to stable radar forest.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">06 / Spots to check</p><h2>Look at possible clearings</h2></div><p>These are possible clearings (not confirmed). We found them with a Japanese radar method for spotting forest clearing<button type="button" class="tip" data-tip="jjfast">?</button>. Open a patch to see it on the map. Its ground and tree signal history is drawn next to forest that didn't change<button type="button" class="tip" data-tip="stable">?</button>.</p></div>
   <div id="method" class="method-sequence">
-    <article class="glass reveal"><span>01 / Observation</span><h3>Observe the canopy</h3><p>L-band radar measures backscatter, the microwave energy that bounces back off the ground and trees. HH and HV are two ways of sending and receiving that signal (two polarizations).</p></article>
-    <article class="glass reveal"><span>02 / Detection</span><h3>Identify a change</h3><p>HH going up can mean a disturbance has just started. HV going down can mean it's further along. But rain, fire and flooding change the signal too.</p></article>
-    <article class="glass reveal"><span>03 / Validation</span><h3>Check the evidence</h3><p>Check patches against GLAD-L alerts and look at the time series. A possible disturbance on radar is not the same thing as confirmed deforestation.</p></article>
+    <article class="glass reveal"><span>01 / Look</span><h3>Watch the trees</h3><p>Long-wave radar passes through clouds<button type="button" class="tip" data-tip="lband">?</button>. It measures the radar echo<button type="button" class="tip" data-tip="backscatter">?</button>: the energy that bounces back off the ground and trees. We read it two ways: the ground signal<button type="button" class="tip" data-tip="hh">?</button> and the tree signal<button type="button" class="tip" data-tip="hv">?</button>.</p></article>
+    <article class="glass reveal"><span>02 / Spot</span><h3>Spot a change</h3><p>A ground signal going up can mean a clearing has just started<button type="button" class="tip" data-tip="early">?</button>. A tree signal going down can mean it's further along<button type="button" class="tip" data-tip="late">?</button>. But rain, fire and flooding change the signal too.</p></article>
+    <article class="glass reveal"><span>03 / Check</span><h3>Check the evidence</h3><p>Compare patches with GLAD-L deforestation alerts<button type="button" class="tip" data-tip="glad">?</button> and look at their history. A possible clearing on radar is not the same as confirmed deforestation.</p></article>
   </div>
   <div class="detection-grid">
     <article class="panel glass reveal">
-      <div class="panel-heading"><h3>Patch explorer</h3><span>Southern Par&aacute;</span></div>
+      <div class="panel-heading"><h3>Find a patch</h3><span>Southern Par&aacute;</span></div>
       <div class="filter-row">
-        <label>First seen by<span class="select"><select id="patch-date"><option value="all">All available dates</option></select></span></label>
-        <label>Stage<span class="select"><select id="patch-stage"><option value="all">All stages</option><option value="early">Early · HH rise</option><option value="late">Late · HV drop</option></select></span></label>
+        <label>First seen by<span class="select"><select id="patch-date"><option value="all">All dates</option></select></span></label>
+        <label>Stage<span class="select"><select id="patch-stage"><option value="all">All stages</option><option value="early">Early · ground signal up</option><option value="late">Late · tree signal down</option></select></span></label>
       </div>
-      <p id="patch-count" class="note" role="status">Loading detection patches&hellip;</p>
+      <p id="patch-count" class="note" role="status">Loading patches&hellip;</p>
       <div id="patches" class="patches"></div>
     </article>
     <article class="panel glass reveal">
-      <p class="eyebrow">Backscatter history / dB</p>
-      <h3>Reading a patch's time series</h3>
-      <p>Pick a patch and the radar map zooms to its outline. Its HH and HV series show up in the controls panel.</p>
+      <p class="eyebrow">Radar echo over time / dB</p>
+      <h3>Reading a patch's history</h3>
+      <p>Pick a patch and the radar map zooms to its outline. Its ground and tree signal lines show up in the controls panel.</p>
       <ul class="series-key">
-        <li><i class="k-hh"></i><span><b>HH</b> solid line: the selected spot or patch.</span></li>
-        <li><i class="k-hv"></i><span><b>HV</b> solid line: when land is cleared, HV usually drops away from the forest line.</span></li>
-        <li><i class="k-ref"></i><span><b>Dashed</b> lines: stable radar forest, for scale.</span></li>
+        <li><i class="k-hh"></i><span><b>Ground signal (HH)</b> solid line: the spot or patch you picked.</span></li>
+        <li><i class="k-hv"></i><span><b>Tree signal (HV)</b> solid line: when land is cleared, it usually drops away from the forest line.</span></li>
+        <li><i class="k-ref"></i><span><b>Dashed</b> lines: forest that didn't change, for scale.</span></li>
       </ul>
-      <p class="note">Pixel values come from the display layers, so they can hit the stretch limits. Patch series use the full-precision stack instead.</p>
+      <p class="note">Values for a single spot come from the map images, so they can hit the brightness limits<button type="button" class="tip" data-tip="stretch">?</button>. Patch lines use the full-precision radar data instead.</p>
       <a class="text-link" href="#explore" data-go="explore">Open the map</a>
     </article>
   </div>
@@ -341,20 +343,20 @@
 
 <!-- ================= analysis ================= -->
 <section id="analysis" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">07 / Understand</p><h2>The forest map at three scales</h2></div><p>Same radar forest map, compared with the Hansen forest map. Hansen is an optical product that ends in 2025, so it's a reference, not ground truth. We wrote the rules down before scoring, and scored each row once.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">07 / Forest map</p><h2>Our forest map at three sizes</h2></div><p>We compared our radar forest map with the Hansen map<button type="button" class="tip" data-tip="hansen">?</button>. That is another forest map made from satellite photos (up to 2025), not the final word. We wrote the rules down before scoring<button type="button" class="tip" data-tip="prereg">?</button>, and scored each row once.</p></div>
   <article class="panel glass reveal">
     <p class="lead-line" id="scales-threshold"></p>
     <div class="table-scroll"><table class="scales" id="scales"><tbody><tr><td>Data pending</td></tr></tbody></table></div>
     <p class="note" id="scales-note"></p>
   </article>
   <details class="story-panel glass reveal" id="detector-first">
-    <summary>First attempt: 1 dB change detector (did not work)</summary>
+    <summary>First try: a simple change detector (1 dB). It did not work.</summary>
     <div class="detector-body">
       <p class="note" id="detector-intro"></p>
       <div id="analysis-metrics" class="metric-grid"><p>Data pending</p></div>
       <div class="analysis-grid">
-        <article class="panel glass"><h3>First-observed patch area</h3><p class="note">Hectares per first detection date, from summary.json. Each patch is counted once, on the date it first shows up.</p><div id="area-chart">Not available</div></article>
-        <article class="panel glass"><h3>Forest-mask and alert context</h3><p>The detector only looked at forest Hansen had never mapped as cleared. So it couldn't fire on land that had been cleared before. That was on purpose.</p><p class="note">Use the map overlays (southern Par&aacute; location) to compare its patches with GLAD-L events and Hansen forest loss 2021&ndash;2025.</p><a class="text-link" href="#explore" data-go="explore">Explore contextual layers</a></article>
+        <article class="panel glass"><h3>Area of new patches by date</h3><p class="note">Hectares of new patches on each date, from summary.json. Each patch counts once, on the date it first shows up.</p><div id="area-chart">Not available</div></article>
+        <article class="panel glass"><h3>Which forest it watched</h3><p>The detector only looked at forest Hansen had never mapped as cleared. So it couldn't fire on land cleared before. That was on purpose.</p><p class="note">Use the map layers (southern Par&aacute;) to compare its patches with GLAD-L deforestation alerts<button type="button" class="tip" data-tip="glad">?</button> and Hansen forest loss 2021&ndash;2025.</p><a class="text-link" href="#explore" data-go="explore">See the map layers</a></article>
       </div>
     </div>
   </details>
@@ -362,15 +364,15 @@
 
 <!-- ================= validation ================= -->
 <section id="impact" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">08 / Validate</p><h2>Validation and limitations</h2></div><p>Agreeing with Hansen and GLAD means we match other products. It doesn't mean our accuracy has been checked independently. Flagged blocks are radar change nobody has confirmed yet.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">08 / How good is it</p><h2>How good is it, and its limits</h2></div><p>When we agree with Hansen or GLAD, we match other maps. That is not proof we are right. Nobody has checked our map on the ground<button type="button" class="tip" data-tip="groundtruth">?</button>. Every flag is a possible clearing, not confirmed.</p></div>
   <div class="analysis-grid">
     <article class="panel glass reveal">
-      <h3>Forest map vs Hansen</h3>
+      <h3>Our forest map vs the Hansen map</h3>
       <div id="val-forest"><span class="tag">pending</span></div>
-      <h3>Flagged forest-to-non-forest blocks vs GLAD alerts</h3>
-      <p class="note">How many flagged blocks overlap a GLAD alert (&plusmn;24 days), compared with the same number of stable-forest blocks picked at random. Enrichment tells you the flags aren't random. It isn't accuracy, and most flags have no alert at all.</p>
+      <h3>Possible clearings<button type="button" class="tip" data-tip="flag">?</button> vs deforestation alerts</h3>
+      <p class="note">How many possible-clearing squares overlap a GLAD alert (&plusmn;24 days)? We compare that with the same number of random squares of unchanged forest. A higher ratio means the flags aren't random. This is not accuracy, and most flags have no alert at all.</p>
       <div class="table-scroll" id="val-enrich"><span class="tag">pending</span></div>
-      <h3 id="results-h">First attempt: 1 dB change detector (20 km window, did not work)</h3>
+      <h3 id="results-h">First try: a simple change detector (1 dB) on the 20 km test area. It did not work.</h3>
       <div id="results"><span class="tag">pending</span></div>
       <!-- HUMAN-RELABEL: the line below is computed from data/metrics.json hand_labeled (AI labeller, blind to the key).
            When an independent human re-label is done, update hand_labeled in metrics.json and change the labeller text in observatory.js handCheck(). -->
@@ -379,30 +381,30 @@
       <button id="download-report" class="mini" disabled>Download data report</button>
     </article>
     <article class="panel glass reveal">
-      <h3>Limitations</h3>
+      <h3>Limits</h3>
       <ul class="limits" id="limits">
-        <li>We only have the dry season (June to October 2026). We didn't test the wet season, which is when cloud is worst.</li>
-        <li id="lim-seasonal">Flags compare the last two passes with the first three, so many are likely seasonal drying rather than clearing.</li>
-        <li>NISAR L2 GCOV is still a provisional product, and the display layers are compressed.</li>
-        <li>Hansen and GLAD come from optical satellites. We use them as a reference, but they aren't ground truth.</li>
-        <li>We don't handle selective logging, fire or flooding.</li>
-        <li>Our first try, a 1 dB change detector, failed. Details are above and in the analysis section.</li>
+        <li>Dry season only<button type="button" class="tip" data-tip="dryseason">?</button>: we have June to October 2026. We didn't test the wet season, when cloud is worst.</li>
+        <li id="lim-seasonal">Flags compare the last two passes with the first three, so many are likely seasonal drying, not clearing.</li>
+        <li>We use NISAR's early-release radar images<button type="button" class="tip" data-tip="gcov">?</button>, which may still change. The map layers are compressed.</li>
+        <li>Hansen and GLAD are made from satellite photos. We compare with them, but they are not the final word.</li>
+        <li>We can't spot selective logging (cutting only some trees), fire or flooding.</li>
+        <li>Our first try, a simple change detector (1 dB), failed. Details are above.</li>
       </ul>
-      <p class="note">We do not claim this stops deforestation, saves carbon, or works everywhere.</p>
+      <p class="note">We don't claim this stops deforestation, saves carbon, or works everywhere.</p>
       <h3>Where it could go next</h3>
-      <p>Passes from the wet season and from more than one year. A correction for the seasons. A method that also watches pasture that's already been cleared. And labels from people who weren't part of the project.</p>
+      <p>Radar passes from the wet season and from more than one year. A fix for seasonal changes. A method that also watches pasture that was cleared before. And labels from people outside the project.</p>
     </article>
   </div>
   <details class="story-panel glass reveal" id="findings"><summary>The story in six steps</summary><div class="story" id="story"><p class="note">Loading&hellip;</p></div></details>
-  <div class="sources reveal" id="sources"><h3>Data sources and acknowledgments</h3><p>NASA&ndash;ISRO NISAR L2 GCOV provisional · Copernicus Sentinel-2 scene classification (Earth Search) · Mapzen / AWS Terrain Tiles · FUNAI Terras Ind&iacute;genas · GLAD-L alerts · Hansen Global Forest Change · MapLibre GL JS · OpenFreeMap / OpenStreetMap · Esri contextual imagery.</p><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md">Sources &amp; acknowledgments</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md">Methods &amp; validation record</a><p class="note">RADD comparison is not available in the shipped frontend datasets.</p></div>
+  <div class="sources reveal" id="sources"><h3>Where the data comes from</h3><p>We built this site with data and tools from: NASA&ndash;ISRO NISAR L2 GCOV provisional · Copernicus Sentinel-2 scene classification (Earth Search) · Mapzen / AWS Terrain Tiles · FUNAI Terras Ind&iacute;genas · GLAD-L alerts · Hansen Global Forest Change · MapLibre GL JS · OpenFreeMap / OpenStreetMap · Esri contextual imagery.</p><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md">Sources &amp; acknowledgments</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md">How we tested it (full record)</a><p class="note">We could not compare with RADD alerts: that data is not included in this site.</p></div>
 </section>
 </main>
 
 <footer>
-  <a class="brand" href="#explore" data-go="intro">Next <span>Frontier</span></a>
-  <div><p>OrbitalResonance &middot; NASA Space Apps 2026 &middot; Dancing with the SARs &middot; The Next Frontier</p><p>Independent challenge project; no NASA endorsement implied.</p></div>
-  <nav aria-label="Research links"><a href="#sources">Data credits</a><a href="#method">Methodology</a><a href="#impact">Limitations</a></nav>
-  <nav aria-label="Project links"><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps" target="_blank" rel="noopener">GitHub repository</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md" target="_blank" rel="noopener">Validation results</a></nav>
+  <a class="brand" href="#explore" data-go="intro">Amazon Forest <span>Watch</span></a>
+  <div><p>Amazon Forest Watch &middot; The Next Frontier</p><p>By team OrbitalResonance &middot; NASA Space Apps 2026 &middot; challenge: Dancing with the SARs</p><p>An independent challenge project. NASA has not endorsed it.</p></div>
+  <nav aria-label="Research links"><a href="#sources">Data credits</a><a href="#method">How it works</a><a href="#impact">How good is it</a><a href="#limits">Limits</a><button type="button" class="glossary-link" data-open-glossary>Glossary</button></nav>
+  <nav aria-label="Project links"><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps" target="_blank" rel="noopener">GitHub repository</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md" target="_blank" rel="noopener">Test results</a></nav>
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
