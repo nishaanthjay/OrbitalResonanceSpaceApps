@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261115-frame-1">
+  <link rel="stylesheet" href="observatory.css?v=20261115-frame-2">
 </head>
 <body>
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -45,7 +45,7 @@
   <div class="hero">
     <p class="eyebrow" id="place">Novo Progresso, Par&aacute; &middot; BR-163</p>
     <h1><span class="ln"><span>The Next</span></span><span class="ln"><span>Frontier.</span></span></h1>
-    <p class="lede">Clouds hide this forest edge from optical satellites for months. NISAR's L-band radar sees through them. Behind this text: <em id="hero-what">its HV image</em>, the forest bright and cleared land dark. An honest test of what it can and cannot catch.</p>
+    <p class="lede">Clouds hide the Amazon from optical satellites for much of the rainy season. NISAR's L-band radar sees through them. Behind this text: <em id="hero-what">its HV image</em>, the forest bright and cleared land dark. An honest test of what it can and cannot catch.</p>
     <div class="actions">
       <button class="cta" data-go="explore">Explore the radar
         <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
@@ -114,9 +114,9 @@
           <div class="note keyrow" id="han-legend"></div>
         </div>
         <div id="big-extras" hidden>
-          <label class="check"><input type="checkbox" id="t-lost" checked> Forest lost June to October</label>
+          <label class="check"><input type="checkbox" id="t-lost" checked> Flagged forest-to-cleared switches, June to October (unconfirmed)</label>
           <div class="note keyrow"><span class="sw" style="background:#b4401c"></span> 100 m blocks: forest on &ge; 2 of 06-26/07-08/07-20, non-forest on 09-30 and 10-12. Click a patch for its HV series.</div>
-          <label class="check"><input type="checkbox" id="t-fs"> Colour lost blocks by first-switch date</label>
+          <label class="check"><input type="checkbox" id="t-fs"> Colour flags by the pass they first switched</label>
           <div class="note keyrow" id="fs-legend"></div>
           <div class="note keyrow"><span class="sw ref" style="border-color:#fdd663"></span> alert-supported patch <span class="sw ref" style="border-color:#f3b49b;margin-left:6px"></span> radar only, unconfirmed (outlines from zoom 12)</div>
           <label class="check"><input type="checkbox" id="t-prot" checked> Protected areas &amp; Indigenous lands <span class="tag" id="p-prot" hidden>pending</span></label>
@@ -125,9 +125,9 @@
           <div class="note keyrow"><span class="sw ref" style="border-style:dashed;border-color:#fdd663"></span> original 20 km window, excluded from scale scores</div>
         </div>
         <div id="frame-extras" hidden>
-          <label class="check"><input type="checkbox" id="t-flost" checked> Forest lost June to October</label>
+          <label class="check"><input type="checkbox" id="t-flost" checked> Flagged forest-to-cleared switches, June to October (unconfirmed)</label>
           <div class="note keyrow"><span class="sw" style="background:#ff2bd6"></span> 100 m blocks, same rule as the 60 km map. Click a patch (&ge; 3 ha) for its HV series.</div>
-          <label class="check"><input type="checkbox" id="t-ffs"> Colour lost blocks by first-switch date</label>
+          <label class="check"><input type="checkbox" id="t-ffs"> Colour flags by the pass they first switched</label>
           <div class="note keyrow" id="ffs-legend"></div>
           <label class="check"><input type="checkbox" id="t-fout" checked> 60 km map and test window outlines</label>
         </div>
@@ -143,13 +143,13 @@
         <h2>BR-163 frontier, 60 km <span class="tag">out-of-sample</span></h2>
         <p class="note" id="big-caption">Threshold fixed on a 10 km strip, tested here unchanged. Agreement with Hansen/GLAD, a reference, not ground truth.</p>
         <div id="big-results"><span class="tag">pending</span></div>
-        <h3>Lost blocks inside protected areas and Indigenous lands</h3>
+        <h3>Flagged blocks inside protected areas and Indigenous lands</h3>
         <div id="big-protected"><span class="tag">pending</span></div>
         <div class="row wrap"><button id="dl-geojson" class="mini" type="button" disabled>Watchlist (GeoJSON)</button><button id="dl-csv" class="mini" type="button" disabled>Watchlist (CSV)</button></div>
         <p class="note" id="dl-note"></p>
         <h3>Forest and non-forest, class by class</h3>
         <div id="big-classes"><span class="tag">pending</span></div>
-        <h3>Lost patches: alert-supported or radar only</h3>
+        <h3>Flagged patches: alert-supported or radar only</h3>
         <div id="big-cats"><span class="tag">pending</span></div>
         <h3>Top 20 places to check first</h3>
         <p class="note" id="big-watch-note"></p>
@@ -159,7 +159,7 @@
       </section>
       <section id="frame-panel" hidden>
         <h2>Full NISAR frame <span class="tag">out-of-sample</span></h2>
-        <p class="note">The same fixed threshold and loss rule over the whole radar frame (track 2, frame 174), scored once against Hansen and GLAD, rules pre-registered in validation/PREREG_frame.md. A reference, not ground truth.</p>
+        <p class="note">The same fixed threshold and class-switch rule over the whole radar frame (track 2, frame 174), scored once against Hansen and GLAD, rules pre-registered in validation/PREREG_frame.md. A reference, not ground truth.</p>
         <div id="frame-results"><span class="tag">pending</span></div>
         <p class="note" id="frame-note"></p>
       </section>
@@ -262,7 +262,7 @@
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=20261115-frame-1"></script>
-<script src="observatory.js?v=20261115-frame-1"></script>
+<script src="explore.js?v=20261115-frame-2"></script>
+<script src="observatory.js?v=20261115-frame-2"></script>
 </body>
 </html>
