@@ -69,3 +69,20 @@ def test_block_mapping_reproduces_lost_layer():
     labels = c.patch_labels(gj["features"])
     assert int((labels > 0).sum()) == sum(f["properties"]["n_blocks"] for f in gj["features"])
     assert np.array_equal(back == 1, (labels > 0) & rep)
+
+
+def test_confidence_classes():
+    med = np.array([[-9.0, -11.0, -11.6, -13.0, np.nan]])
+    assert c.confidence_classes(med, -11.25, 0.5).tolist() == [[1, 3, 3, 2, 0]]
+
+
+def test_warp_to_display_matches_source_blocks():
+    big = json.loads((BIG / "big.json").read_text())
+    tf, h, w = Affine(*big["grid"]["transform"]), big["grid"]["height"], big["grid"]["width"]
+    native = np.zeros((c.NY, c.NX), np.uint8)
+    native[100:200, 300:400] = 1
+    native[400:410, 50:60] = 2
+    disp = c.warp_to_display(native, tf, h, w)
+    blk = c.source_blocks(tf, h, w)
+    expect = np.where(blk >= 0, native.ravel()[np.clip(blk, 0, None)], 0)
+    assert np.array_equal(disp, expect)

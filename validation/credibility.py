@@ -49,6 +49,7 @@ NATIVE_TF = from_origin(XC[0] - BLOCK_M / 2, YC[0] + BLOCK_M / 2, BLOCK_M, BLOCK
 
 FOREST_RGB, NONFOREST_RGB = (0x2F, 0x6B, 0x4F), (0xB4, 0x40, 0x1C)
 UNCERTAIN_BAND_DB = 0.5  # display choice for the confidence layer, not a tuned or scored value
+UNCERTAIN_RGB = (0x8A, 0x94, 0x90)  # neutral grey
 PERSIST_COLORS = ["#b4401c", "#a24a24", "#90542c", "#7e5e34", "#6c683c", "#5a6244", "#485e4a", "#3a644d", "#33684e", "#2f6b4f"]
 TOP_N = 20
 
@@ -113,6 +114,25 @@ def display_to_native(values: np.ndarray, src: np.ndarray, fill) -> tuple[np.nda
     out[flat] = values.ravel()[keep]
     rep[flat] = True
     return out.reshape(NY, NX), rep.reshape(NY, NX)
+
+
+def confidence_classes(med: np.ndarray, T: float, band: float = UNCERTAIN_BAND_DB) -> np.ndarray:
+    """uint8 per block from the 9-pass median HV (dB): 0 no data, 1 forest, 2 non-forest, 3 uncertain (|med - T| <= band)."""
+    out = np.zeros(med.shape, np.uint8)
+    ok = np.isfinite(med)
+    unc = ok & (np.abs(med - T) <= band)
+    out[ok & ~unc & (med >= T)] = 1
+    out[ok & ~unc & (med < T)] = 2
+    out[unc] = 3
+    return out
+
+
+def warp_to_display(native: np.ndarray, display_tf: Affine, h: int, w: int) -> np.ndarray:
+    """Same nearest warp as make_big.py (native block grid -> big.json EPSG:3857 grid); 0 = no data."""
+    out = np.zeros((h, w), native.dtype)
+    reproject(native, out, src_transform=NATIVE_TF, src_crs=CRS, dst_transform=display_tf, dst_crs="EPSG:3857",
+              resampling=Resampling.nearest, src_nodata=0, dst_nodata=0)
+    return out
 
 
 # ---------- lost patches on the native grid ----------
@@ -209,14 +229,31 @@ def run(big_dir: Path, metrics_path: Path, stack: str | None = None) -> dict:
         import xarray as xr
         import fnf
         ds = xr.open_dataset(stack)
+        if [str(t)[:10] for t in ds.time.values] != big["dates"]:
+            raise SystemExit("stack dates differ from big.json")
+        if not (np.allclose(ds["x"].values, XC) and np.allclose(ds["y"].values, YC)):
+            raise SystemExit("stack grid differs from the PREREG_scale.md block grid")
         hv = ds["hv_db"].values
-        med = fnf.median_feature(np.where(np.isfinite(hv).all(axis=0), hv, np.nan))
-        ok = np.isfinite(med)
-        unc = ok & (np.abs(med - T) <= UNCERTAIN_BAND_DB)
-        res["confidence"] = {"uncertain_band_db": UNCERTAIN_BAND_DB, "status": "computed",
-                             "note": "display choice, not a tuned or scored value",
-                             "blocks": {"forest": int((ok & ~unc & (med >= T)).sum()), "nonforest": int((ok & ~unc & (med < T)).sum()),
-                                        "uncertain": int(unc.sum())}}
+        with np.errstate(all="ignore"):
+            med = fnf.median_feature(np.where(np.isfinite(hv).all(axis=0), hv, np.nan))  # make_big.py's clip
+        conf = confidence_classes(med, T)
+        disp = warp_to_display(conf, tf, *pers.shape)
+        med_disp = decode_classes(np.asarray(Image.open(big_dir / big["layers"]["median"]).convert("RGBA")))
+        sure = (disp == 1) | (disp == 2)
+        if (disp[sure] != med_disp[sure]).any() or ((disp > 0) != (med_disp > 0)).any():
+            raise SystemExit("confidence layer disagrees with forest_median.webp outside the uncertain band")
+        img = np.zeros(disp.shape + (4,), np.uint8)
+        for v, col in ((1, FOREST_RGB), (2, NONFOREST_RGB), (3, UNCERTAIN_RGB)):
+            img[disp == v] = (*col, 255)
+        Image.fromarray(img, "RGBA").save(big_dir / "confidence.webp", format="WEBP", lossless=True, exact=True)
+        n = int((conf > 0).sum())
+        cnt = {"forest": int((conf == 1).sum()), "nonforest": int((conf == 2).sum()), "uncertain": int((conf == 3).sum())}
+        res["confidence"] = {"file": "confidence.webp", "uncertain_band_db": UNCERTAIN_BAND_DB, "status": "computed",
+                             "definition": f"9-pass median HV within +/-{UNCERTAIN_BAND_DB} dB of T_db = uncertain; otherwise the median map's class",
+                             "note": "the +/-0.5 dB band is a display choice, not a tuned or scored value",
+                             "colors": {"forest": "#2f6b4f", "non_forest": "#b4401c", "uncertain": "#8a9490"},
+                             "scope": "whole 60 km map incl. the original window, native blocks valid on all 9 passes",
+                             "blocks": cnt, "share": {k: v / n for k, v in cnt.items()}}
     else:
         res["confidence"] = {"uncertain_band_db": UNCERTAIN_BAND_DB, "status": "pending",
                              "note": "needs block HV from data/stack_big_t2f174.nc (run with --stack); +/-0.5 dB is a display choice"}
