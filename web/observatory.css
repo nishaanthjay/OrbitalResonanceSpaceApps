@@ -59,6 +59,10 @@ h1, h2, h3, p { margin-top: 0; }
              text-decoration: none; white-space: nowrap; transition: opacity .25s, color .25s; }
 .top nav a:hover, .top nav a.active { opacity: 1; color: #fff; }
 .top nav a.ext::after { content: '\2197'; margin-left: 5px; font-size: 11px; opacity: .6; }
+/* longer brand + 10 links + Glossary + Tour: tighten the bar so it fits from ~1280 px down to the 900 px mobile layout */
+@media (max-width: 1500px) and (min-width: 901px) { .top { gap: 14px; padding-right: 18px; } .top nav { gap: 0; } .top nav a { padding: 7px 9px; font-size: 12.5px; } }
+@media (max-width: 1320px) and (min-width: 901px) { .top nav { overflow-x: auto; scrollbar-width: none; min-width: 0; } .top nav::-webkit-scrollbar { display: none; } .top nav a.ext::after { display: none; } }
+@media (max-width: 600px) { .top { gap: 8px; } .top .brand { white-space: normal; width: 6.6em; font-size: 13px; line-height: 1.15; } }
 #nav-blob { position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: 0; border-radius: 999px; opacity: 0; pointer-events: none;
             background: linear-gradient(180deg, rgba(206, 217, 223, .16), rgba(206, 217, 223, .06));
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -1px 0 rgba(0, 0, 0, .2);
@@ -114,6 +118,9 @@ h1 .ln { display: block; overflow: hidden; padding-bottom: .07em; margin-bottom:
 h1 .ln > span { display: inline-block; animation: lineUp 1.1s var(--ease) both; }
 h1 .ln:nth-child(1) > span { animation-delay: .25s; }
 h1 .ln:nth-child(2) > span { animation-delay: .37s; }
+/* hero title: app name on line 1, the tagline ("The Next Frontier.") smaller on line 2 */
+.hero h1 { font-size: clamp(40px, 4.6vw, 62px); }
+.hero h1 .ln + .ln { font-size: .52em; letter-spacing: -.015em; color: var(--lichen); margin-top: .18em; }
 .lede { font-size: 15px; line-height: 1.65; color: var(--mist); margin: 0 0 30px; max-width: 44ch; animation: rise 1s var(--ease) both .55s; }
 .lede em { font-style: normal; color: var(--lichen); display: inline-block; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; animation: rise 1s var(--ease) both .7s; }
