@@ -216,5 +216,340 @@
   "lost_blocks": 4618,
   "definition": "per lost block (PREREG_scale.md rule, valid on all 9 dates): the first pass after 07-20 on which it is non-forest and stays non-forest through 10-12. Descriptive only; no new score or threshold.",
   "command": "python validation/first_switch.py --stack data/stack_big_t2f174.nc --big-dir web/data/explore/big"
+ },
+ "class_metrics": {
+  "source": "validation/scale_metrics.json a_forest_map (counts copied, not recomputed)",
+  "scope": "scored blocks: big AOI, valid on all 9 passes, original window excluded",
+  "reference": "Hansen GFC v1.13 forest, block forest if >= 50 % of 25 px (a reference, not ground truth)",
+  "median": {
+   "n": 158920,
+   "confusion": {
+    "rows": "map class",
+    "cols": "Hansen class",
+    "map_forest": {
+     "hansen_forest": 123786,
+     "hansen_nonforest": 1804
+    },
+    "map_nonforest": {
+     "hansen_forest": 5465,
+     "hansen_nonforest": 27865
+    }
+   },
+   "forest_precision": 0.9856357990285851,
+   "forest_recall": 0.9577179286814028,
+   "nonforest_precision": 0.836033603360336,
+   "nonforest_recall": 0.9391957935892683,
+   "overall_agreement": 0.9542600050339793,
+   "formulas": {
+    "forest_precision": "tp / (tp + fp)",
+    "forest_recall": "tp / (tp + fn)",
+    "nonforest_precision": "tn / (tn + fn)",
+    "nonforest_recall": "tn / (tn + fp)",
+    "overall_agreement": "(tp + tn) / n"
+   }
+  },
+  "median_pure_blocks": {
+   "n": 150660,
+   "confusion": {
+    "rows": "map class",
+    "cols": "Hansen class",
+    "map_forest": {
+     "hansen_forest": 121284,
+     "hansen_nonforest": 805
+    },
+    "map_nonforest": {
+     "hansen_forest": 3973,
+     "hansen_nonforest": 24598
+    }
+   },
+   "forest_precision": 0.9934064493934752,
+   "forest_recall": 0.968281213824377,
+   "nonforest_precision": 0.8609429141437122,
+   "nonforest_recall": 0.9683108294295949,
+   "overall_agreement": 0.9682862073543077,
+   "formulas": {
+    "forest_precision": "tp / (tp + fp)",
+    "forest_recall": "tp / (tp + fn)",
+    "nonforest_precision": "tn / (tn + fn)",
+    "nonforest_recall": "tn / (tn + fp)",
+    "overall_agreement": "(tp + tn) / n"
+   }
+  }
+ },
+ "persistence": {
+  "file": "persistence.webp",
+  "definition": "number of the 9 passes on which the block is forest (HV >= T_db); 9 = forest on every pass",
+  "colors": {
+   "0": "#b4401c",
+   "1": "#a24a24",
+   "2": "#90542c",
+   "3": "#7e5e34",
+   "4": "#6c683c",
+   "5": "#5a6244",
+   "6": "#485e4a",
+   "7": "#3a644d",
+   "8": "#33684e",
+   "9": "#2f6b4f"
+  },
+  "source": "decoded from the lossless forest_<date>.webp layers (exact classes, nearest resampling); no stack values used",
+  "blocks": {
+   "counted": 198476,
+   "per_count": {
+    "0": 40260,
+    "1": 2113,
+    "2": 1567,
+    "3": 1648,
+    "4": 1811,
+    "5": 2436,
+    "6": 3652,
+    "7": 6660,
+    "8": 17189,
+    "9": 121140
+   },
+   "share": {
+    "0": 0.2028456841129406,
+    "1": 0.010646123460771076,
+    "2": 0.007895161127793789,
+    "3": 0.008303270924444266,
+    "4": 0.00912452891029646,
+    "5": 0.012273524254821741,
+    "6": 0.01840020959713013,
+    "7": 0.03355569439126141,
+    "8": 0.08660492956327213,
+    "9": 0.6103508736572684
+   },
+   "note": "whole 60 km map incl. the original window; native 100 m blocks that have at least one display pixel (358,783 of 360,000 blocks; the rest are dropped by nearest resampling and not counted). Block of each display pixel found by warping block indices with make_big.py's reproject call."
+  }
+ },
+ "confidence": {
+  "uncertain_band_db": 0.5,
+  "status": "pending",
+  "note": "needs block HV from data/stack_big_t2f174.nc (run with --stack); +/-0.5 dB is a display choice"
+ },
+ "lost_categories": {
+  "definition": "alert_supported: at least one block of the patch holds a GLAD-L or GLAD-S2 alert pixel dated 2026-06-26 .. 2026-11-05 (PREREG_scale.md precision window, scale.py matching); radar_only_unconfirmed: none. Radar-only patches are unconfirmed radar change, not deforestation.",
+  "scope": "all lost patches in lost.geojson (whole 60 km map incl. the original window)",
+  "patches": {
+   "alert_supported": {
+    "patches": 738,
+    "ha": 1777.0
+   },
+   "radar_only_unconfirmed": {
+    "patches": 2261,
+    "ha": 2841.0
+   }
+  },
+  "blocks_scored_area": {
+   "lost": 2816,
+   "with_glad_l": 244,
+   "with_glad_s2": 406,
+   "with_either": 485,
+   "check": "with_glad_l and with_glad_s2 reproduce scale_metrics.json b_alerts.*.lost.n_with_alert"
+  }
+ },
+ "watch_priorities": {
+  "definition": "the 20 largest lost patches (8-connected merges of lost blocks, lost.geojson), ranked by area. distance_m = from the patch's nearest block centre to the nearest block centre that was already non-forest at the start (non-forest on >= 2 of 06-26/07-08/07-20); 100 m = touching. Places to check first, not confirmed clearing.",
+  "items": [
+   {
+    "id": 2236,
+    "centroid_lon": -54.69353,
+    "centroid_lat": -8.23756,
+    "area_ha": 37.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2362,
+    "centroid_lon": -54.69984,
+    "centroid_lat": -8.25395,
+    "area_ha": 36.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2267,
+    "centroid_lon": -54.66087,
+    "centroid_lat": -8.24156,
+    "area_ha": 34.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2336,
+    "centroid_lon": -54.67175,
+    "centroid_lat": -8.24683,
+    "area_ha": 26.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2081,
+    "centroid_lon": -54.68218,
+    "centroid_lat": -8.22474,
+    "area_ha": 22.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 1163,
+    "centroid_lon": -54.73929,
+    "centroid_lat": -8.08849,
+    "area_ha": 20.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": false,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2206,
+    "centroid_lon": -54.67627,
+    "centroid_lat": -8.23476,
+    "area_ha": 20.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 1084,
+    "centroid_lon": -54.74267,
+    "centroid_lat": -8.07657,
+    "area_ha": 18.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": false,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2200,
+    "centroid_lon": -54.75295,
+    "centroid_lat": -8.2344,
+    "area_ha": 18.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2230,
+    "centroid_lon": -54.68112,
+    "centroid_lat": -8.23572,
+    "area_ha": 18.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2293,
+    "centroid_lon": -54.67919,
+    "centroid_lat": -8.24197,
+    "area_ha": 15.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-09-18"
+   },
+   {
+    "id": 629,
+    "centroid_lon": -54.81711,
+    "centroid_lat": -8.00031,
+    "area_ha": 13.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": false,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2422,
+    "centroid_lon": -54.69163,
+    "centroid_lat": -8.2563,
+    "area_ha": 13.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 239,
+    "centroid_lon": -54.80013,
+    "centroid_lat": -7.95504,
+    "area_ha": 12.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": false,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 768,
+    "centroid_lon": -54.81067,
+    "centroid_lat": -8.0173,
+    "area_ha": 12.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": false,
+    "first_switch_date": "2026-08-25"
+   },
+   {
+    "id": 2352,
+    "centroid_lon": -54.69369,
+    "centroid_lat": -8.24714,
+    "area_ha": 12.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-09-18"
+   },
+   {
+    "id": 1074,
+    "centroid_lon": -54.73719,
+    "centroid_lat": -8.07262,
+    "area_ha": 11.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": false,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2229,
+    "centroid_lon": -54.69751,
+    "centroid_lat": -8.23498,
+    "area_ha": 11.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 2369,
+    "centroid_lon": -54.67583,
+    "centroid_lat": -8.2511,
+    "area_ha": 11.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   },
+   {
+    "id": 1682,
+    "centroid_lon": -54.75735,
+    "centroid_lat": -8.16189,
+    "area_ha": 9.0,
+    "category": "alert_supported",
+    "distance_m": 100.0,
+    "in_original_window": true,
+    "first_switch_date": "2026-08-13"
+   }
+  ]
  }
 }

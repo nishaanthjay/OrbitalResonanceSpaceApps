@@ -206,3 +206,31 @@ Lost blocks: 240,178 (4.20 % of scored blocks, 240,178 ha of class switch), of w
 Recall_like restricted to Hansen-forest reference blocks: GLAD-L lost 0.4035 (5,471 of 13,559), control 0.0151; GLAD-S2 lost 0.1437 (6,639 of 46,201), control 0.0312.
 Alert pixels read: GLAD-L 1,023,460, GLAD-S2 75,688,881.
 Reading, stated plainly: lost blocks have an alert about 26 times (GLAD-L) and 6 times (GLAD-S2) as often as random stable-forest blocks, so the class switch is not random. But only 3.3 % (GLAD-L) and 4.3 % (GLAD-S2) of lost blocks carry an alert. The rest are **radar-only, unconfirmed**; we do not call them deforestation. Alerts are a reference, not ground truth.
+## Credibility pack (descriptive, 60 km map)
+Run 2026-11-14. No new threshold; nothing already scored was rescored. Command:
+`python validation/credibility.py --big-dir web/data/explore/big --metrics validation/scale_metrics.json`
+Adds `class_metrics`, `persistence`, `confidence`, `lost_categories` and `watch_priorities` to `web/data/explore/big/big.json` (no existing key changed), `category` to every patch in `lost.geojson` (nothing else changed), and writes `persistence.webp`. Built without the big stack (not on this machine): class metrics come from the counts in `scale_metrics.json`; per-block classes are decoded from the lossless `forest_<date>.webp` layers, and each display pixel is traced to its native 100 m block by warping block indices with the same `reproject` call as `make_big.py`. Checks built into the script (it stops if any fails): every patch rasterises back to its `n_blocks`; `lost.webp` traced back matches `lost.geojson` block for block; the scored lost blocks total 2,816; and the alert matching reproduces 244 (GLAD-L) and 406 (GLAD-S2) lost blocks with an alert, as in `scale_metrics.json`.
+
+### 1. Class metrics (9-pass median map vs Hansen, scored blocks)
+| | Hansen forest | Hansen non-forest |
+|---|---|---|
+| **Map forest** | 123,786 (tp) | 1,804 (fp) |
+| **Map non-forest** | 5,465 (fn) | 27,865 (tn) |
+
+| Class | precision | recall |
+|---|---|---|
+| Forest | tp / (tp + fp) = **0.9856** | tp / (tp + fn) = **0.9577** |
+| Non-forest | tn / (tn + fn) = **0.8360** | tn / (tn + fp) = **0.9392** |
+
+Overall agreement (tp + tn) / n = 0.9543, n = 158,920. Pure blocks (Hansen fraction <= 0.1 or >= 0.9, n = 150,660): forest 0.9934 / 0.9683, non-forest 0.8609 / 0.9683 (precision / recall). Reading: non-forest is the weaker class. 16.4 % of the blocks the map calls non-forest are Hansen forest (5,465 of 33,330), so 95.4 % is not just "mostly forest": non-forest recall is 93.9 %. Hansen is a reference, not ground truth.
+
+### 2. Persistence (forest on how many of the 9 passes)
+198,476 native blocks counted (whole 60 km map incl. the original window; blocks valid on all 9 passes that have a display pixel): forest on all 9 passes 121,140 (61.0 %), on none 40,260 (20.3 %), on 1 to 8 passes 37,076 (18.7 %). Counts per value in `big.json` `persistence`; map in `persistence.webp` (laterite 0 to canopy green 9). The "uncertain" class (9-pass median HV within +/-0.5 dB of T_db, a display choice) needs block HV values from `data/stack_big_t2f174.nc` and is **pending** (`confidence.status`). Run the script with `--stack` to add it.
+
+### 3. Lost-patch categories
+A patch is `alert_supported` if at least one of its blocks holds a GLAD-L or GLAD-S2 alert pixel dated 2026-06-26..11-05 (the PREREG_scale.md precision window, scale.py matching); otherwise `radar_only_unconfirmed`. Whole map (2,999 patches, 4,618 ha): **alert_supported 738 patches, 1,777 ha; radar_only_unconfirmed 2,261 patches, 2,841 ha** (61.5 % of flagged area). 1,887 of the 2,261 radar-only patches are a single 1 ha block. Scored blocks only: 485 of 2,816 lost blocks (17.2 %) have a GLAD-L or GLAD-S2 alert; 2,331 (82.8 %) have neither. Radar-only patches are unconfirmed radar change, not deforestation.
+
+### 4. Watch priorities (top 20 by area)
+The 20 largest lost patches (9 to 37 ha, 368 ha together) are in `big.json` `watch_priorities` (id, centroid, area, category, distance, first switch). All 20 are alert_supported. All 20 touch (100 m, adjacent blocks) land that was already non-forest at the start (non-forest on >= 2 of 06-26/07-08/07-20), i.e. they extend existing clearings rather than open new ones. 14 of the 20 lie in the original 20 km window (used to choose T; listed and flagged `in_original_window`, not excluded, since this is a list of places to check, not a score). First switch: 08-13 for 17, 08-25 for 1, 09-18 for 2. Distance is not a useful ranking key for these 20 because every one is adjacent; ranking is by area only.
+
+Tests: `python -m pytest -q validation pipeline/load web/tools` -> 69 passed (after rebasing on the full-frame commits).
