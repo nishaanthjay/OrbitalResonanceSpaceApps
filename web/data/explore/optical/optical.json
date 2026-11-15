@@ -1,0 +1,162 @@
+{
+ "source": "Copernicus Sentinel-2 L2A (Earth Search STAC v1, sentinel-2-l2a), modified Copernicus Sentinel data 2026",
+ "grid": {
+  "crs": "EPSG:3857",
+  "width": 603,
+  "height": 607,
+  "bounds": [
+   -6119560.312316406,
+   -946584.4828402491,
+   -6058537.65778421,
+   -885157.034579813
+  ],
+  "transform": [
+   101.19843206002639,
+   0.0,
+   -6119560.312316406,
+   0.0,
+   -101.19843206002639,
+   -885157.034579813
+  ]
+ },
+ "bounds_lonlat": [
+  -54.972945606450594,
+  -8.472268545181047,
+  -54.424769774012425,
+  -7.926099021500293
+ ],
+ "tolerance_days": 6,
+ "rule": "nearest Sentinel-2 acquisition date within +/- 6 days of each NISAR date; the day's MGRS tiles mosaicked",
+ "true_colour": "B04/B03/B02 surface reflectance, fixed stretch 0..0.3 gamma 0.5, same for all dates; 10 m averaged onto the grid; NO cloud masking. reflectance = DN * 0.0001 with the catalogue offset (-0.1) NOT applied: forest DN is ~180-740 (B04 median 272), which the offset would make negative",
+ "clear_fraction": "share of the 60 km box with SCL 4, 5, 6 (cloud_blindness.py rule)",
+ "webp_quality": 75,
+ "passes": [
+  {
+   "nisar_date": "2026-06-26",
+   "file": "optical_2026-06-26.webp",
+   "scene_id": "S2B_21LYL_20260624_0_L2A+S2B_21MYM_20260624_0_L2A",
+   "date": "2026-06-24",
+   "days_apart": -2,
+   "clear_fraction": 0.9977,
+   "clear_fraction_source": "SCL recomputed here",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-07-08",
+   "file": "optical_2026-07-08.webp",
+   "scene_id": "S2C_21LYL_20260709_0_L2A+S2C_21MYM_20260709_0_L2A",
+   "date": "2026-07-09",
+   "days_apart": 1,
+   "clear_fraction": 0.9222,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-07-20",
+   "file": "optical_2026-07-20.webp",
+   "scene_id": "S2C_21LYL_20260719_0_L2A+S2C_21MYM_20260719_0_L2A",
+   "date": "2026-07-19",
+   "days_apart": -1,
+   "clear_fraction": 0.9947,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-08-13",
+   "file": "optical_2026-08-13.webp",
+   "scene_id": "S2B_21LYL_20260813_0_L2A+S2B_21MYM_20260813_0_L2A",
+   "date": "2026-08-13",
+   "days_apart": 0,
+   "clear_fraction": 0.9993,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-08-25",
+   "file": "optical_2026-08-25.webp",
+   "scene_id": "S2B_21LYL_20260823_0_L2A+S2B_21MYM_20260823_0_L2A",
+   "date": "2026-08-23",
+   "days_apart": -2,
+   "clear_fraction": 0.9114,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-09-06",
+   "file": "optical_2026-09-06.webp",
+   "scene_id": "S2C_21LYL_20260907_0_L2A+S2C_21MYM_20260907_0_L2A",
+   "date": "2026-09-07",
+   "days_apart": 1,
+   "clear_fraction": 0.0,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-09-18",
+   "file": "optical_2026-09-18.webp",
+   "scene_id": "S2C_21LYL_20260917_0_L2A+S2C_21MYM_20260917_0_L2A",
+   "date": "2026-09-17",
+   "days_apart": -1,
+   "clear_fraction": 0.7635,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-09-30",
+   "file": "optical_2026-09-30.webp",
+   "scene_id": "S2A_21LYL_20260929_0_L2A+S2A_21MYM_20260929_0_L2A",
+   "date": "2026-09-29",
+   "days_apart": -1,
+   "clear_fraction": 0.0,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  },
+  {
+   "nisar_date": "2026-10-12",
+   "file": "optical_2026-10-12.webp",
+   "scene_id": "S2B_21LYL_20261012_0_L2A+S2B_21MYM_20261012_0_L2A",
+   "date": "2026-10-12",
+   "days_apart": 0,
+   "clear_fraction": 0.8991,
+   "clear_fraction_source": "cloud.json (cloud_blindness.py)",
+   "tiles": [
+    "21LYL",
+    "21MYM"
+   ],
+   "has_data_share_of_box": 1.0
+  }
+ ],
+ "command": "python validation/optical_layers.py --big-json web/data/explore/big/big.json --out-dir web/data/explore/optical --cloud-json web/data/explore/big/cloud.json"
+}
