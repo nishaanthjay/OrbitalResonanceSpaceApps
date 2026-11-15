@@ -146,7 +146,7 @@ function padding() {
     : { top: 80, right: 60, bottom: 150, left: state.mode === 'intro' ? Math.round(W * 0.16) : 76 + 372 + 40 };
 }
 function fit(duration = 1300) {
-  if (!state.loc) return;
+  if (!state.loc || state.cinema) return; // cinema.js owns the camera during the globe fly-in
   const b = state.loc.bounds_lonlat, mob = map.getContainer().clientWidth <= 900;
   const cam = map.cameraForBounds([[b[0], b[1]], [b[2], b[3]]], { padding: padding() });
   if (!cam) return;
@@ -827,6 +827,7 @@ map.on('load', async () => {
     // phones: keep the map credits behind the (i) button so they do not cover the hero
     if (innerWidth <= 900) document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
   } catch (e) { $('map-status').hidden = false; $('map-status').textContent = `Map data not available: ${e.message}. Check the data files and reload.`; }
+  document.dispatchEvent(new Event('explore:ready')); // cinema.js waits for this (state.bigMeta stays null if loading failed)
 });
 
 $('loc').onchange = (e) => selectLoc(e.target.value).catch(() => { $('map-status').hidden = false; $('map-status').textContent = 'Study area unavailable. Please reload.'; });
@@ -889,4 +890,5 @@ document.querySelectorAll('input[name=layer]').forEach((r) => (r.disabled = true
 $('boundary').onchange = applyVisibility;
 $('reset-map').onclick = () => fit();
 map.on('error', (e) => { if (/abort/i.test(String(e && e.error && (e.error.name + ' ' + e.error.message)))) return; // a newer image replaced this one
+  console.warn('map layer error', e.sourceId || '', e.error);
   $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });
