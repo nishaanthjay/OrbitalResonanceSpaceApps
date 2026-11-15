@@ -77,8 +77,11 @@ function setText(el, text) { // a small roll when a label changes
   if (!reduced) el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
 }
 
-const LAYER_NAME = { hv: 'HV', hh: 'HH', composite: 'HH + HV', hvchg: 'HV change', hhchg: 'HH change', forest: 'forest map', median: 'forest map', confidence: 'confidence map', persistence: 'forest persistence map' };
-const STATIC_LABEL = { median: '9-pass median', confidence: 'confidence (9-pass median)', persistence: 'passes seen as forest' };
+const LAYER_NAME = { hv: 'tree-signal', hh: 'ground-signal', composite: 'colour-mix', hvchg: 'tree-signal change', hhchg: 'ground-signal change', forest: 'forest map', median: 'typical forest map', confidence: 'map of unsure squares', persistence: 'count of passes seen as forest' };
+const STATIC_LABEL = { median: 'typical forest map', confidence: 'unsure squares (typical map)', persistence: 'passes seen as forest' };
+// plain display names for the place picker and the "About" box (the data files keep their own technical names)
+const PLACE_NAME = { spara: 'Novo Progresso, Pará (20 km test area)', rondonia: 'Rondônia (20 km)', big: 'BR-163 frontier, 60 km', frame: 'Whole radar image (~300 km)' };
+const placeName = (l) => PLACE_NAME[l.id] || l.name;
 function setImage(redraw = true) {
   if (state.loc) document.dispatchEvent(new CustomEvent('evidence:map-date',{detail:{date:state.loc.dates[state.i]}}));
   const loc = state.loc, op = +$('opacity').value / 100, date = loc.dates[state.i];
@@ -94,7 +97,7 @@ function setImage(redraw = true) {
     show('radar', url(isChg ? 'hv' : state.layer, state.i), isChg ? 0.45 * op : op);
     const showChg = isChg && hasImage(state.layer, state.i);
     show('chg', showChg ? url(state.layer, state.i) : null, 1);
-    setText($('datelabel'), `${date} · pass ${state.i + 1} of ${loc.dates.length}` + (isChg && !showChg ? ' · first pass, nothing earlier to compare' : ''));
+    setText($('datelabel'), `${date} · pass ${state.i + 1} of ${loc.dates.length}` + (isChg && !showChg ? ' · first pass, nothing earlier to compare with' : ''));
     setText($('hero-what'), `its ${LAYER_NAME[state.layer]} image from ${date}`);
   }
   const exploring = state.mode === 'exploring';
@@ -123,7 +126,7 @@ function drawPasses() {
   const x = (ms) => `--p:${(((ms - t[0]) / span) * 100).toFixed(2)}`;
   let html = '<span class="rail-cursor" id="rail-cursor" aria-hidden="true"></span>';
   for (let k = 1; k < t.length; k++)
-    for (let g = t[k - 1] + 12 * DAY; g < t[k] - 6 * DAY; g += 12 * DAY) html += `<span class="gap" style="${x(g)}" title="No pass in the stack"></span>`;
+    for (let g = t[k - 1] + 12 * DAY; g < t[k] - 6 * DAY; g += 12 * DAY) html += `<span class="gap" style="${x(g)}" title="Missed pass: no radar image on this date"></span>`;
   html += dates.map((d, i) => `<button class="pass" style="${x(t[i])};--d:${i}" data-i="${i}" aria-pressed="false" aria-label="Pass ${d}" tabindex="${i === state.i ? 0 : -1}"><i></i><span>${d.slice(5)}</span></button>`).join('');
   $('passes').innerHTML = html;
   $('pass-count').textContent = String(dates.length).padStart(2, '0');
@@ -229,22 +232,22 @@ function drawLegend() {
   const s = state.loc.stretch, L = state.layer, el = $('legend');
   if (isForestLoc()) {
     const T = (isFrame() ? state.frameMeta : state.bigMeta).T_db.toFixed(2);
-    const fnf = `<span class="sw" style="background:#2f6b4f"></span> forest (HV &ge; ${T} dB) <span class="sw" style="background:#b4401c;margin-left:6px"></span> non-forest`;
-    let body = `${fnf}. Transparent = outside the swath on at least one pass. 100 m blocks.`;
+    const fnf = `<span class="sw" style="background:#2f6b4f"></span> forest (tree signal &ge; ${T} dB) <span class="sw" style="background:#b4401c;margin-left:6px"></span> open land`;
+    let body = `${fnf}. No colour = outside the strip the satellite sees ${Glossary.tip('swath')} on at least one pass. 100 m squares.`;
     if (L === 'confidence') {
       const c = state.bigMeta.confidence || {};
-      body = `${fnf} <span class="sw" style="background:#8a9490;margin-left:6px"></span> uncertain: 9-pass median HV within &plusmn;${c.uncertain_band_db} dB of the threshold (${pct(c.share && c.share.uncertain)} of mapped blocks). The band is a display choice, not a tuned value.`;
+      body = `${fnf} <span class="sw" style="background:#8a9490;margin-left:6px"></span> unsure: the typical tree signal is within &plusmn;${c.uncertain_band_db} dB of the cut-off (${pct(c.share && c.share.uncertain)} of mapped squares). We picked this range for display. We didn't tune it.`;
     } else if (L === 'persistence') {
       const pc = state.bigMeta.persistence || {}, cols = pc.colors || {};
-      body = `<span class="ramp">${Object.keys(cols).map((k) => `<span class="sw" style="background:${cols[k]}" title="${k} of 9"></span>`).join('')}</span> 0 &rarr; 9 of the 9 passes classed forest. ${pct(pc.blocks && pc.blocks.share && pc.blocks.share['9'])} of blocks were forest on every pass, ${pct(pc.blocks && pc.blocks.share && pc.blocks.share['0'])} on none.`;
+      body = `<span class="ramp">${Object.keys(cols).map((k) => `<span class="sw" style="background:${cols[k]}" title="${k} of 9"></span>`).join('')}</span> 0 &rarr; 9 of the 9 passes looked like forest. ${pct(pc.blocks && pc.blocks.share && pc.blocks.share['9'])} of squares were forest on every pass, ${pct(pc.blocks && pc.blocks.share && pc.blocks.share['0'])} on none.`;
     }
     el.innerHTML = `<div class="note keyrow" style="padding-left:0">${body}</div>`;
     return;
   }
   const bar = (css, lo, hi, unit) => `<div class="legend" style="background:${css}"></div><div class="legend-lab"><span>${lo}</span><span>${hi}</span></div><div class="note">${unit}</div>`;
-  if (L === 'hv' || L === 'hh') el.innerHTML = bar('linear-gradient(90deg,#000,#fff)', `${s[L].lo} dB`, `${s[L].hi} dB`, `${L.toUpperCase()} gamma0, one fixed stretch for all dates (values outside are clipped)`);
-  else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, 'This date minus the average of all earlier dates, on ~80 m cells. Changes under 1 dB are left transparent (noise on a single date is ~0.4 dB at 20 m). It\'s a preview built from the clipped display layers, so real drops can be bigger.');
-  else el.innerHTML = `<div class="note">Red = HH (${s.hh.lo} to ${s.hh.hi} dB), green = HV (${s.hv.lo} to ${s.hv.hi} dB), blue = HH&minus;HV (${s.ratio.lo} to ${s.ratio.hi} dB). Green/yellow = forest, purple/blue = cleared or bare.</div>`;
+  if (L === 'hv' || L === 'hh') el.innerHTML = bar('linear-gradient(90deg,#000,#fff)', `${s[L].lo} dB`, `${s[L].hi} dB`, `${L === 'hv' ? 'Tree' : 'Ground'} signal (${L.toUpperCase()}), radar echo brightness ${Glossary.tip('gamma0')}. One fixed brightness range for all dates ${Glossary.tip('stretch')}: values beyond it look the same as the edge.`);
+  else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, `This date minus the average of all earlier dates, in ~80 m squares. Changes under 1 dB are left clear, because radar grain ${Glossary.tip('speckle')} on a single date is ~0.4 dB at 20 m. It's a preview made from the display images, which are cut off at the brightness range. So real drops can be bigger.`);
+  else el.innerHTML = `<div class="note">Red = ground signal, HH (${s.hh.lo} to ${s.hh.hi} dB). Green = tree signal, HV (${s.hv.lo} to ${s.hv.hi} dB). Blue = the difference, HH&minus;HV (${s.ratio.lo} to ${s.ratio.hi} dB). Green/yellow = forest, purple/blue = cleared or bare.</div>`;
 }
 
 // ---------- time series ----------
@@ -259,7 +262,7 @@ async function loadSeries() {
     if (bytes.length !== loc.series_shape.reduce((a, b) => a * b, 1)) throw new Error('Invalid series size');
     if (state.loc === loc) state.series = bytes;
   } catch {
-    if (state.loc === loc) $('chart').textContent = 'Pixel time series not available. Detection patch series may still be inspected.';
+    if (state.loc === loc) $('chart').textContent = 'The history of single spots isn\'t available. You can still click a detection patch.';
   }
 }
 function cellAt(lon, lat) {
@@ -299,7 +302,7 @@ function chartSVG(v, ref, dates, fresh) {
   for (let g = Math.ceil(lo); g <= hi; g += 2) grid += `<line x1="${ml}" x2="${W - mr}" y1="${Y(g)}" y2="${Y(g)}" stroke="${CHART.grid}" stroke-opacity=".5"/><text x="${ml - 4}" y="${Y(g) + 4}" fill="${CHART.text}" font-size="10" text-anchor="end">${g}</text>`;
   const ticks = dates.map((d, i) => (i % 2 === 0 ? `<text x="${X(d)}" y="${H - 8}" fill="${CHART.text}" font-size="10" text-anchor="${i === dates.length - 1 ? 'end' : 'middle'}">${d.slice(5)}</text>` : '')).join('');
   const cur = `<line x1="${X(dates[state.i])}" x2="${X(dates[state.i])}" y1="${mt}" y2="${H - mb}" stroke="${CHART.cur}" stroke-opacity=".7" stroke-dasharray="2 3"/>`;
-  return `<svg class="${fresh ? 'fresh' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="HH and HV backscatter over time at the selected spot">${grid}${ticks}${cur}
+  return `<svg class="${fresh ? 'fresh' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ground signal (HH) and tree signal (HV) over time at the selected spot">${grid}${ticks}${cur}
     ${line(ref.hh, CHART.hh, true)}${line(ref.hv, CHART.hv, true)}${line(v.hh, CHART.hh)}${line(v.hv, CHART.hv)}${dots(v.hh, CHART.hh)}${dots(v.hv, CHART.hv)}</svg>`;
 }
 function placeMarker(lon, lat, fresh) {
@@ -307,7 +310,7 @@ function placeMarker(lon, lat, fresh) {
   else {
     const el = document.createElement('div');
     el.className = 'pin';
-    el.setAttribute('aria-label', 'Selected observation');
+    el.setAttribute('aria-label', 'Selected spot');
     el.innerHTML = '<span></span>'; // MapLibre positions the outer element with transform; animate the inner one
     state.marker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map);
   }
@@ -321,37 +324,38 @@ function placeMarker(lon, lat, fresh) {
   }, 250);
 }
 
-const KEY = `<b style="color:${CHART.hh}">HH</b> and <b style="color:${CHART.hv}">HV</b>`;
+const KEY = `<b style="color:${CHART.hh}">ground signal (HH)</b> and <b style="color:${CHART.hv}">tree signal (HV)</b>`;
 function drawChart(lon, lat, fresh = true) {
   state.last = { kind: 'point', lon, lat };
-  if (isForestLoc()) { $('chart').innerHTML = `<div class="hint">Click a ${isFrame() ? 'magenta' : 'red'} flagged patch to see its HV series against the forest threshold.</div>`; return; }
+  if (isForestLoc()) { $('chart').innerHTML = `<div class="hint">Click a ${isFrame() ? 'magenta' : 'red'} possible clearing. You'll see its tree signal over time, next to the forest cut-off.</div>`; return; }
   const c = cellAt(lon, lat), el = $('chart');
-  if (!c) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
-  if (!state.series) { el.textContent = 'No pixel time series here. Try a detection patch, or reload.'; return; }
+  if (!c) { el.innerHTML = '<div class="hint">This spot is outside the radar image. Click inside it.</div>'; return; }
+  if (!state.series) { el.textContent = 'No signal history here. Try a detection patch, or reload the page.'; return; }
   const v = valuesAt(...c), ref = state.loc.stable_forest_ref;
   if (!v.hv.some(Boolean)) { el.innerHTML = '<div class="hint">No radar data at this spot.</div>'; return; }
   const clippedAny = [...v.hh, ...v.hv].some((p) => p && p.clipped);
   el.innerHTML = `${chartSVG(v, ref, state.loc.dates, fresh)}
-    <div class="note">${KEY} (dB) at ${lat.toFixed(4)}, ${lon.toFixed(4)}, ~80 m cell. Dashed = stable radar forest (median of ${ref.n_pixels.toLocaleString()} px with HV &ge; ${state.manifest.t_db_forest.toFixed(2)} dB on every date). Clearing usually shows as HV falling away from the dashed line.</div>
-    ${clippedAny ? '<div class="warn">Hollow dots hit the display stretch limit: the true value is at or beyond it.</div>' : ''}`;
+    <div class="note">${KEY} (dB) at ${lat.toFixed(4)}, ${lon.toFixed(4)}, in a ~80 m square. Dashed = forest that didn't change ${Glossary.tip('stable')} (middle value of ${ref.n_pixels.toLocaleString()} px with tree signal &ge; ${state.manifest.t_db_forest.toFixed(2)} dB on every date). Clearing usually shows as the tree signal falling away from the dashed line.</div>
+    ${clippedAny ? `<div class="warn">Hollow dots hit the edge of the brightness range ${Glossary.tip('stretch')}. The true value is at or beyond it.</div>` : ''}`;
   placeMarker(lon, lat, fresh);
 }
 
 // A clicked detection: the series are patch means of the 5x5-multilooked full-precision stack (detections.geojson).
-const SPLIT_NAME = { tune: 'tune half', holdout: 'holdout half', buffer: 'buffer strip' };
+const SPLIT_NAME = { tune: 'in the half we tuned on', holdout: 'in the test half, never used for tuning', buffer: 'in the gap strip between the halves' };
+const STAGE_NAME = { early: 'early sign: ground signal goes up', late: 'later sign: tree signal goes down' };
 function drawDetection(f, lngLat, fresh = true) {
   if (fresh) document.dispatchEvent(new CustomEvent('evidence:selection',{detail:{feature:f,kind:'det',point:[lngLat.lng,lngLat.lat],dates:state.loc.dates}}));
   state.last = { kind: 'det', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates;
-  const title = `Detection ${esc(p.id)}: ${esc(p.area_ha)} ha, first seen ${esc(p.first_date)}, ${esc(SPLIT_NAME[p.split] || p.split)}`;
+  const title = `Radar detection ${esc(p.id)}: ${esc(p.area_ha)} ha, first seen ${esc(p.first_date)}, ${esc(SPLIT_NAME[p.split] || p.split)}`;
   const series = (a) => (Array.isArray(a) && a.length === dates.length ? a.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null);
   const hh = series(p.hh_series_db), hv = series(p.hv_series_db);
   if (!hh || !hv) {
-    el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hh_series_db and hv_series_db must each hold ${dates.length} numbers (one per date).</div>`;
+    el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Can't draw the chart: each signal needs ${dates.length} values, one per date.</div>`;
     return;
   }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh, hv }, state.loc.stable_forest_ref, dates, fresh)}
-    <div class="note">${KEY} (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. The optical chip check we have can't tell whether this patch is clearing or radar noise. Someone independent needs to review it.</div>`;
+    <div class="note">${KEY} (dB): average over this patch from the full-detail data (5&times;5 pixels averaged to cut radar grain ${Glossary.tip('speckle')}). Stage: ${esc(STAGE_NAME[p.stage] || p.stage)}. Dashed = forest that didn't change, from the display images (middle value of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Our photo check can't tell if this patch is clearing or radar noise. Someone independent needs to review it.</div>`;
   placeMarker(lngLat.lng, lngLat.lat, fresh);
 }
 // A clicked lost patch on the 60 km map: patch-mean HV from the stack (lost.geojson hv_series_db) vs the fixed threshold.
@@ -359,12 +363,12 @@ function drawLost(f, lngLat, fresh = true) {
   if (fresh) document.dispatchEvent(new CustomEvent('evidence:selection',{detail:{feature:f,kind:'lost',point:[lngLat.lng,lngLat.lat],dates:state.loc.dates}}));
   state.last = { kind: 'lost', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates, T = (isFrame() ? state.frameMeta : state.bigMeta).T_db;
-  const cat = { alert_supported: 'alert-supported (a GLAD alert in the patch)', radar_only_unconfirmed: 'radar only, unconfirmed' }[p.category];
-  const title = `Flagged patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_switch_date || p.first_flagged || 'n/a')}${cat ? `, ${cat}` : ''}${p.in_original_window ? ', inside the test window' : ''}`;
+  const cat = { alert_supported: 'matches an alert (a GLAD alert in the patch)', radar_only_unconfirmed: 'radar only, not confirmed' }[p.category];
+  const title = `Possible clearing ${esc(p.id)}: ${esc(p.area_ha)} ha, open land from ${esc(p.first_switch_date || p.first_flagged || 'n/a')}${cat ? `, ${cat}` : ''}${p.in_original_window ? ', inside the test area' : ''}`;
   const hv = Array.isArray(p.hv_series_db) && p.hv_series_db.length === dates.length ? p.hv_series_db.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null;
-  if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hv_series_db must hold ${dates.length} numbers.</div>`; return; }
+  if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Can't draw the chart: the tree signal needs ${dates.length} values, one per date.</div>`; return; }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates, fresh)}
-    <div class="note"><b style="color:${CHART.hv}">HV</b> (dB): mean over this patch's 100 m blocks from the full-precision stack. Dashed = the fixed forest threshold ${T.toFixed(2)} dB (above = forest). Moisture or speckle can also push it below the line. ${p.n_blocks === 1 ? 'This is a single 1 ha block, and ' : 'It\'s '}unverified.</div>`;
+    <div class="note"><b style="color:${CHART.hv}">Tree signal (HV)</b> (dB): average over this patch's 100 m squares, from the full-detail data. Dashed = the fixed forest cut-off ${T.toFixed(2)} dB (above = forest). Wet ground or radar grain ${Glossary.tip('speckle')} can also push it below the line. ${p.n_blocks === 1 ? 'This is a single 1 ha square, and it is ' : 'It is '}not confirmed.</div>`;
   placeMarker(lngLat.lng, lngLat.lat, fresh);
 }
 function redrawLast() { // same selection, new pass: redraw without the entrance animation
@@ -406,7 +410,7 @@ function addHansen(meta) { // same corners as the radar image: the webp was writ
   map.addLayer({ id: 'hansen', type: 'raster', source: 'hansen', layout: { visibility: 'none' },
     paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest', 'raster-opacity': 0.85 } });
   const lg = $('han-legend');
-  lg.replaceChildren(document.createTextNode('transparent = no loss in 2021–2025:'));
+  lg.replaceChildren(document.createTextNode('no colour = no loss in 2021–2025:'));
   Object.keys(meta.years).sort().forEach((y) => {
     if (!/^#[0-9a-f]{6}$/i.test(meta.years[y])) return;
     const sw = mk('span', undefined, 'sw');
@@ -507,34 +511,34 @@ function renderBigResults(meta) {
   box.replaceChildren();
   const fm = sc.forest_map_vs_hansen || {}, al = sc.alerts || {}, lr = sc.loss_rule || {}, bl = sc.blocks || {};
   const rows = [
-    ['Forest map (9-pass median) agreeing with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} all-forest baseline`],
-    ['Kappa', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available'],
-    ['Blocks scored (test window excluded)', `${int(bl.scored)} × 1 ha`],
-    ['Blocks flagged by the class-switch rule (unconfirmed)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
+    ['How often our typical forest map agrees with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} if you just guessed "forest" everywhere`, 'agreement', 'baseline'],
+    ['Agreement score without lucky guesses', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available', 'kappa'],
+    ['Squares scored (test area left out)', `${int(bl.scored)} × 1 ha`, 'block'],
+    ['Squares marked as possible clearing (not confirmed)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`, 'flag'],
   ];
   for (const [src, label] of [['GLAD-L', 'GLAD-L'], ['GLAD-S2', 'GLAD-S2']]) {
     const a = al[src];
-    rows.push([`Flagged blocks with a ${label} alert`, a ? `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control` : 'not available']);
+    rows.push([`Possible clearings with a ${label} alert`, a ? `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} for random forest that didn't change` : 'not available', 'precision']);
   }
-  const dl = mk('dl', undefined, 'kv');
-  rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
-  box.append(dl);
+  box.append(kvList(rows));
   const w = sc.alert_windows || {};
-  box.append(mk('p', 'Nobody has confirmed these flagged blocks. The rule compares the last two passes, which fall late in the dry season, so some flags are probably the forest drying out. What counts is how they compare with random stable forest. Don\'t read the flagged area as forest loss.', 'note'));
-  box.append(mk('p', `Alerts dated ${w.precision ? w.precision.join(' to ') : 'n/a'} (±24 days around ${w.reference ? w.reference.join(' to ') : 'n/a'}). Scored once, rules pre-registered in validation/PREREG_scale.md; full numbers in validation/scale_metrics.json.`, 'note'));
+  box.append(mk('p', 'Nobody has confirmed these possible clearings. The rule compares the last two passes, late in the dry season. So some flags are likely seasonal drying. What counts is how they compare with random forest that didn\'t change. Don\'t read the flagged area as forest loss.', 'note'));
+  const pre = mk('p', `Alerts dated ${w.precision ? w.precision.join(' to ') : 'n/a'} (±24 days around ${w.reference ? w.reference.join(' to ') : 'n/a'}). We scored this once, with the rules written down first `, 'note');
+  pre.append(Glossary.tipEl('prereg'), document.createTextNode(' (validation/PREREG_scale.md). Full numbers: validation/scale_metrics.json.'));
+  box.append(pre);
 }
 
 function renderBigProtected(pj) {
   const box = $('big-protected');
   box.replaceChildren();
-  if (!pj || !Array.isArray(pj.areas)) { box.append(mk('span', 'pending', 'tag')); return; }
+  if (!pj || !Array.isArray(pj.areas)) { box.append(mk('span', 'not available', 'tag')); return; }
   const dl = mk('dl', undefined, 'kv');
   pj.areas.forEach((a) => dl.append(mk('dt', `${a.name} (${a.kind.split(' (')[0]})`),
-    mk('dd', `${int(a.lost_blocks_inside)} blocks · ${a.lost_ha_inside} ha (${pct(a.lost_share_of_valid_blocks)} of its mapped blocks)`)));
+    mk('dd', `${int(a.lost_blocks_inside)} squares · ${a.lost_ha_inside} ha (${pct(a.lost_share_of_valid_blocks)} of its mapped squares)`)));
   const o = pj.outside_all_areas || {};
-  dl.append(mk('dt', 'Outside all protected areas'), mk('dd', `${int(o.lost_blocks)} blocks (${pct(o.lost_share_of_valid_blocks)} of mapped blocks)`));
+  dl.append(mk('dt', 'Outside all protected areas'), mk('dd', `${int(o.lost_blocks)} squares (${pct(o.lost_share_of_valid_blocks)} of mapped squares)`));
   box.append(dl);
-  box.append(mk('p', `Whole 60 km map, test window included (${int(pj.total_lost_blocks)} flagged blocks). A block counts when its centre is inside the official boundary. Boundaries: FUNAI Terras Indígenas (read 2026-11-14); MMA CNUC 07/2026 has no conservation unit in this area. See submission/sources.md.`, 'note'));
+  box.append(mk('p', `Whole 60 km map, test area included (${int(pj.total_lost_blocks)} squares marked as possible clearing, not confirmed). A square counts when its centre is inside the official boundary. Boundaries: FUNAI Terras Indígenas (read 2026-11-14). MMA CNUC 07/2026 has no conservation area here. See submission/sources.md.`, 'note'));
 }
 
 function watchlist() {
@@ -564,7 +568,7 @@ async function loadBig() {
   state.bigMeta = meta;
   state.big = { id: 'big', kind: 'big', name: 'BR-163 frontier, 60 km (forest map)', dates: meta.dates, bounds_lonlat: meta.bounds_lonlat,
     notes: 'Forest / non-forest from one fixed NISAR HV threshold on every pass (track 2, frame 174, ascending), 100 m blocks; the swath edge cuts the west of the box. Out-of-sample: threshold fixed on a 10 km strip, tested here unchanged. Agreement with Hansen/GLAD, a reference, not ground truth.' };
-  $('loc').append(new Option(`${state.big.name} (${meta.dates.length} dates)`, 'big'));
+  $('loc').append(new Option(placeName(state.big), 'big'));
   const c = corners(meta.bounds_lonlat);
   map.addSource('lost-img', { type: 'image', url: `${BIG}${meta.layers.lost}`, coordinates: c });
   map.addLayer({ id: 'lost-img', type: 'raster', source: 'lost-img', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } });
@@ -575,7 +579,7 @@ async function loadBig() {
     map.addLayer({ id: 'lost-fill', type: 'fill', source: 'lostp', layout: { visibility: 'none' }, paint: { 'fill-color': '#b4401c', 'fill-opacity': 0.01 } });
     map.addLayer({ id: 'lost-line', type: 'line', source: 'lostp', layout: { visibility: 'none' }, minzoom: 12, paint: { 'line-color': ['match', ['get', 'category'], 'alert_supported', '#fdd663', '#f3b49b'], 'line-width': ['match', ['get', 'category'], 'alert_supported', 1.6, 0.8] } });
     $('dl-geojson').disabled = false; $('dl-csv').disabled = false;
-    $('dl-note').textContent = `${feats.length.toLocaleString()} patches; fields: id, centroid lon/lat, area_ha, first_flagged (${meta.first_flagged_definition}). Unverified radar flags.`;
+    $('dl-note').textContent = `${feats.length.toLocaleString()} patches. Each row has: id, centre lon/lat, area_ha, first_flagged (${meta.first_flagged_definition}). These are radar flags only, not confirmed.`;
   }
   if (prot && Array.isArray(prot.features)) {
     map.addSource('prot', { type: 'geojson', data: prot });
@@ -587,7 +591,7 @@ async function loadBig() {
   const b = meta.original_window_bbox, ring = [...corners(b), corners(b)[0]];
   map.addSource('win', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ring } } });
   map.addLayer({ id: 'win-line', type: 'line', source: 'win', layout: { visibility: 'none' }, paint: { 'line-color': '#fdd663', 'line-width': 1.8, 'line-dasharray': [3, 2] } });
-  map.addSource('win-pt', { type: 'geojson', data: { type: 'Feature', properties: { t: 'test window, excluded from scale scores' }, geometry: { type: 'Point', coordinates: [(b[0] + b[2]) / 2, b[3]] } } });
+  map.addSource('win-pt', { type: 'geojson', data: { type: 'Feature', properties: { t: 'test area, left out of the bigger scores' }, geometry: { type: 'Point', coordinates: [(b[0] + b[2]) / 2, b[3]] } } });
   map.addLayer({ id: 'win-label', type: 'symbol', source: 'win-pt', layout: { visibility: 'none', 'text-field': ['get', 't'], 'text-size': 12, 'text-anchor': 'bottom', 'text-offset': [0, -0.3], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#091008', 'text-halo-width': 1.5 } });
   renderBigResults(meta);
   renderBigProtected(pj);
@@ -598,9 +602,10 @@ async function loadBig() {
 }
 
 // ---------- 60 km map: credibility pack (big.json) and optical-vs-radar timeline (cloud.json); numbers read from the files ----------
-function kvList(rows) {
+function kvList(rows) { // rows: [label, value, tip key(s) for the label?, tip key(s) for the value?]
   const dl = mk('dl', undefined, 'kv');
-  rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
+  const withTips = (n, keys) => { [].concat(keys || []).forEach((k) => { n.append(' ', Glossary.tipEl(k)); }); return n; };
+  rows.forEach(([k, v, tk, tv]) => dl.append(withTips(mk('dt', k), tk), withTips(mk('dd', v), tv)));
   return dl;
 }
 function renderBigExtras(meta, cloud) {
@@ -608,29 +613,31 @@ function renderBigExtras(meta, cloud) {
   const cls = $('big-classes'); cls.replaceChildren();
   if (cm) {
     const c = cm.confusion;
+    const cnote = mk('p', 'Hansen is another map to compare with, not the final word. ', 'note');
+    cnote.append(mk('small', `Details: ${meta.class_metrics.scope}. ${meta.class_metrics.reference}.`));
     cls.append(kvList([
-      ['Forest: precision / recall', `${pct(cm.forest_precision)} / ${pct(cm.forest_recall)}`],
-      ['Non-forest: precision / recall', `${pct(cm.nonforest_precision)} / ${pct(cm.nonforest_recall)}`],
-      ['Map forest, Hansen forest / non-forest', `${int(c.map_forest.hansen_forest)} / ${int(c.map_forest.hansen_nonforest)} blocks`],
-      ['Map non-forest, Hansen forest / non-forest', `${int(c.map_nonforest.hansen_forest)} / ${int(c.map_nonforest.hansen_nonforest)} blocks`],
-    ]), mk('p', `${meta.class_metrics.scope}. ${meta.class_metrics.reference}.`, 'note'));
-  } else cls.append(mk('span', 'pending', 'tag'));
+      ['Forest: how often Hansen agrees / how much we found', `${pct(cm.forest_precision)} / ${pct(cm.forest_recall)}`, ['precision', 'recall']],
+      ['Open land: how often Hansen agrees / how much we found', `${pct(cm.nonforest_precision)} / ${pct(cm.nonforest_recall)}`],
+      ['We say forest: Hansen says forest / open land', `${int(c.map_forest.hansen_forest)} / ${int(c.map_forest.hansen_nonforest)} squares`],
+      ['We say open land: Hansen says forest / open land', `${int(c.map_nonforest.hansen_forest)} / ${int(c.map_nonforest.hansen_nonforest)} squares`],
+    ]), cnote);
+  } else cls.append(mk('span', 'not available', 'tag'));
 
   const lc = meta.lost_categories, cats = $('big-cats'); cats.replaceChildren();
   if (lc && lc.patches) {
     const a = lc.patches.alert_supported, r = lc.patches.radar_only_unconfirmed;
     cats.append(kvList([
-      ['Alert-supported (GLAD-L or GLAD-S2 in the patch)', `${int(a.patches)} patches · ${int(a.ha)} ha`],
-      ['Radar only, unconfirmed', `${int(r.patches)} patches · ${int(r.ha)} ha`],
-    ]), mk('p', 'Radar-only patches are radar change that nobody has confirmed. They aren\'t deforestation. Alerts are dated 2026-06-26 to 2026-11-05, over the whole 60 km map including the test window.', 'note'));
-  } else cats.append(mk('span', 'pending', 'tag'));
+      ['Matches an alert (GLAD-L or GLAD-S2 in the patch)', `${int(a.patches)} patches · ${int(a.ha)} ha`, 'alertsupported'],
+      ['Radar only, not confirmed', `${int(r.patches)} patches · ${int(r.ha)} ha`, 'radaronly'],
+    ]), mk('p', 'Radar-only patches are radar changes that nobody has confirmed. They aren\'t deforestation. Alerts are dated 2026-06-26 to 2026-11-05, over the whole 60 km map, test area included.', 'note'));
+  } else cats.append(mk('span', 'not available', 'tag'));
 
   const wp = meta.watch_priorities, list = $('big-watch'); list.replaceChildren();
   if (wp && Array.isArray(wp.items)) {
-    $('big-watch-note').textContent = 'The 20 biggest flagged patches. Distance is to land that was already non-forest at the start (100 m means touching). Check these first, but none is confirmed clearing. Click one to fly to it.';
+    $('big-watch-note').textContent = 'The 20 biggest possible clearings. Distance is to land that was already open at the start (100 m means touching). Check these first, but none is confirmed clearing. Click one to fly to it.';
     wp.items.forEach((it) => {
       const li = mk('li'), b = mk('button', undefined, 'watch-item'); b.type = 'button';
-      b.append(mk('b', `${it.area_ha} ha`), mk('span', `${it.category === 'alert_supported' ? 'alert-supported' : 'radar only'} · from ${it.first_switch_date} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test window' : ''}`));
+      b.append(mk('b', `${it.area_ha} ha`), mk('span', `${it.category === 'alert_supported' ? 'matches an alert' : 'radar only'} · from ${it.first_switch_date} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test area' : ''}`));
       b.onclick = () => openLost(it.id);
       li.append(b); list.append(li);
     });
@@ -648,7 +655,7 @@ async function openLost(id) {
 }
 function renderCloud(c) {
   const box = $('big-cloud'); box.replaceChildren();
-  if (!c || !Array.isArray(c.scenes) || !c.scenes.length) { box.append(mk('span', 'pending', 'tag')); return; }
+  if (!c || !Array.isArray(c.scenes) || !c.scenes.length) { box.append(mk('span', 'not available', 'tag')); return; }
   const passes = c.nisar_passes, good = c.good_threshold, W = 340, H = 150, ml = 30, mr = 8, mt = 22, mb = 22;
   const t0 = Date.parse(passes[0]), t1 = Date.parse(passes[passes.length - 1]);
   const X = (d) => ml + (Date.parse(d) - t0) / (t1 - t0) * (W - ml - mr), Y = (f) => mt + (1 - f) * (H - mt - mb);
@@ -658,17 +665,20 @@ function renderCloud(c) {
   g += passes.map((d) => `<line x1="${X(d)}" x2="${X(d)}" y1="4" y2="14" stroke="${CHART.hv}" stroke-width="2"/>`).join('');
   g += c.scenes.map((sc) => { const f = sc.clear_fraction_aoi; return `<circle cx="${X(sc.date)}" cy="${Y(f)}" r="3.2" fill="${f >= good ? '#CED9DF' : '#5d6b62'}"><title>${sc.date}: ${(100 * f).toFixed(1)}% clear</title></circle>`; }).join('');
   g += [0, 3, 6, 8].map((i) => `<text x="${X(passes[i])}" y="${H - 6}" fill="${CHART.text}" font-size="10" text-anchor="${i === 8 ? 'end' : 'middle'}">${passes[i].slice(5)}</text>`).join('');
-  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sentinel-2 clear fraction per scene and NISAR pass dates">${g}</svg>`;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cloud-free share of each Sentinel-2 photo, and the NISAR pass dates">${g}</svg>`;
   const s = c.summary && c.summary.aoi;
   const gaps = passes.slice(1).map((d, i) => (Date.parse(d) - Date.parse(passes[i])) / 864e5);
   const wrap = mk('div'); wrap.innerHTML = svg; box.append(wrap);
-  box.append(mk('p', `Ticks on top: the 9 NISAR passes, all usable (L-band is not stopped by cloud; longest gap ${Math.max(...gaps)} days). Dots: Sentinel-2 scenes, share of the 60 km box clear in its scene classification; light = at least ${good * 100}% clear.`, 'note'));
+  const tnote = mk('p', `Ticks on top: the 9 NISAR passes, all usable. Its long-wave radar passes through clouds `, 'note');
+  tnote.append(Glossary.tipEl('lband'), document.createTextNode(` (longest gap ${Math.max(...gaps)} days). Dots: Sentinel-2 photos `), Glossary.tipEl('sentinel2'),
+    document.createTextNode(`, with the share of the 60 km box that was cloud-free `), Glossary.tipEl('scene'), document.createTextNode(`. Light = at least ${good * 100}% clear.`));
+  box.append(tnote);
   if (s) box.append(kvList([
-    ['Sentinel-2 scenes, 06-26 to 10-12', `${int(s.n_scenes)}, of which ${int(s.n_ge_80pct_clear)} at least 80% clear`],
-    ['Median clear share per scene', pct(s.median_clear_fraction)],
+    ['Sentinel-2 photos, 06-26 to 10-12', `${int(s.n_scenes)}, of which ${int(s.n_ge_80pct_clear)} at least 80% clear`],
+    ['Typical cloud-free share per photo', pct(s.median_clear_fraction)],
     ['Longest gap between clear Sentinel-2 views', `${s.longest_gap_days_between_good_views} days`],
   ]));
-  box.append(mk('p', 'This is the dry season, and Sentinel-2 actually saw this area well from June to October. Cloud didn\'t blind it. What NISAR adds here is that every pass is usable without screening for cloud. Cloud starts building in September, and we didn\'t measure the wet season (about November to May). Scene classification misses haze and small clouds, so treat the clear shares as upper bounds. validation/cloud_blindness.json.', 'note'));
+  box.append(mk('p', 'This is the dry season, and Sentinel-2 actually saw this area well from June to October. Cloud didn\'t blind it. What NISAR adds here: every pass is usable without checking for cloud. Cloud starts building in September. We didn\'t measure the wet season (about November to May). Sentinel-2\'s cloud check misses haze and small clouds, so the clear shares are upper limits. validation/cloud_blindness.json.', 'note'));
 }
 
 // ---------- full NISAR frame (web/data/explore/frame/, frame.json + layers; scores copied there from validation/frame_metrics.json) ----------
@@ -684,13 +694,13 @@ async function loadFrame() {
   const b = meta.bounds_lonlat_wsen, c = corners(b);
   state.frame = { id: 'frame', kind: 'frame', name: `Full NISAR frame${Number.isFinite(meta.scores?.blocks?.scored_km2) ? `, ${Math.round(meta.scores.blocks.scored_km2).toLocaleString()} km² scored` : ''} (forest map)`, dates: meta.dates, bounds_lonlat: b,
     notes: 'The whole radar frame (track 2, frame 174, ascending), 100 m blocks, the same fixed HV threshold and forest-to-non-forest flag rule as the 60 km map. Only the 9-pass median map is shown at this size. Out-of-sample; agreement with Hansen/GLAD is a reference, not ground truth.' };
-  $('loc').append(new Option(`${state.frame.name} (${meta.dates.length} dates)`, 'frame'));
+  $('loc').append(new Option(placeName(state.frame), 'frame'));
   const raster = { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' };
   map.addSource('flost-img', { type: 'image', url: `${FRAME}${meta.layers.lost}`, coordinates: c });
   map.addLayer({ id: 'flost-img', type: 'raster', source: 'flost-img', layout: { visibility: 'none' }, paint: raster });
   map.addSource('ffs-img', { type: 'image', url: `${FRAME}${meta.layers.first_switch}`, coordinates: c });
   map.addLayer({ id: 'ffs-img', type: 'raster', source: 'ffs-img', layout: { visibility: 'none' }, paint: raster });
-  const outl = { type: 'FeatureCollection', features: Object.entries(meta.outlines || {}).map(([k, g]) => ({ type: 'Feature', properties: { name: k === 'window_20km' ? 'test window' : '60 km map' }, geometry: g })) };
+  const outl = { type: 'FeatureCollection', features: Object.entries(meta.outlines || {}).map(([k, g]) => ({ type: 'Feature', properties: { name: k === 'window_20km' ? 'test area' : '60 km map' }, geometry: g })) };
   map.addSource('fout', { type: 'geojson', data: outl });
   map.addLayer({ id: 'fout-line', type: 'line', source: 'fout', layout: { visibility: 'none' }, paint: { 'line-color': '#fdd663', 'line-width': 1.4, 'line-dasharray': [3, 2] } });
   const pts = { type: 'FeatureCollection', features: outl.features.map((f) => { const r = f.geometry.coordinates[0]; return { type: 'Feature', properties: f.properties, geometry: { type: 'Point', coordinates: [Math.min(...r.map((q) => q[0])), Math.max(...r.map((q) => q[1]))] } }; }) };
@@ -724,23 +734,23 @@ function renderFrameResults(meta) {
   box.replaceChildren();
   const fm = (sc.a_forest_map || {}).median || {}, bl = sc.blocks || {}, lr = sc.loss_rule || {}, al = sc.b_alerts || {};
   const rows = [
-    ['Area scored (60 km map and test window excluded)', `${int(bl.scored)} blocks · ${typeof bl.scored_km2 === 'number' ? Math.round(bl.scored_km2).toLocaleString() : 'n/a'} km²`],
-    ['Forest map (9-pass median) agreeing with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} all-forest baseline`],
-    ['Kappa', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available'],
-    ['Forest: precision / recall', `${pct(fm.forest_precision)} / ${pct(fm.forest_recall)}`],
-    ['Non-forest: precision / recall', `${pct(fm.nonforest_precision)} / ${pct(fm.nonforest_recall)}`],
-    ['Blocks flagged by the class-switch rule (unconfirmed)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
+    ['Area scored (60 km map and test area left out)', `${int(bl.scored)} squares · ${typeof bl.scored_km2 === 'number' ? Math.round(bl.scored_km2).toLocaleString() : 'n/a'} km²`, 'block'],
+    ['How often our typical forest map agrees with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} if you just guessed "forest" everywhere`, 'agreement', 'baseline'],
+    ['Agreement score without lucky guesses', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available', 'kappa'],
+    ['Forest: how often Hansen agrees / how much we found', `${pct(fm.forest_precision)} / ${pct(fm.forest_recall)}`, ['precision', 'recall']],
+    ['Open land: how often Hansen agrees / how much we found', `${pct(fm.nonforest_precision)} / ${pct(fm.nonforest_recall)}`],
+    ['Squares marked as possible clearing (not confirmed)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`, 'flag'],
   ];
   for (const src of ['GLAD-L', 'GLAD-S2']) {
     const a = al[src];
-    if (a) rows.push([`Flagged blocks with a ${src} alert`, `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control`]);
+    if (a) rows.push([`Possible clearings with a ${src} alert`, `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} for random forest that didn't change`, 'precision']);
   }
   box.append(kvList(rows));
   const n = meta.counts || {}, pg = n.patches_in_geojson || {};
-  $('frame-note').textContent = `Map shows ${int(pg.patches)} flagged patches of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} alert-supported, ${int(pg.radar_only_unconfirmed)} radar only); smaller patches are in the flag image but not clickable. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
+  $('frame-note').textContent = `The map shows ${int(pg.patches)} possible clearings of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} match an alert, ${int(pg.radar_only_unconfirmed)} radar only). Smaller patches are in the image, but you can't click them. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
   const pd = (sc.a_forest_map || {}).per_date || {}, ds = Object.keys(pd).sort();
   if (ds.length >= 2 && typeof pd[ds[0]].oa === 'number' && typeof pd[ds[ds.length - 1]].oa === 'number') {
-    $('frame-note').textContent += ` Caution: single-pass agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (all-forest baseline ${pct(fm.all_forest_baseline)}): HV drops as the dry season goes on. The class-switch rule compares the last two passes, so a lot of the flags are probably seasonal drying, not clearing. Flags are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? (al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like).toFixed(1) : 'n/a'}× more likely than random stable forest to overlap a GLAD-L alert, but most of them are unconfirmed. Don\'t read the flagged area as forest loss.`;
+    $('frame-note').textContent += ` Caution: on a single pass, agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (just guessing "forest" everywhere: ${pct(fm.all_forest_baseline)}). The tree signal drops as the dry season goes on. The rule compares the last two passes, so many flags are likely seasonal drying, not clearing. Possible clearings are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? (al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like).toFixed(1) : 'n/a'}× more likely than random forest that didn't change to overlap a GLAD-L alert. This is not accuracy, and most of them are not confirmed. Don't read the flagged area as forest loss.`;
   }
 }
 
@@ -752,6 +762,20 @@ function stopPlay() {
   $('play-ico').innerHTML = PLAY;
   setText($('play-txt'), 'Play passes');
   $('play').setAttribute('aria-label', 'Play through the passes');
+}
+// "About these layers": a short plain sentence, then the technical note from the data file as small print (unchanged)
+function renderAbout(loc, forest) {
+  const n = loc.dates.length, span = `${loc.dates[0]} to ${loc.dates[n - 1]}`;
+  const plain = {
+    spara: `The 20 km area where we built and tuned the method. You see NISAR's early-release radar images, ${n} passes from ${span}.`,
+    rondonia: `Our first test area. Only ${n} passes (${span}) can be used here. Alerts showed no clearing of 1 ha or more there from 2026-08-29 to 2026-10-16, so we moved to Novo Progresso.`,
+    big: `A 60 km area along the BR-163 highway. On every pass, each 100 m square is called forest or open land with one fixed cut-off. The west edge is outside the satellite's strip.`,
+    frame: `The whole area of one radar image, about 300 km across. It uses the same cut-off and rule as the 60 km map. At this size we only show the typical forest map.`,
+  }[loc.id] || '';
+  const el = $('about');
+  el.replaceChildren(document.createTextNode(`${placeName(loc)}. ${plain} `));
+  if (loc.id === 'spara' || loc.id === 'rondonia') el.append(Glossary.tipEl('gcov'), document.createTextNode(' '));
+  el.append(mk('small', `Technical note: ${loc.notes}${forest ? '' : ' Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.'}`));
 }
 async function selectLoc(id) {
   stopPlay();
@@ -770,11 +794,11 @@ async function selectLoc(id) {
   if (frame) loadFrameLost();
   document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; });
   applyVisibility();
-  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} flagged patch to see its HV series.</div>` : '<div class="hint">Click anywhere on the map to see HH and HV at that spot on every date, with stable forest next to it.</div>';
+  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} possible clearing to see its tree signal over time.</div>` : '<div class="hint">Click anywhere on the map. You\'ll see the tree and ground signals at that spot on every date, next to forest that didn\'t change.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
   drawPasses();
   drawStrip();
-  $('about').textContent = forest ? `${state.loc.name}. ${state.loc.notes}` : `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
+  renderAbout(state.loc, forest);
   const b = state.loc.bounds_lonlat;
   if (map.getSource('boundary')) map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...corners(b), corners(b)[0]]] } });
   fit(state.mode === 'intro' ? 0 : 1100);
@@ -796,11 +820,11 @@ map.on('load', async () => {
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
     map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' } });
     const response = await fetch(DATA + 'explore.json');
-    if (!response.ok) throw new Error('Acquisition catalog unavailable');
+    if (!response.ok) throw new Error('the list of radar passes is missing');
     state.manifest = await response.json();
-    if (!state.manifest.locations?.length) throw new Error('No study areas available');
+    if (!state.manifest.locations?.length) throw new Error('there are no places to show');
     const sel = $('loc');
-    state.manifest.locations.forEach((l) => sel.append(new Option(`${l.name} (${l.dates.length} dates)`, l.id)));
+    state.manifest.locations.forEach((l) => sel.append(new Option(placeName(l), l.id)));
     const first = state.manifest.locations[0], c0 = corners(first.bounds_lonlat), d0 = first.dates[first.dates.length - 1];
     const paint = { 'raster-fade-duration': 0, 'raster-resampling': 'nearest', 'raster-opacity': 0, 'raster-opacity-transition': { duration: reduced ? 0 : FADE, delay: 0 } };
     for (const id of ['radarA', 'radarB']) {
@@ -822,11 +846,11 @@ map.on('load', async () => {
     document.body.classList.add('ready');
     // phones: keep the map credits behind the (i) button so they do not cover the hero
     if (innerWidth <= 900) document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
-  } catch (e) { $('map-status').hidden = false; $('map-status').textContent = `Map data not available: ${e.message}. Check the data files and reload.`; }
+  } catch (e) { $('map-status').hidden = false; $('map-status').textContent = `The map data didn't load (${e.message}). Please reload the page.`; }
   document.dispatchEvent(new Event('explore:ready')); // cinema.js waits for this (state.bigMeta stays null if loading failed)
 });
 
-$('loc').onchange = (e) => selectLoc(e.target.value).catch(() => { $('map-status').hidden = false; $('map-status').textContent = 'Study area unavailable. Please reload.'; });
+$('loc').onchange = (e) => selectLoc(e.target.value).catch(() => { $('map-status').hidden = false; $('map-status').textContent = 'This place didn\'t load. Please reload the page.'; });
 $('date').oninput = (e) => goTo(+e.target.value);
 $('passes').onclick = (e) => { const b = e.target.closest('.pass'); if (b) goTo(+b.dataset.i); };
 $('passes').onkeydown = (e) => {
