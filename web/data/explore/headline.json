@@ -1,0 +1,75 @@
+{
+ "about": "Numbers that exist only in validation/ files, copied here unchanged so the page can read them at runtime. Each entry names its source file and field path (or results_final.md section and table row). Non-forest precision/recall on the page are computed from the tp/fp/fn/tn counts: tn/(tn+fn), tn/(tn+fp).",
+ "fnf_holdout_20km": {
+  "source": "validation/fnf_metrics.json",
+  "path": "holdout.all",
+  "value": {
+   "n": 19368,
+   "tp": 8446,
+   "fp": 1559,
+   "fn": 1708,
+   "tn": 7655,
+   "oa": 0.8313197026022305,
+   "kappa": 0.6620957958468119,
+   "forest_precision": 0.8441779110444778,
+   "forest_recall": 0.8317904274177664,
+   "all_forest_baseline": 0.5242668318876498
+  },
+  "label": "20 km window, south half (holdout)",
+  "prereg": "validation/PREREG_fnf.md"
+ },
+ "rondonia_transfer": {
+  "source": "validation/fnf_metrics.json",
+  "path": "transfer_rondonia.all",
+  "value": {
+   "n": 40000,
+   "tp": 28252,
+   "fp": 901,
+   "fn": 843,
+   "tn": 10004,
+   "oa": 0.9564,
+   "kappa": 0.8898828146994383,
+   "forest_precision": 0.9690940898020787,
+   "forest_recall": 0.971025949475855,
+   "all_forest_baseline": 0.727375
+  },
+  "label": "Rondonia, 20 km (transfer, threshold unchanged)",
+  "prereg": "validation/PREREG_fnf.md"
+ },
+ "T_db": {
+  "source": "validation/fnf_metrics.json",
+  "path": "T_db",
+  "value": -11.250146865844727
+ },
+ "tune_blocks": {
+  "source": "validation/fnf_metrics.json",
+  "path": "tune.n_blocks",
+  "value": 19423,
+  "note": "100 m blocks of the north half of the 20 km window (about 20 x 10 km) on which T_db was chosen"
+ },
+ "glad_l_on_prior_clearing": {
+  "source": "validation/results_final.md",
+  "path": "## Share of 2026 GLAD alerts on land already cleared before 2026, row 'GLAD-L | 2026 (all), whole window'",
+  "value": {
+   "alert_pixels": 45312,
+   "on_hansen_loss_2001_2025": 41915,
+   "share_pct": 92.5
+  }
+ },
+ "detector": {
+  "source": "validation/results_final.md",
+  "path": "## Thresholds (HH rise threshold row and the paragraph under it); ## Supporting diagnostics (hansen_classes.py)",
+  "value": {
+   "threshold_db": 1.0,
+   "threshold_is_grid_minimum": true,
+   "stable_forest_noise_sd_db": [
+    0.39,
+    0.45
+   ],
+   "detections_on_hansen_intact_pct": {
+    "north": 99.1,
+    "south": 98.0
+   }
+  }
+ }
+}
