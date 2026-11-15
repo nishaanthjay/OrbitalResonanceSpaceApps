@@ -75,7 +75,7 @@
     cine.cancelled = false;
     state.cinema = true; body.classList.add('cine');
     hideRadar();
-    setPlace('NISAR · L-band radar', 'Earth');
+    setPlace('NISAR radar satellite', 'Earth');
     await sleep(900);
     stopSpin();
     setPlace('South America', 'The Amazon');
@@ -84,7 +84,7 @@
     setPlace('Pará, Brazil', 'BR-163 highway');
     await fly({ center: [-55.1, -7.4], zoom: wide() ? 6.6 : 5.6, duration: 2800, curve: 1.3 });
     if (cine.cancelled) return;
-    setPlace('Novo Progresso', 'The forest frontier');
+    setPlace('Novo Progresso', 'Where forest meets farms');
     state.cinema = false; // fit() is explore.js's own landing camera
     const done = new Promise((res) => map.once('moveend', res));
     fit(2600);
@@ -112,7 +112,7 @@
     onAdd() {
       const d = document.createElement('div');
       d.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-      d.innerHTML = '<button type="button" class="ctl-3d" aria-pressed="false" title="Tilt the map in 3D (terrain and flagged-patch columns)">3D</button>';
+      d.innerHTML = '<button type="button" class="ctl-3d" aria-pressed="false" aria-label="Tilt the map in 3D" title="Tilt the map in 3D (hills and columns for possible clearings)">3D</button>';
       d.firstChild.onclick = () => set3D(!three.on);
       return d;
     }
@@ -238,10 +238,10 @@
   }
   async function initClock() {
     const meta = await big();
-    if (!meta) { $('clock-status').textContent = 'Forest maps pending: web/data/explore/big/ is not available.'; return; }
+    if (!meta) { $('clock-status').textContent = 'Forest maps not ready yet: web/data/explore/big/ is missing.'; return; }
     let p;
     try { p = await loadPasses(); } catch { p = null; }
-    if (!p) { $('clock-status').textContent = 'Forest maps pending: the per-pass layers did not load.'; return; }
+    if (!p) { $('clock-status').textContent = 'Forest maps not ready yet: the map for each pass did not load.'; return; }
     $('clock-imgs').replaceChildren(...p.imgs.map((im, k) => { const c = im.cloneNode(); c.alt = `Forest map from the ${p.dates[k]} pass`; return c; }));
     $('clock-spark').innerHTML = sparkline(p.share, p.dates);
     $('clock-steps').replaceChildren(...p.dates.map((d, k) => {
@@ -250,7 +250,7 @@
       return b;
     }));
     const min = Math.min(...p.share), max = Math.max(...p.share);
-    $('clock-note').textContent = `Share of 100 m blocks classed forest on each pass, among the ${p.valid9.toLocaleString()} display pixels valid on all ${p.dates.length} passes (counted in your browser from the forest_<date>.webp layers). It moves between ${pct(min)} and ${pct(max)}: swings this big from one pass to the next come partly from moisture and speckle, not only clearing. The dip at the end falls in the late dry season, when HV tends to drop as plants dry out. Don\'t read this as a forest-loss curve.`;
+    $('clock-note').textContent = `Share of 100 m squares counted as forest on each pass. We count only the ${p.valid9.toLocaleString()} map pixels seen on all ${p.dates.length} passes (counted in your browser from the forest_<date>.webp layers). It moves between ${pct(min)} and ${pct(max)}. Jumps this big between passes come partly from moisture and radar grain, not only clearing. The dip at the end falls late in the dry season, when the tree signal tends to drop as plants dry out. Don\'t read this as a forest-loss curve.`;
     $('clock-status').hidden = true;
     $('clock-play').disabled = false;
     clockShow(p.dates.length - 1);
@@ -270,8 +270,8 @@
     const n = nextPlanned(dates), when = n.next.toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
     const inDays = n.days === 0 ? 'today' : n.days === 1 ? 'tomorrow' : `in ${n.days} days`;
     $('countdown').innerHTML = '';
-    $('countdown').append(node('span', 'Next pass, planned repeat cycle', 'cd-k'), node('strong', `${when} · ${inDays}`),
-      node('small', `Counted in 12-day steps from the last pass in this stack (${n.last}). A planned repeat, not a confirmed acquisition.${n.skipped ? ` ${n.skipped} planned pass${n.skipped > 1 ? 'es' : ''} since then ${n.skipped > 1 ? 'are' : 'is'} not processed here.` : ''} The site doesn\'t update itself.`));
+    $('countdown').append(node('span', 'Next planned pass', 'cd-k'), node('strong', `${when} · ${inDays}`),
+      node('small', `Counted in 12-day steps from the last pass we have (${n.last}). It's a planned visit, not a confirmed one.${n.skipped ? ` ${n.skipped} planned pass${n.skipped > 1 ? 'es' : ''} since then ${n.skipped > 1 ? 'are' : 'is'} not processed here.` : ''} This site doesn\'t update itself.`));
     const cap = document.querySelector('.hero .caption');
     if (cap && !cap.querySelector('.cd')) cap.append(node('span', ` · next planned pass ${inDays}`, 'cd'));
   }
@@ -302,7 +302,7 @@
     const o = optFor(d), cmp = $('ovr');
     const ns = nearestScene(d), gapDays = ns ? Math.round(Math.abs(Date.parse(ns.date) - Date.parse(d)) / DAY) : null;
     if (o && o.file) {
-      $('ovr-optical').onerror = () => { cmp.classList.add('no-opt'); $('ovr-status').hidden = false; $('ovr-status').textContent = 'The Sentinel-2 image didn\'t load. Try another date.'; };
+      $('ovr-optical').onerror = () => { cmp.classList.add('no-opt'); $('ovr-status').hidden = false; $('ovr-status').textContent = 'The Sentinel-2 photo didn\'t load. Try another date.'; };
       $('ovr-optical').src = `${OPT}${o.file}`;
       $('ovr-opt-label').textContent = `${o.date || ''}${Number.isFinite(o.clear_fraction) ? ` · ${(100*o.clear_fraction).toFixed(1)}% of box clear` : Number.isFinite(o.cloud_pct) ? ` · ${o.cloud_pct.toFixed(0)}% cloud` : ''}`;
       cmp.classList.remove('no-opt');
@@ -312,8 +312,8 @@
       cmp.classList.add('no-opt');
       $('ovr-status').hidden = false;
       $('ovr-status').textContent = ovr.opt
-        ? `No optical scene within 6 days of ${d}.`
-        : `Sentinel-2 image: pending (web/data/explore/optical/ not built yet).${ns ? ` Nearest scene ${ns.date}, ${gapDays} d away, ${pct(ns.clear_fraction_aoi, 0)} of the box clear.` : ''}`;
+        ? `No Sentinel-2 photo within 6 days of ${d}.`
+        : `Sentinel-2 photo: not ready yet (web/data/explore/optical/ not built yet).${ns ? ` Closest photo ${ns.date}, ${gapDays} days away, ${pct(ns.clear_fraction_aoi, 0)} of the box clear.` : ''}`;
     }
     $('ovr-passes').querySelectorAll('button').forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
     const cur = $('ovr-timeline').querySelector('.cur');
@@ -324,31 +324,31 @@
     const t0 = Date.parse(passesD[0]) - 3 * DAY, t1 = Date.parse(passesD[passesD.length - 1]) + 3 * DAY;
     const X = (d) => ml + (Date.parse(d) - t0) / (t1 - t0) * (W - ml - mr), Y = (f) => top + (1 - f) * (bot - top);
     const good = c.good_threshold;
-    let g = `<text x="0" y="${rowR + 4}" class="lab">NISAR</text><text x="0" y="${Y(0.45) + 4}" class="lab">Sentinel-2</text><text x="0" y="${Y(0.45) + 17}" class="lab dim">clear share</text>`;
+    let g = `<text x="0" y="${rowR + 4}" class="lab">NISAR</text><text x="0" y="${Y(0.45) + 4}" class="lab">Sentinel-2</text><text x="0" y="${Y(0.45) + 17}" class="lab dim">clear sky</text>`;
     g += `<line x1="${ml}" x2="${W - mr}" y1="${rowR}" y2="${rowR}" class="axis"/>`;
     for (const f of [0, 1]) g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(f)}" y2="${Y(f)}" class="axis"/><text x="${ml - 6}" y="${Y(f) + 4}" text-anchor="end" class="lab dim">${f * 100}%</text>`;
     g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(good)}" y2="${Y(good)}" stroke="#fdd663" stroke-dasharray="3 3" stroke-opacity=".7"/><text x="${ml - 6}" y="${Y(good) + 4}" text-anchor="end" class="lab" style="fill:#fdd663">${good * 100}%</text>`;
     const xs = passesD.map(X);
     g += `<line class="cur" ${xs.map((x, i) => `data-x${i}="${x.toFixed(1)}"`).join(' ')} x1="${xs[0]}" x2="${xs[0]}" y1="${rowR - 14}" y2="${bot}" stroke="#CED9DF" stroke-opacity=".45" stroke-dasharray="2 3"/>`;
-    g += xs.map((x, i) => `<circle cx="${x.toFixed(1)}" cy="${rowR}" r="6" class="rad"><title>NISAR ${passesD[i]}: usable</title></circle>`).join('');
-    g += c.scenes.map((s) => `<circle cx="${X(s.date).toFixed(1)}" cy="${Y(s.clear_fraction_aoi).toFixed(1)}" r="4" class="${s.clear_fraction_aoi >= good ? 'opt good' : 'opt'}"><title>Sentinel-2 ${s.date}: ${pct(s.clear_fraction_aoi)} clear</title></circle>`).join('');
+    g += xs.map((x, i) => `<circle cx="${x.toFixed(1)}" cy="${rowR}" r="6" class="rad"><title>NISAR ${passesD[i]}: usable pass</title></circle>`).join('');
+    g += c.scenes.map((s) => `<circle cx="${X(s.date).toFixed(1)}" cy="${Y(s.clear_fraction_aoi).toFixed(1)}" r="4" class="${s.clear_fraction_aoi >= good ? 'opt good' : 'opt'}"><title>Sentinel-2 photo ${s.date}: ${pct(s.clear_fraction_aoi)} clear sky</title></circle>`).join('');
     g += [0, Math.floor(passesD.length / 2), passesD.length - 1].map((i) => `<text x="${xs[i]}" y="${H - 6}" text-anchor="middle" class="lab dim">${passesD[i].slice(5)}</text>`).join('');
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="NISAR passes and Sentinel-2 clear share per scene">${g}</svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="NISAR radar passes, and the share of clear sky in each Sentinel-2 photo">${g}</svg>`;
   }
   async function initOptical() {
     const meta = await big();
-    if (!meta) { $('ovr-status').textContent = 'Radar forest maps pending.'; return; }
+    if (!meta) { $('ovr-status').textContent = 'Radar forest maps not ready yet.'; return; }
     [ovr.opt, ovr.cloud] = await Promise.all([getJSON(`${OPT}optical.json`), getJSON(`${BIG}cloud.json`)]);
     if (!ovr.opt) { // no dated Sentinel-2 images built: show the cloud timeline alone, without the two-satellite framing
       $('ovr').hidden = true;
       $('ovr').closest('.compare-layout').classList.add('cloud-only');
       const sec = $('optical-radar');
       sec.querySelector('.section-head h2').textContent = 'Cloud over the same 60 km, June to October';
-      sec.querySelector('.section-head > p').textContent = 'Every Sentinel-2 scene over the 60 km map in the dry season, with the share of the area its own scene classification marks clear, next to NISAR\'s passes.';
-      sec.querySelector('.compare-side h3').textContent = 'Sentinel-2 clear share per scene, NISAR passes on top';
+      sec.querySelector('.section-head > p').textContent = 'Every Sentinel-2 photo of the 60 km map in the dry season, next to NISAR\'s passes. For each photo, we show how much of the area Sentinel-2 itself marks as clear sky.';
+      sec.querySelector('.compare-side h3').textContent = 'Clear sky in each Sentinel-2 photo, NISAR passes on top';
     }
     $('ovr-passes').replaceChildren(...meta.dates.map((d, k) => {
-      const b = node('button', d.slice(5)); b.type = 'button'; b.setAttribute('aria-label', `Compare on ${d}`);
+      const b = node('button', d.slice(5)); b.type = 'button'; b.setAttribute('aria-label', `Compare photo and radar on ${d}`);
       b.onclick = () => ovrShow(k);
       return b;
     }));
@@ -358,11 +358,11 @@
       const s = c.summary && c.summary.aoi, pd = meta.dates.map((d) => Date.parse(d)), gap = Math.max(...pd.slice(1).map((t, i) => (t - pd[i]) / DAY));
       if (s) $('ovr-summary').replaceChildren(kvList([
         ['NISAR passes usable', `${meta.dates.length} of ${meta.dates.length} · longest gap ${gap} days`],
-        ['Sentinel-2 scenes at least 80% clear', `${int(s.n_ge_80pct_clear)} of ${int(s.n_scenes)} · longest gap ${s.longest_gap_days_between_good_views} days`],
-        ['Median clear share per Sentinel-2 scene', pct(s.median_clear_fraction)],
-        ['Sentinel-2 scenes fully clouded (clear < 2%)', `${c.scenes.filter((x) => x.clear_fraction_aoi < 0.02).length} of ${c.scenes.length}`],
+        ['Sentinel-2 photos at least 80% clear', `${int(s.n_ge_80pct_clear)} of ${int(s.n_scenes)} · longest gap ${s.longest_gap_days_between_good_views} days`],
+        ['Typical (median) clear sky per Sentinel-2 photo', pct(s.median_clear_fraction)],
+        ['Sentinel-2 photos fully clouded (clear < 2%)', `${c.scenes.filter((x) => x.clear_fraction_aoi < 0.02).length} of ${c.scenes.length}`],
       ]));
-      $('ovr-note').textContent = 'June to October is the dry season here, and Sentinel-2 saw this box fine. Cloud didn\'t blind it. What radar adds is that cloud never costs you a pass, so every 12-day map works without screening. We didn\'t measure the wet season (about November to May), when there\'s more cloud. The clear shares come from Sentinel-2\'s scene classification, which misses haze and small clouds. Source: big/cloud.json.';
+      $('ovr-note').textContent = 'June to October is the dry season here, and Sentinel-2 saw this box fine. Cloud didn\'t blind it. What radar adds: cloud never costs you a pass, so every 12-day map works without checking for cloud. We didn\'t measure the wet season (about November to May), when there\'s more cloud. The clear-sky shares come from Sentinel-2\'s own cloud marking, which misses haze and small clouds. Source: big/cloud.json.';
     } else $('ovr-timeline').replaceChildren(node('span', 'pending', 'tag'));
     ovrShow(meta.dates.length - 1);
   }
@@ -409,7 +409,7 @@
       };
       rows.forEach((a, i) => areas.append(row(`${i + 1}. ${a.name}`, `${a.kind.split(' (')[0]} · ${a.etnia_nome || ''}`.replace(/ · $/, ''), `${int(a.lost_blocks_inside)} ha`, a.lost_share_of_valid_blocks)));
       if (o.lost_blocks != null) areas.append(row('Outside all protected areas', 'for comparison', `${int(o.lost_blocks)} ha`, o.lost_share_of_valid_blocks, 'ref'));
-      areas.append(node('p', `Bar = share of the area's mapped 100 m blocks flagged forest-to-non-forest June to October (${rows.map((a) => `${a.name} ${pct(a.lost_share_of_valid_blocks)}`).join(', ')}; outside ${pct(o.lost_share_of_valid_blocks)}). Whole 60 km map, test window included; a block counts when its centre is inside the official FUNAI boundary. MMA CNUC lists no conservation unit in this box. Nobody has confirmed these flags, and some are probably seasonal drying.`, 'note'));
+      areas.append(node('p', `Bar = share of the area's mapped 100 m squares that went from forest to open land between June and October (${rows.map((a) => `${a.name} ${pct(a.lost_share_of_valid_blocks)}`).join(', ')}; outside ${pct(o.lost_share_of_valid_blocks)}). This is the whole 60 km map, including the 20 km test area. A square counts when its centre is inside the official FUNAI boundary. MMA CNUC lists no conservation area in this box. Nobody has confirmed these possible clearings, and some are probably seasonal drying.`, 'note'));
     } else areas.append(node('span', 'pending', 'tag'));
 
     const box = $('threat-clusters');
@@ -425,8 +425,8 @@
       const W = 84 * devicePixelRatio, cv = document.createElement('canvas');
       cv.width = W; cv.height = W; cv.setAttribute('aria-hidden', 'true');
       const txt = node('span', undefined, 'cl-txt');
-      txt.append(node('b', `${it.area_ha} ha`), node('span', `${it.category === 'alert_supported' ? 'alert-supported' : 'radar only, unconfirmed'}`, it.category === 'alert_supported' ? 'cat al' : 'cat ro'),
-        node('small', `non-forest from ${it.first_switch_date.slice(5)} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test window' : ''}`));
+      txt.append(node('b', `${it.area_ha} ha`), node('span', `${it.category === 'alert_supported' ? 'matches an alert' : 'radar only, not confirmed'}`, it.category === 'alert_supported' ? 'cat al' : 'cat ro'),
+        node('small', `open land from ${it.first_switch_date.slice(5)} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test area' : ''}`));
       b.append(node('i', String(rank + 1), 'rank'), cv, txt, node('span', 'Fly there', 'fly'));
       b.onclick = () => { toTop(); openLost(it.id); };
       box.append(b);
@@ -444,7 +444,7 @@
           if (e.isIntersecting) tl.timer = setInterval(() => tlStep(tl.k + 1), 700);
         })).observe(box);
       }
-    } else $('tl-date').textContent = 'Time-lapse pending: the per-pass forest maps did not load.';
+    } else $('tl-date').textContent = 'Time-lapse not ready yet: the forest map for each pass did not load.';
   }
 
   // ================= 7. tour mode (~60 s, for the screen recording) =================
@@ -470,51 +470,51 @@
     $('tour').hidden = false;
     const steps = [
       async () => {
-        caption('NISAR\'s L-band radar over this stretch of Amazon frontier: nine passes, never more than 24 days apart. Cloud doesn\'t get in the radar\'s way.', 1, 9);
+        caption('The NISAR radar satellite flew over this edge of the Amazon nine times, never more than 24 days apart. Clouds don\'t block its radar.', 1, 9);
         toTop(); setMode('intro'); set3D(false, 0);
         if (!reduced) { map.jumpTo(START()); spin(); await flyIn(); } else await wait(4000, tok);
         await wait(1200, tok);
       },
       async () => {
-        caption('The 20 km test window, radar composite: 9 passes from June to October 2026.', 2, 9);
+        caption('The 20 km test area, in a colour mix of both radar signals: 9 passes from June to October 2026.', 2, 9);
         await go('composite'); await wait(1200, tok); playPasses(true); await wait(6500, tok); playPasses(false);
       },
       async () => {
         if (!meta) return;
-        caption(`60 km, out of sample: one fixed threshold. The forest map agrees with Hansen on ${pct(fm && fm.oa)} of blocks, against ${pct(fm && fm.all_forest_baseline)} for "all forest". A reference, not ground truth.`, 3, 9);
+        caption(`A 60 km area the method had never seen, with one fixed brightness cut-off. Our forest map agrees with the Hansen map on ${pct(fm && fm.oa)} of squares. Just guessing "forest" everywhere gets ${pct(fm && fm.all_forest_baseline)}. Hansen is another map, not the final word.`, 3, 9);
         await go('big'); state.layer = 'forest';
         document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === 'forest'; });
         setImage(); await wait(1400, tok); playPasses(true); await wait(6500, tok); playPasses(false);
       },
       async () => {
         if (!meta) return;
-        caption('Blocks flagged as going from forest to non-forest pop up as columns. Taller means a bigger patch, and the colour is the pass where it first switched. None of this is confirmed.', 4, 9);
+        caption('Possible clearings rise up as columns: squares that looked like forest, then like open land. Taller means a bigger patch. Colour shows the pass when it first changed. None of this is confirmed.', 4, 9);
         set3D(true, 2000); await wait(2200, tok);
         if (!reduced) map.easeTo({ bearing: map.getBearing() + 70, duration: 6500, easing: (t) => t });
         await wait(6800, tok); set3D(false, 1200); await wait(1300, tok);
       },
       async () => {
         if (!top) return;
-        caption(`Place to check first: ${top.area_ha} ha, ${top.category === 'alert_supported' ? 'with a GLAD alert' : 'radar only, unconfirmed'}, non-forest from ${top.first_switch_date}. A flag to check, not confirmed clearing.`, 5, 9);
+        caption(`Place to check first: ${top.area_ha} ha, ${top.category === 'alert_supported' ? 'matches a GLAD deforestation alert' : 'radar only, not confirmed'}, looked cleared from ${top.first_switch_date}. It is a possible clearing to check, not confirmed.`, 5, 9);
         await openLost(top.id); await wait(7000, tok);
       },
       async () => {
         if (!fr) return;
         const f = fr.scores && fr.scores.a_forest_map && fr.scores.a_forest_map.median, km = fr.scores && fr.scores.blocks && fr.scores.blocks.scored_km2;
-        caption(`The whole radar frame: ${km ? `${Math.round(km).toLocaleString()} km²` : 'scored area'} scored once, ${pct(f && f.oa)} agreement with Hansen against ${pct(f && f.all_forest_baseline)} for "all forest".`, 6, 9);
+        caption(`The whole radar image: ${km ? `${Math.round(km).toLocaleString()} km²` : 'scored area'}, tested once. It agrees with the Hansen map ${pct(f && f.oa)} of the time. Just guessing "forest" everywhere gets ${pct(f && f.all_forest_baseline)}.`, 6, 9);
         await go('frame'); await wait(7000, tok);
       },
       async () => {
-        caption('The frontier clock: the 60 km forest map drawn again for each pass, with how much of it is forest.', 7, 9);
+        caption('Over time: the 60 km forest map, drawn again for each pass, with how much of it is forest.', 7, 9);
         setMode('intro'); await wait(300, tok); scrollToId('frontier'); await wait(1200, tok);
         clockStop(); clockShow(0); clockPlay(); await wait(7200, tok); clockStop();
       },
       async () => {
-        caption('Where to look first: flagged blocks inside Indigenous lands and the biggest flagged patches, pass by pass. This won\'t stop deforestation. It shows people where to check.', 8, 9);
+        caption('Where to look first: possible clearings inside Indigenous lands, and the biggest ones, pass by pass. This won\'t stop deforestation. It shows people where to check.', 8, 9);
         scrollToId('threats'); await wait(8000, tok);
       },
       async () => {
-        caption('Look at the evidence before you name a cause: dated optical images, whether alerts agree, and whether rainfall, soil moisture and fire data exist for that date. Regional context doesn\'t confirm anything at the patch.', 9, 9);
+        caption('Check the evidence before you name a cause: dated photos, other alerts, and rain, soil moisture and fire data for that date. Data for the wider region confirms nothing about one patch.', 9, 9);
         scrollToId('environment'); document.dispatchEvent(new Event('evidence:tour')); await wait(7500, tok);
       },
     ];
