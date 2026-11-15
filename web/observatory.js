@@ -147,7 +147,115 @@
     const report = {title:'The Next Frontier : frontend data report',sources:['data/detections.geojson','data/summary.json','data/metrics.json','data/explore/explore.json'],scope:'Southern Para; map patches span the whole window; agreement is scored only on holdout per-date detections.',caveats:['Radar disturbance is not confirmed deforestation.','GLAD-L alerts are a reference, not ground truth.','Optical chip labels were made by the same AI assistant that ran detection; not independently human validated.'],map_patch_count:detections?.features.length ?? null,map_patch_area_ha:detections?.features.every(f=>Number.isFinite(f.properties.area_ha)) ? detections.features.reduce((s,f)=>s+f.properties.area_ha,0) : null,summary,metrics};
     const a = document.createElement('a'), url = URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'})); a.href=url;a.download='forest-observatory-data-report.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
-  Promise.all([json('data/explore/explore.json'),json('data/detections.geojson'),json('data/summary.json'),json('data/metrics.json')]).then(([m,d,s,met]) => {
+  // ================= headline results: every number below is read from these files at runtime =================
+  // big.json / frame.json (scores copied from validation/scale_metrics.json / frame_metrics.json), big/cloud.json,
+  // data/metrics.json, and explore/headline.json (values that only exist in validation/, each with its source + path).
+  const pc = (v, d = 1) => Number.isFinite(v) ? `${(v * 100).toFixed(d)}%` : 'n/a';
+  const int = v => Number.isFinite(v) ? Math.round(v).toLocaleString('en') : 'n/a';
+  const times = (a, b) => Number.isFinite(a) && Number.isFinite(b) && b > 0 ? `${(a / b).toFixed(1)}×` : 'n/a';
+  const nfPR = c => c && [c.tn / (c.tn + c.fn), c.tn / (c.tn + c.fp)]; // non-forest precision, recall from counts
+  const fill = (id, nodes) => { const b = el(id); if (b) b.replaceChildren(...nodes); };
+  const H = {};
+
+  function facts() {
+    const big = H.big?.scores?.forest_map_vs_hansen, fr = H.frame?.scores, fm = fr?.a_forest_map?.median, gl = fr?.b_alerts?.['GLAD-L'];
+    const sc = H.cloud?.scenes, cl = Array.isArray(sc) ? sc.filter(s => s.clear_fraction_aoi < 0.02).length : null;
+    const np = H.cloud?.nisar_passes?.length;
+    const item = (k, big1, vs, txt) => { const a = node('article', '', 'fact'); a.append(node('span', k, 'k'), node('strong', big1), node('span', vs, 'vs'), node('small', txt)); return a; };
+    fill('facts', [
+      item('60 km forest map', pc(big?.oa), `vs ${pc(big?.all_forest_baseline)} if you call everything forest`, 'Agreement with the Hansen forest map, 9-pass median, out of sample.'),
+      item(`Full NISAR frame, ~${int(fr?.blocks?.scored_km2)} km²`, pc(fm?.oa), `vs ${pc(fm?.all_forest_baseline)} all-forest baseline`, `Same fixed threshold, scored once. Kappa ${Number.isFinite(fm?.kappa) ? fm.kappa.toFixed(2) : 'n/a'}.`),
+      item('Flagged blocks, full frame', times(gl?.lost?.precision_like, gl?.control?.precision_like), `more likely than random stable forest to overlap a GLAD-L alert (${pc(gl?.lost?.precision_like)} vs ${pc(gl?.control?.precision_like, 2)})`, 'Enrichment, not accuracy: flags are unconfirmed.'),
+      item('Dry season, June to October', np ? `${np} of ${np}` : 'n/a', `radar passes usable · Sentinel-2: ${cl ?? 'n/a'} of ${sc?.length ?? 'n/a'} scenes fully clouded (clear < 2%)`, 'Sentinel-2 still saw this area well most of the time.'),
+    ]);
+  }
+
+  function scales() {
+    const hd = H.head, T = hd?.T_db?.value, tb = hd?.tune_blocks?.value;
+    el('scales-threshold').textContent = Number.isFinite(T)
+      ? `One HV threshold (${T.toFixed(2)} dB), set on a ${Number.isFinite(tb) ? `${int(tb / 100)} km² strip (${int(tb)} blocks, ` : ''}the north half of the 20 km window${Number.isFinite(tb) ? ')' : ''}, never refit.`
+      : 'Threshold pending (headline.json).';
+    const rows = [
+      ['20 km window, held-out half', hd?.fnf_holdout_20km?.value, 'validation/fnf_metrics.json holdout.all'],
+      ['Rondônia, 20 km (transfer)', hd?.rondonia_transfer?.value, 'validation/fnf_metrics.json transfer_rondonia.all'],
+      ['60 km, BR-163 frontier', H.big?.scores?.forest_map_vs_hansen, 'big.json scores.forest_map_vs_hansen'],
+      ['Full NISAR frame', H.frame?.scores?.a_forest_map?.median, 'frame.json scores.a_forest_map.median'],
+    ];
+    const t = el('scales'); t.replaceChildren();
+    const thead = document.createElement('thead'), hr = document.createElement('tr');
+    ['Scale', 'Area scored', 'Agreement', 'All-forest baseline', 'Kappa', 'Forest P / R', 'Non-forest P / R'].forEach(h => hr.append(node('th', h)));
+    thead.append(hr); t.append(thead);
+    const tb2 = document.createElement('tbody');
+    rows.forEach(([label, c, src]) => {
+      const tr = document.createElement('tr'); tr.title = src;
+      if (!c) { tr.append(node('td', label), node('td', 'pending')); tb2.append(tr); return; }
+      const [np, nr] = nfPR(c);
+      [label, `${int(c.n / 100)} km²`, pc(c.oa), pc(c.all_forest_baseline), c.kappa.toFixed(2), `${pc(c.forest_precision)} / ${pc(c.forest_recall)}`, `${pc(np)} / ${pc(nr)}`]
+        .forEach((v, i) => tr.append(node(i ? 'td' : 'th', v)));
+      tb2.append(tr);
+    });
+    t.append(tb2);
+    el('scales-note').textContent = 'Area = scored 100 m blocks (1 ha each). P / R = precision / recall against Hansen, non-forest computed from the confusion counts. The 60 km row excludes the 20 km window; Rondônia is a different area with the threshold unchanged. Sources: hover a row, or validation/results_final.md.';
+  }
+
+  function validation() {
+    const big = H.big?.scores?.forest_map_vs_hansen, fm = H.frame?.scores?.a_forest_map?.median;
+    const dl = node('dl', '', 'kv');
+    [['60 km map, agreement (all-forest baseline)', big && `${pc(big.oa)} (${pc(big.all_forest_baseline)}) · kappa ${big.kappa.toFixed(2)}`],
+     ['Full frame, agreement (all-forest baseline)', fm && `${pc(fm.oa)} (${pc(fm.all_forest_baseline)}) · kappa ${fm.kappa.toFixed(2)}`],
+     ['Full frame, non-forest precision', fm && pc(nfPR(fm)[0])]].forEach(([k, v]) => dl.append(node('dt', k), node('dd', v || 'pending')));
+    fill('val-forest', [dl]);
+    const t = document.createElement('table'), hr = document.createElement('tr');
+    ['Area', 'Alerts', 'Flagged blocks', 'With alert', 'Random stable forest', 'Ratio'].forEach(h => hr.append(node('th', h)));
+    t.append(hr);
+    for (const [name, al] of [['60 km', H.big?.scores?.alerts], ['Full frame', H.frame?.scores?.b_alerts]]) for (const src of ['GLAD-L', 'GLAD-S2']) {
+      const a = al?.[src], tr = document.createElement('tr');
+      [name, src, int(a?.lost?.n_blocks), pc(a?.lost?.precision_like), pc(a?.control?.precision_like, 2), times(a?.lost?.precision_like, a?.control?.precision_like)].forEach(v => tr.append(node('td', v)));
+      t.append(tr);
+    }
+    fill('val-enrich', [t]);
+  }
+
+  function detector() { // the failed first attempt, from data/metrics.json + headline.json detector
+    const m = metrics, d = H.head?.detector?.value, box = el('results');
+    if (!m?.agreement || m.agreement.split !== 'holdout') { fill('results', [node('span', 'pending', 'tag')]); return; }
+    const a = m.agreement, agree = Math.round(a.precision_like * m.n_detections), caught = Math.round(a.recall_like * m.n_reference);
+    box.replaceChildren(node('p', `On the held-out south half, ${agree} of ${m.n_detections} detections matched a GLAD-L alert (precision-like ${a.precision_like.toFixed(3)}), and ${caught} of ${m.n_reference} GLAD-L events of 1 ha or more were caught (recall-like ${a.recall_like.toFixed(3)}).${d ? ` Its ${d.threshold_db.toFixed(1)} dB threshold was the lowest tested and close to the ${d.stable_forest_noise_sd_db.join('–')} dB noise on stable forest.` : ''}`));
+    const hl = m.hand_labeled, hc = el('hand-check');
+    if (hl && Number.isFinite(hl.precision) && Number.isFinite(hl.n_sample) && Number.isFinite(hl.n_unsure)) {
+      const usable = hl.n_sample - hl.n_unsure, cleared = Math.round(hl.precision * usable);
+      hc.textContent = `Hand check: ${cleared} of ${usable} checkable held-out flags showed clearing in Sentinel-2 (${hl.n_unsure} of ${hl.n_sample} had no clear image). Labelled by our AI assistant blind to the key; independent human re-label pending.`;
+    } else hc.textContent = 'Hand check: pending (metrics.json hand_labeled).';
+    if (d) el('detector-intro').textContent = `The first method flagged a change when HH rose or HV fell by ${d.threshold_db.toFixed(1)} dB against earlier passes. It did not work: see the validation section. By pixel area ${d.detections_on_hansen_intact_pct.south}% (south) to ${d.detections_on_hansen_intact_pct.north}% (north) of its detections were on Hansen-intact forest, and the optical check could not tell them from undisturbed forest. Kept here for the record.`;
+  }
+
+  function limits() {
+    const pd = H.frame?.scores?.a_forest_map?.per_date, ds = pd && Object.keys(pd).sort();
+    if (!ds?.length) return;
+    const f = pd[ds[0]], l = pd[ds[ds.length - 1]];
+    el('lim-seasonal').textContent = `Flags compare the last two passes with the first three, so many are likely seasonal drying rather than clearing. Over the full frame the single-pass forest map agrees with Hansen ${pc(f.oa)} on ${ds[0]} but ${pc(l.oa)} on ${ds[ds.length - 1]}, against an all-forest baseline of ${pc(l.all_forest_baseline)}: late in the dry season, forest looks less like forest to the radar.`;
+  }
+
+  function story() {
+    const big = H.big?.scores?.forest_map_vs_hansen, fr = H.frame?.scores, fm = fr?.a_forest_map?.median, gl = fr?.b_alerts?.['GLAD-L'];
+    const hd = H.head, ho = hd?.fnf_holdout_20km?.value, ro = hd?.rondonia_transfer?.value, gp = hd?.glad_l_on_prior_clearing?.value, d = hd?.detector?.value;
+    const sc = H.cloud?.scenes, cl = Array.isArray(sc) ? sc.filter(s => s.clear_fraction_aoi < 0.02).length : null, np = H.cloud?.nisar_passes?.length;
+    const cats = H.big?.lost_categories?.patches, m = metrics;
+    const p = (title, text, src) => { const n = node('p', ''); n.append(node('b', title), document.createTextNode(text)); if (src) n.append(node('span', ` (${src})`, 'note')); return n; };
+    const pd = fr?.a_forest_map?.per_date, ds = pd && Object.keys(pd).sort();
+    fill('story', [
+      p('1. The Next Frontier: a place and a sensor.', `The forest edge along the BR-163 highway near Novo Progresso, Pará, where forest is being cut for cattle pasture, watched by NISAR's L-band radar, which sees through cloud. All ${np ?? 'n/a'} passes here from June to October were usable; Sentinel-2 had ${cl ?? 'n/a'} fully clouded scenes of ${sc?.length ?? 'n/a'} in the same dry-season months, and saw the area well the rest of the time.`, 'submission/sources.md; big/cloud.json'),
+      p('2. Radar maps forest well, and the threshold transfers.', `One HV threshold, never refit, agrees with the Hansen forest map on ${pc(ho?.oa)} of held-out blocks in the 20 km window (all-forest baseline ${pc(ho?.all_forest_baseline)}), ${pc(ro?.oa)} in Rondônia (${pc(ro?.all_forest_baseline)}), ${pc(big?.oa)} over 60 km (${pc(big?.all_forest_baseline)}) and ${pc(fm?.oa)} over the full frame (${pc(fm?.all_forest_baseline)}).`, 'headline.json, big.json, frame.json'),
+      p('3. Forest-to-cleared flags point at real alerts, but most are unconfirmed.', `Flagged blocks over the full frame are ${times(gl?.lost?.precision_like, gl?.control?.precision_like)} more likely than random stable forest to overlap a GLAD-L alert, yet only ${pc(gl?.lost?.precision_like)} of them do.${cats ? ` On the 60 km map ${int(cats.radar_only_unconfirmed?.patches)} of ${int(cats.radar_only_unconfirmed?.patches + cats.alert_supported?.patches)} flagged patches have no alert at all.` : ''}${ds ? ` The map's agreement falls from ${pc(pd[ds[0]].oa)} on the first pass to ${pc(pd[ds[ds.length - 1]].oa)} on the last, so many flags are likely seasonal drying.` : ''}`, 'frame.json, big.json'),
+      p('4. Our first detector failed, and why.', m?.agreement ? `A 1 dB change detector on the 20 km window matched ${Math.round(m.agreement.precision_like * m.n_detections)} of ${m.n_detections} held-out detections to GLAD-L alerts and caught ${Math.round(m.agreement.recall_like * m.n_reference)} of ${m.n_reference} alert events.${d ? ` Its threshold sat close to the ${d.stable_forest_noise_sd_db.join('–')} dB per-pass noise on stable forest.` : ''}` : 'Pending (metrics.json).', 'data/metrics.json; validation/results_final.md'),
+      p('5. Most new alerts are not in old-growth forest.', gp ? `${gp.share_pct}% of 2026 GLAD-L alert pixels in the 20 km window (${int(gp.on_hansen_loss_2001_2025)} of ${int(gp.alert_pixels)}) fall on land Hansen had already mapped as cleared in 2001–2025: re-clearing of old pasture, which a forest-only method excludes by design.` : 'Pending (headline.json).', 'validation/results_final.md'),
+      p('6. What would fix it.', 'Wet-season and multi-year passes, so seasonal drying can be told apart from clearing; a seasonal correction; a pasture-aware method that also watches re-clearing; and independent human labels instead of our AI check.'),
+    ]);
+  }
+
+  Promise.all([json('data/explore/explore.json'),json('data/detections.geojson'),json('data/summary.json'),json('data/metrics.json'),
+    json('data/explore/headline.json'),json('data/explore/big/big.json'),json('data/explore/frame/frame.json'),json('data/explore/big/cloud.json')]).then(([m,d,s,met,hd,bg,fr,cl]) => {
+    Object.assign(H, {head: hd, big: bg, frame: fr, cloud: cl});
     if (m?.locations?.length) {
       manifest = m; el('compare-loc').replaceChildren(...m.locations.map(l => new Option(l.name,l.id))); el('compare-loc').disabled = false; compare();
       const para = m.locations.find(l=>l.id==='spara'); if (para) el('patch-date').append(...para.dates.map(date=>new Option(date,date)));
@@ -155,5 +263,6 @@
     detections = Array.isArray(d?.features) && d.features.every(f=>f?.geometry && f?.properties && Number.isInteger(f.properties.id) && /^\d{4}-\d{2}-\d{2}$/.test(f.properties.first_date) && ['early','late'].includes(f.properties.stage)) ? d : null;
     summary = s; metrics = met; renderPatches(); analysis();
     if (met) { el('metrics-notes').textContent = met.notes || ''; el('download-report').disabled = false; }
+    for (const f of [facts, scales, validation, detector, limits, story]) { try { f(); } catch (e) { console.warn(f.name, e); } }
   }).catch(() => { el('compare-status').textContent = 'Data unavailable. Check your connection and reload.'; });
 })();

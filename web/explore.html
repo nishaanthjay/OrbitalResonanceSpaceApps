@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261115-cine-3">
-  <link rel="stylesheet" href="cinema.css?v=20261115-cine-3">
+  <link rel="stylesheet" href="observatory.css?v=20261115-honest-1">
+  <link rel="stylesheet" href="cinema.css?v=20261115-honest-1">
 </head>
 <body>
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -65,8 +65,6 @@
   </div>
 
   <div class="strip glass">
-    <div class="facts" id="facts"></div>
-    <div class="divider"></div>
     <button class="card" data-go="composite" id="card-radar"><span class="thumb"><img id="thumb-radar" alt=""></span><span><b>Through the clouds</b><small>Radar composite, HH + HV</small></span></button>
     <button class="card" data-go="hvchg" id="card-change"><span class="thumb"><img id="thumb-change" alt=""></span><span><b>What changed</b><small>HV change vs earlier passes</small></span></button>
     <button class="card" data-go="big" id="card-big" hidden><span class="thumb"><img id="thumb-big" alt=""></span><span><b>Forest map, 60 km</b><small>BR-163 frontier at scale</small></span></button>
@@ -189,6 +187,11 @@
   </aside>
 </section>
 
+<!-- ================= headline facts: every value read at runtime (observatory.js) from big.json, frame.json, cloud.json ================= -->
+<section class="facts-band" aria-label="Headline results">
+  <div class="headline" id="facts"><p class="note">Loading results&hellip;</p></div>
+</section>
+
 <!-- ================= frontier clock ================= -->
 <section id="frontier" class="section">
   <div class="section-head reveal"><div><p class="eyebrow">02 / Frontier clock</p><h2>Nine passes over one forest edge</h2></div><p>The 60 km forest map, redrawn from each NISAR pass with one fixed HV threshold, nothing tuned per pass. Green is forest, rust is non-forest; transparent is outside the swath on that pass.</p></div>
@@ -306,22 +309,59 @@
 
 <!-- ================= analysis ================= -->
 <section id="analysis" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">07 / Understand</p><h2>Forest disturbance analysis</h2></div><p>Measured values from the repository's southern Par&aacute; datasets. Whole-window map patches and holdout scoring use different counting units.</p></div>
-  <div id="analysis-metrics" class="metric-grid reveal"><p>Data pending</p></div>
-  <div class="analysis-grid">
-    <article class="panel glass reveal"><h3>First-observed patch area</h3><p class="note">Hectares by first detection date, from summary.json. Patches are counted once, on their first date.</p><div id="area-chart">Not available</div></article>
-    <article class="panel glass reveal"><h3>Forest-mask and loss context</h3><p>Use the map overlays to compare potential disturbances with GLAD-L events and Hansen forest loss from 2021&ndash;2025.</p><p>The forest-only method excludes previously cleared land. Its results do not describe all land-cover change.</p><p class="note">Forest-mask coverage percentage: not included in the frontend datasets. Historical loss is context, not a current forest classification.</p><a class="text-link" href="#explore" data-go="explore">Explore contextual layers</a></article>
-  </div>
+  <div class="section-head reveal"><div><p class="eyebrow">07 / Understand</p><h2>The forest map at three scales</h2></div><p>The same radar forest map, scored against the Hansen forest map (an optical product ending in 2025: a reference, not ground truth). Each row was scored once, with rules written down before scoring.</p></div>
+  <article class="panel glass reveal">
+    <p class="lead-line" id="scales-threshold"></p>
+    <div class="table-scroll"><table class="scales" id="scales"><tbody><tr><td>Data pending</td></tr></tbody></table></div>
+    <p class="note" id="scales-note"></p>
+  </article>
+  <details class="story-panel glass reveal" id="detector-first">
+    <summary>First attempt: 1 dB change detector (did not work)</summary>
+    <div class="detector-body">
+      <p class="note" id="detector-intro"></p>
+      <div id="analysis-metrics" class="metric-grid"><p>Data pending</p></div>
+      <div class="analysis-grid">
+        <article class="panel glass"><h3>First-observed patch area</h3><p class="note">Hectares by first detection date, from summary.json. Patches are counted once, on their first date.</p><div id="area-chart">Not available</div></article>
+        <article class="panel glass"><h3>Forest-mask and alert context</h3><p>The detector looked only at forest that Hansen had never mapped as cleared, so by design it could not fire on previously cleared land.</p><p class="note">Use the map overlays (southern Par&aacute; location) to compare its patches with GLAD-L events and Hansen forest loss 2021&ndash;2025.</p><a class="text-link" href="#explore" data-go="explore">Explore contextual layers</a></article>
+      </div>
+    </div>
+  </details>
 </section>
 
 <!-- ================= validation ================= -->
 <section id="impact" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">08 / Validate</p><h2>Validation and limitations</h2></div><p>A transparent prototype for investigating forest change. Alert agreement is a comparison with another product, not independently verified accuracy.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow">08 / Validate</p><h2>Validation and limitations</h2></div><p>Agreement with Hansen and GLAD is a comparison with other products, not independently verified accuracy. Flagged blocks are unconfirmed radar change.</p></div>
   <div class="analysis-grid">
-    <article class="panel glass reveal"><h3 id="results-h">Held-out reference agreement</h3><div id="results">Pending</div><p id="metrics-notes" class="note"></p><p class="warn">The optical chip check was performed by the same AI assistant that ran detection, not an independent human reviewer. Human re-labeling is needed.</p><button id="download-report" class="mini" disabled>Download data report</button></article>
-    <article class="panel glass reveal"><h3>What this prototype demonstrates</h3><p>Real radar acquisitions, aligned temporal exploration, inspectable detection patches, and explicit reference comparisons in one open workflow.</p><h3>What remains uncertain</h3><ul class="limits"><li>Rain, soil moisture, fire and flooded forest can mimic disturbances.</li><li>Selective logging is not detected. Detection was tested on one study area.</li><li>Provisional radar products and compressed display layers introduce limitations.</li><li>Low reference agreement does not establish new forest clearing. Independent verification remains essential.</li></ul><h3>Where it could go next</h3><p>Human-reviewed labels, improved noise rejection, and further study areas could support a better-tested monitoring workflow.</p></article>
+    <article class="panel glass reveal">
+      <h3>Forest map vs Hansen</h3>
+      <div id="val-forest"><span class="tag">pending</span></div>
+      <h3>Flagged forest-to-cleared blocks vs GLAD alerts</h3>
+      <p class="note">Share of flagged blocks that overlap a GLAD alert (&plusmn;24 days), against the same number of randomly drawn stable-forest blocks. Enrichment shows the flags are not random; it is not accuracy, and most flags have no alert.</p>
+      <div class="table-scroll" id="val-enrich"><span class="tag">pending</span></div>
+      <h3 id="results-h">First attempt: 1 dB change detector (20 km window, did not work)</h3>
+      <div id="results"><span class="tag">pending</span></div>
+      <!-- HUMAN-RELABEL: the line below is computed from data/metrics.json hand_labeled (AI labeller, blind to the key).
+           When an independent human re-label is done, update hand_labeled in metrics.json and change the labeller text in observatory.js handCheck(). -->
+      <p class="warn" id="hand-check" data-labeller="ai-assistant"></p>
+      <p id="metrics-notes" class="note"></p>
+      <button id="download-report" class="mini" disabled>Download data report</button>
+    </article>
+    <article class="panel glass reveal">
+      <h3>Limitations</h3>
+      <ul class="limits" id="limits">
+        <li>Dry season only (June to October 2026). The wet season, when cloud is heaviest, was not tested.</li>
+        <li id="lim-seasonal">Flags compare the last two passes with the first three, so many are likely seasonal drying rather than clearing.</li>
+        <li>NISAR L2 GCOV is a provisional product; display layers are compressed.</li>
+        <li>Hansen and GLAD are optical reference products, not ground truth.</li>
+        <li>Selective logging, fire and flooding are not handled.</li>
+        <li>The first attempt, a 1 dB change detector, failed (details above and in the analysis section).</li>
+      </ul>
+      <p class="note">We do not claim this stops deforestation, saves carbon, or works everywhere.</p>
+      <h3>Where it could go next</h3>
+      <p>Wet-season and multi-year passes, a seasonal correction, a method that also watches already-cleared pasture, and independent human labels.</p>
+    </article>
   </div>
-  <details class="story-panel glass reveal" id="findings"><summary>Research context and supporting findings</summary><div class="story" id="story"></div></details>
+  <details class="story-panel glass reveal" id="findings"><summary>The story in six steps</summary><div class="story" id="story"><p class="note">Loading&hellip;</p></div></details>
   <div class="sources reveal" id="sources"><h3>Data sources and acknowledgments</h3><p>NASA&ndash;ISRO NISAR L2 GCOV provisional · Copernicus Sentinel-2 scene classification (Earth Search) · Mapzen / AWS Terrain Tiles · FUNAI Terras Ind&iacute;genas · GLAD-L alerts · Hansen Global Forest Change · MapLibre GL JS · OpenFreeMap / OpenStreetMap · Esri contextual imagery.</p><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md">Sources &amp; acknowledgments</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md">Methods &amp; validation record</a><p class="note">RADD comparison is not available in the shipped frontend datasets.</p></div>
 </section>
 </main>
@@ -334,8 +374,8 @@
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js?v=20261115-cine-3"></script>
-<script src="observatory.js?v=20261115-cine-3"></script>
-<script src="cinema.js?v=20261115-cine-3"></script>
+<script src="explore.js?v=20261115-honest-1"></script>
+<script src="observatory.js?v=20261115-honest-1"></script>
+<script src="cinema.js?v=20261115-honest-1"></script>
 </body>
 </html>

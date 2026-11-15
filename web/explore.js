@@ -130,10 +130,8 @@ function drawPasses() {
 
 // strip facts and thumbnails, all from the manifest and the exported layers
 function drawStrip() {
-  const d = state.loc.dates, last = d[d.length - 1], first = state.manifest.locations[0], fl = first.dates[first.dates.length - 1];
-  const mon = (s) => new Date(s + 'T00:00:00Z').toLocaleString('en', { month: 'short', timeZone: 'UTC' });
-  $('facts').innerHTML = `<span><b>L-band</b> radar, ~24 cm waves</span><span><b>${d.length} passes</b> &middot; ${mon(d[0])}&ndash;${mon(last)} ${last.slice(0, 4)}</span>` +
-    '<span><b>12-day</b> repeat orbit</span>';
+  const first = state.manifest.locations[0], fl = first.dates[first.dates.length - 1];
+  // headline facts (#facts) are rendered by observatory.js from big.json / frame.json / cloud.json, independent of the map
   $('thumb-radar').src = `${DATA}${first.id}/composite_${fl}.webp`;
   $('thumb-change').src = `${DATA}${first.id}/hvchg_${fl}.webp`;
   if (state.big) { $('thumb-big').src = `${DATA}big/forest_median.webp`; $('card-big').hidden = false; }
@@ -350,14 +348,7 @@ function redrawLast() { // same selection, new pass: redraw without the entrance
   } else drawChart(l.lon, l.lat, false);
 }
 
-// ---------- story ----------
-function story() {
-  $('story').innerHTML = `
-    <p><b>The next frontier, twice.</b> The place: the forest edge along the BR-163 highway near Novo Progresso, Pará, a frontier town where forest is being cut for cattle pasture (Mongabay; see submission/sources.md). The sensor: NISAR's L-band radar, which sees through cloud: every one of its 9 passes here was usable, while Sentinel-2 had 5 fully clouded scenes in the same months (validation/cloud_blindness.json). This was the dry season; the wet season, when cloud is worst, was not tested.</p>
-    <p><b>Radar separates forest from cleared land.</b> One HV threshold, chosen on the north half of the window and tested once on the south half, put 83.1% of 100 m blocks in the same class as the Hansen forest map (kappa 0.66), against 52.4% for calling everything forest. The same threshold, unchanged, scored 95.6% in Rondônia. <span class="note">(validation/fnf_metrics.json; pre-registered in validation/PREREG_fnf.md. This is agreement with an optical map that ends in 2025, not ground truth.)</span></p>
-    <p><b>Catching new clearing is harder, and we say so.</b> On the held-out south half, 2 of 57 detections agree with GLAD-L alerts, and 0 of 179 GLAD-L events of 1 ha or more are caught. 92.5% of 2026 GLAD-L alert pixels fall on land Hansen already mapped as cleared 2001&ndash;2025, which our forest-only method excludes by design. By pixel area, 98.0% to 99.1% of our detections fall on Hansen-intact forest. Whether they are new clearing or radar noise is not established by the available optical chip check. Independent human review is needed. Our threshold, 1.0 dB, is the lowest value we tested and is close to the per-date noise (about 0.4 dB standard deviation on stable forest). We make no claim that these detections are clearing. <span class="note">(validation/results_final.md. Agreement with an alert product is a reference, not ground truth.)</span></p>
-    <p class="note">We do not claim this stops deforestation or works everywhere. Rain, fire, flooding and selective logging are not handled.</p>`;
-}
+// ---------- story: rendered by observatory.js (#story), so it does not wait for the map's load event ----------
 
 // ---------- view 4: detections, GLAD-L, Hansen loss, results (files already in web/data; never invented) ----------
 // A file that fails to load shows "pending" for that item only.
@@ -415,43 +406,7 @@ function addDetections(fc) {
   $('t-det').checked = true;
 }
 
-function renderResults() {
-  const box = $('results'), m = state.metrics, problems = [];
-  box.replaceChildren();
-  if (!m || typeof m !== 'object') { box.append(mk('span', 'pending', 'tag')); return; }
-  box.append(mk('p', 'Agreement with GLAD-L alerts on the held-out south half: a reference, not ground truth.', 'note'));
-  const num = (v) => typeof v === 'number' && Number.isFinite(v);
-  const rows = [];
-  const a = m.agreement;
-  if (!a || typeof a !== 'object') problems.push('agreement is missing');
-  else if (a.split !== 'holdout') {
-    box.append(mk('p', a.split === undefined ? 'agreement not shown: split is missing' : `scored on the wrong split (split: ${a.split})`, 'warn'));
-  } else {
-    rows.push(['Split', 'holdout']);
-    for (const [k, label] of [['precision_like', 'Precision-like'], ['recall_like', 'Recall-like']]) {
-      if (num(a[k])) rows.push([label, a[k].toFixed(3)]); else problems.push(`agreement.${k} is missing or not a number`);
-    }
-  }
-  for (const [k, label] of [['n_detections', 'Detections scored'], ['n_reference', 'Reference events']]) {
-    if (num(m[k])) rows.push([label, String(m[k])]); else problems.push(`${k} is missing or not a number`);
-  }
-  if (rows.length) {
-    const dl = mk('dl', undefined, 'kv');
-    rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
-    box.append(dl);
-  }
-  if (!('hand_labeled' in m)) problems.push('hand_labeled is missing');
-  else if (m.hand_labeled === null) box.append(mk('p', 'Optical chip-label precision: pending', 'note'));
-  else if (m.hand_labeled && num(m.hand_labeled.precision)) {
-    box.append(mk('p', `Optical chip-label precision (AI review): ${m.hand_labeled.precision.toFixed(3)} (sample ${m.hand_labeled.n_sample}, unsure ${m.hand_labeled.n_unsure}; unsure excluded). Not independently human validated.`, 'note'));
-  } else problems.push('hand_labeled.precision is missing or not a number');
-  if (m.reference_source !== undefined && m.reference_source !== 'GLAD-L') problems.push(`reference_source is ${m.reference_source}, but the caption says GLAD-L`);
-  if (problems.length) {
-    const ul = mk('ul', undefined, 'problems');
-    problems.forEach((p) => ul.append(mk('li', `metrics.json: ${p}`)));
-    box.append(ul);
-  }
-}
+// #results (the failed 1 dB detector) is rendered by observatory.js from data/metrics.json
 
 async function loadExtras() {
   // start every fetch at once, add the layers in drawing order (Hansen under alerts under detections)
@@ -463,7 +418,6 @@ async function loadExtras() {
   addRef(await pRef);
   addDetections(await pDet);
   state.metrics = await pMet;
-  renderResults();
 }
 
 function updateFilters() { // detections from their first date on, alerts from their date on
@@ -675,7 +629,7 @@ function renderCloud(c) {
     ['Median clear share per scene', pct(s.median_clear_fraction)],
     ['Longest gap between clear Sentinel-2 views', `${s.longest_gap_days_between_good_views} days`],
   ]));
-  box.append(mk('p', 'This window is the dry season and Sentinel-2 saw this area well: optical does not go blind here between June and October. NISAR\'s edge in this window is that every pass is usable with no cloud screening. Cloud builds from September; the wet season (about November to May) was not measured. Scene classification misses haze and small clouds, so clear shares are upper bounds. validation/cloud_blindness.json.', 'note'));
+  box.append(mk('p', 'This window is the dry season and Sentinel-2 saw this area well: Sentinel-2 was not blinded here between June and October. NISAR\'s edge in this window is that every pass is usable with no cloud screening. Cloud builds from September; the wet season (about November to May) was not measured. Scene classification misses haze and small clouds, so clear shares are upper bounds. validation/cloud_blindness.json.', 'note'));
 }
 
 // ---------- full NISAR frame (web/data/explore/frame/, frame.json + layers; scores copied there from validation/frame_metrics.json) ----------
@@ -690,7 +644,7 @@ async function loadFrame() {
   state.frameMeta = meta;
   const b = meta.bounds_lonlat_wsen, c = corners(b);
   state.frame = { id: 'frame', kind: 'frame', name: 'Full NISAR frame, ~60,000 km² (forest map)', dates: meta.dates, bounds_lonlat: b,
-    notes: 'The whole radar frame (track 2, frame 174, ascending), 100 m blocks, the same fixed HV threshold and loss rule as the 60 km map. Only the 9-pass median map is shown at this size. Out-of-sample; agreement with Hansen/GLAD is a reference, not ground truth.' };
+    notes: 'The whole radar frame (track 2, frame 174, ascending), 100 m blocks, the same fixed HV threshold and forest-to-cleared flag rule as the 60 km map. Only the 9-pass median map is shown at this size. Out-of-sample; agreement with Hansen/GLAD is a reference, not ground truth.' };
   $('loc').append(new Option(`${state.frame.name} (${meta.dates.length} dates)`, 'frame'));
   const raster = { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' };
   map.addSource('flost-img', { type: 'image', url: `${FRAME}${meta.layers.lost}`, coordinates: c });
@@ -816,7 +770,6 @@ map.on('load', async () => {
     }
     map.addSource('boundary', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addLayer({ id: 'boundary', type: 'line', source: 'boundary', paint: { 'line-color': '#93A889', 'line-opacity': 0.7, 'line-width': 1.2, 'line-dasharray': [4, 3] } });
-    story();
     try { await loadBig(); } catch (e) { console.warn('60 km forest map not loaded', e); }
     try { await loadFrame(); } catch (e) { console.warn('frame forest map not loaded', e); }
     try { await loadExtras(); } catch (e) { ['det', 'ref', 'han'].forEach((k) => pending(k, true)); }
