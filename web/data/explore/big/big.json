@@ -69,6 +69,7 @@
   "lost_patches": "lost.geojson"
  },
  "n_lost_patches": 2999,
+ "first_flagged_definition": "per block: the earliest pass from 08-13 on from which the block is non-forest on every pass through 10-12; patch value = the earliest over its blocks",
  "scores": {
   "scope": "big AOI, valid on all 9 dates, original window excluded",
   "blocks": {

@@ -25,3 +25,12 @@ def test_patches_merge_8_connected_and_series_linear_mean():
     assert len(f) == 2 and f[0]["properties"]["area_ha"] == 2.0
     expect = 10 * np.log10((0.1 + 0.01) / 2)
     assert abs(f[0]["properties"]["hv_series_db"][0] - round(expect, 2)) < 1e-9
+
+
+def test_first_flagged():
+    F, N = True, False
+    forest = np.array([[F, F, F, F, F, F, F, N, N],
+                       [F, F, F, N, F, N, N, N, N],
+                       [F, F, F, N, N, N, N, N, N],
+                       [F, F, F, F, F, F, F, F, N]]).T[:, :, None]
+    assert make_big.first_flagged(forest)[:, 0].tolist() == [7, 5, 3, 8]

@@ -219,3 +219,6 @@ footer nav { display: flex; gap: 15px; }
 .maplibregl-ctrl-attrib a { color: var(--muted); }
 
 .map-point { width: 14px; height: 14px; border: 2px solid var(--text); background: var(--bg); border-radius: 2px; }
+#big-panel .kv { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+#big-panel .kv dd { overflow-wrap: anywhere; }
+@media (max-width: 800px) { #big-panel .kv { grid-template-columns: 1fr; gap: 2px; } #big-panel .kv dd { margin-bottom: 10px; } }

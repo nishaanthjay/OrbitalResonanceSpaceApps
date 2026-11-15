@@ -7,7 +7,9 @@ const DATA = 'data/explore/';
 const R = 6378137;
 const $ = (id) => document.getElementById(id);
 const state = { manifest: null, loc: null, i: 0, layer: 'composite', series: null, playing: null, marker: null,
-  last: null, det: null, ref: null, hansen: null, metrics: null };
+  last: null, det: null, ref: null, hansen: null, metrics: null, big: null, bigMeta: null, lost: null, bigProt: null };
+const isBig = () => !!state.loc && state.loc.kind === 'big';
+const findLoc = (id) => (state.big && id === state.big.id ? state.big : state.manifest.locations.find((l) => l.id === id));
 const COLORS = { early: '#b68b52', late: '#bd776a', ref: '#81989c' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -28,10 +30,22 @@ function corners(b) { // b = W S E N
   return [[b[0], b[3]], [b[2], b[3]], [b[2], b[1]], [b[0], b[1]]];
 }
 function hasImage(layer, i) { return !(layer.endsWith('chg') && i === 0); }
-function url(layer, i) { return `${DATA}${state.loc.id}/${layer}_${state.loc.dates[i]}.webp`; }
+function url(layer, i) {
+  if (layer === 'median') return `${DATA}${state.loc.id}/forest_median.webp`;
+  return `${DATA}${state.loc.id}/${layer}_${state.loc.dates[i]}.webp`;
+}
 
 function setImage() {
   const loc = state.loc, c = corners(loc.bounds_lonlat), op = +$('opacity').value / 100;
+  if (isBig()) {
+    map.getSource('radar').updateImage({ url: url(state.layer, state.i), coordinates: c });
+    map.setPaintProperty('radar', 'raster-opacity', op);
+    map.setPaintProperty('chg', 'raster-opacity', 0);
+    $('datelabel').textContent = state.layer === 'median' ? `9-pass median (${loc.dates[0]} to ${loc.dates[loc.dates.length - 1]}); slider marks ${loc.dates[state.i]}` : loc.dates[state.i];
+    drawLegend();
+    redrawLast();
+    return;
+  }
   const isChg = state.layer.endsWith('chg');
   // base radar image: the chosen layer, or HV under a change layer
   map.getSource('radar').updateImage({ url: url(isChg ? 'hv' : state.layer, state.i), coordinates: c });
@@ -46,12 +60,17 @@ function setImage() {
 }
 
 function preload() { // so the slider and play are smooth
+  if (isBig()) { state.loc.dates.forEach((_, i) => { const im = new Image(); im.src = url('forest', i); }); return; }
   for (const layer of ['composite', 'hv', 'hh', 'hvchg', 'hhchg'])
     state.loc.dates.forEach((_, i) => { if (hasImage(layer, i)) { const im = new Image(); im.src = url(layer, i); } });
 }
 
 function drawLegend() {
   const s = state.loc.stretch, L = state.layer, el = $('legend');
+  if (isBig()) {
+    el.innerHTML = `<div class="note keyrow"><span class="sw" style="background:#2f6b4f"></span> forest (HV &ge; ${state.bigMeta.T_db.toFixed(2)} dB) <span class="sw" style="background:#b4401c"></span> non-forest. Transparent = outside the swath on at least one pass. 100 m blocks.</div>`;
+    return;
+  }
   const bar = (css, lo, hi, unit) => `<div class="legend" style="background:${css}"></div><div class="legend-lab"><span>${lo}</span><span>${hi}</span></div><div class="note">${unit}</div>`;
   if (L === 'hv' || L === 'hh') el.innerHTML = bar('linear-gradient(90deg,#000,#fff)', `${s[L].lo} dB`, `${s[L].hi} dB`, `${L.toUpperCase()} gamma0, one fixed stretch for all dates (values outside are clipped)`);
   else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, 'This date minus the mean of all earlier dates. Computed on ~80 m cells; changes under 1 dB are transparent (per-date noise ~0.4 dB at 20 m). Display preview from the clipped layers: real drops can be larger.');
@@ -62,6 +81,7 @@ function drawLegend() {
 async function loadSeries() {
   const loc = state.loc;
   state.series = null;
+  if (loc.kind === 'big') return; // no per-pixel series file for the 60 km map; lost patches carry their own
   try {
     const r = await fetch(`${DATA}${loc.id}/series.bin`);
     if (!r.ok) throw new Error('Series unavailable');
@@ -118,6 +138,7 @@ function placeMarker(lon, lat) {
 
 function drawChart(lon, lat) {
   state.last = { kind: 'point', lon, lat };
+  if (isBig()) { $('chart').innerHTML = '<div class="hint">Click a red "forest lost" patch to see its HV series against the forest threshold.</div>'; return; }
   const c = cellAt(lon, lat), el = $('chart');
   if (!c) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
   if (!state.series) { el.textContent = 'Pixel time series not available. Try a detection patch or reload.'; return; }
@@ -146,9 +167,25 @@ function drawDetection(f, lngLat) {
     <div class="note"><b style="color:#bd998d">HH</b> and <b style="color:#8fa58b">HV</b> (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Whether this patch is clearing or radar noise is not established by the available optical chip check. Independent human review is needed.</div>`;
   placeMarker(lngLat.lng, lngLat.lat);
 }
+// A clicked lost patch on the 60 km map: patch-mean HV from the stack (lost.geojson hv_series_db) vs the fixed threshold.
+function drawLost(f, lngLat) {
+  state.last = { kind: 'lost', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
+  const p = f.properties, el = $('chart'), dates = state.loc.dates, T = state.bigMeta.T_db;
+  const title = `Lost patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_flagged || 'n/a')}${p.in_original_window ? ', inside the test window' : ''}`;
+  const hv = Array.isArray(p.hv_series_db) && p.hv_series_db.length === dates.length ? p.hv_series_db.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null;
+  if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hv_series_db must hold ${dates.length} numbers.</div>`; return; }
+  el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates)}
+    <div class="note"><b style="color:#8fa58b">HV</b> (dB): mean over this patch's 100 m blocks from the full-precision stack. Dashed = the fixed forest threshold ${T.toFixed(2)} dB (above = forest). A drop below the line can also come from moisture or speckle; ${p.n_blocks === 1 ? 'this is a single 1 ha block, ' : ''}unverified.</div>`;
+  placeMarker(lngLat.lng, lngLat.lat);
+}
 function redrawLast() {
   const l = state.last;
   if (!l) return;
+  if (l.kind === 'lost') {
+    const f = state.lost && state.lost.byId.get(l.id);
+    if (f) drawLost(f, { lng: l.lon, lat: l.lat });
+    return;
+  }
   if (l.kind === 'det') {
     const f = state.det && state.det.byId.get(l.id);
     if (f) drawDetection(f, { lng: l.lon, lat: l.lat });
@@ -283,26 +320,137 @@ function applyVisibility() {
   vis('ref-line', $('t-ref').checked);
   vis('det-fill', $('t-det').checked);
   vis('det-line', $('t-det').checked);
+  const big = isBig();
+  const bvis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on && big ? 'visible' : 'none'); };
+  bvis('lost-img', $('t-lost').checked);
+  bvis('lost-fill', $('t-lost').checked);
+  bvis('lost-line', $('t-lost').checked);
+  bvis('prot-line', $('t-prot').checked);
+  bvis('prot-label', $('t-prot').checked);
+  bvis('win-line', $('t-win').checked);
+  bvis('win-label', $('t-win').checked);
+}
+
+// ---------- 60 km forest map (web/data/explore/big/, written by web/tools/make_big.py and validation/protected_areas.py) ----------
+// Every number shown here is read from big.json / big_protected.json (copied there from validation/scale_metrics.json).
+const BIG = `${DATA}big/`;
+const pct = (v, d = 1) => (typeof v === 'number' && Number.isFinite(v) ? `${(100 * v).toFixed(d)}%` : 'not available');
+const int = (v) => (Number.isInteger(v) ? v.toLocaleString() : 'not available');
+
+function renderBigResults(meta) {
+  const box = $('big-results'), sc = meta.scores || {};
+  box.replaceChildren();
+  const fm = sc.forest_map_vs_hansen || {}, al = sc.alerts || {}, lr = sc.loss_rule || {}, bl = sc.blocks || {};
+  const rows = [
+    ['Forest map (9-pass median) agreeing with Hansen', `${pct(fm.oa)} vs ${pct(fm.all_forest_baseline)} all-forest baseline`],
+    ['Kappa', typeof fm.kappa === 'number' ? fm.kappa.toFixed(3) : 'not available'],
+    ['Blocks scored (test window excluded)', `${int(bl.scored)} × 1 ha`],
+    ['Lost blocks (class-switch rule)', `${int(lr.lost_blocks)} (${int(lr.lost_ha)} ha)`],
+  ];
+  for (const [src, label] of [['GLAD-L', 'GLAD-L'], ['GLAD-S2', 'GLAD-S2']]) {
+    const a = al[src];
+    rows.push([`Lost blocks with a ${label} alert`, a ? `${pct(a.lost.precision_like)} vs ${pct(a.control.precision_like, 2)} random stable-forest control` : 'not available']);
+  }
+  const dl = mk('dl', undefined, 'kv');
+  rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
+  box.append(dl);
+  const w = sc.alert_windows || {};
+  box.append(mk('p', `Alerts dated ${w.precision ? w.precision.join(' to ') : 'n/a'} (±24 days around ${w.reference ? w.reference.join(' to ') : 'n/a'}). Scored once, rules pre-registered in validation/PREREG_scale.md; full numbers in validation/scale_metrics.json.`, 'note'));
+}
+
+function renderBigProtected(pj) {
+  const box = $('big-protected');
+  box.replaceChildren();
+  if (!pj || !Array.isArray(pj.areas)) { box.append(mk('span', 'pending', 'tag')); return; }
+  const dl = mk('dl', undefined, 'kv');
+  pj.areas.forEach((a) => dl.append(mk('dt', `${a.name} (${a.kind.split(' (')[0]})`),
+    mk('dd', `${int(a.lost_blocks_inside)} blocks · ${a.lost_ha_inside} ha (${pct(a.lost_share_of_valid_blocks)} of its mapped blocks)`)));
+  const o = pj.outside_all_areas || {};
+  dl.append(mk('dt', 'Outside all protected areas'), mk('dd', `${int(o.lost_blocks)} blocks (${pct(o.lost_share_of_valid_blocks)} of mapped blocks)`));
+  box.append(dl);
+  box.append(mk('p', `Whole 60 km map, test window included (${int(pj.total_lost_blocks)} lost blocks). A block counts when its centre is inside the official boundary. Boundaries: FUNAI Terras Indígenas (read 2026-11-14); MMA CNUC 07/2026 has no conservation unit in this area. See submission/sources.md.`, 'note'));
+}
+
+function watchlist() {
+  return state.lost.features.map((f) => ({ id: f.properties.id, centroid_lon: f.properties.centroid_lon, centroid_lat: f.properties.centroid_lat,
+    area_ha: f.properties.area_ha, first_flagged: f.properties.first_flagged }));
+}
+function saveFile(name, text, type) {
+  const a = document.createElement('a'), u = URL.createObjectURL(new Blob([text], { type }));
+  a.href = u; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+function downloadWatchlist(kind) {
+  const rows = watchlist();
+  if (kind === 'geojson') {
+    const fc = { type: 'FeatureCollection', name: 'br163_60km_forest_lost_watchlist',
+      description: `Lost patches (class-switch rule, ${state.loc.dates[0]}..${state.loc.dates[state.loc.dates.length - 1]}), NISAR HV threshold ${state.bigMeta.T_db.toFixed(2)} dB. first_flagged: ${state.bigMeta.first_flagged_definition}. Unverified radar flags, not confirmed clearing.`,
+      features: rows.map((r) => ({ type: 'Feature', properties: r, geometry: { type: 'Point', coordinates: [r.centroid_lon, r.centroid_lat] } })) };
+    saveFile('br163_forest_lost_watchlist.geojson', JSON.stringify(fc), 'application/geo+json');
+  } else {
+    const head = ['id', 'centroid_lon', 'centroid_lat', 'area_ha', 'first_flagged'];
+    saveFile('br163_forest_lost_watchlist.csv', [head.join(','), ...rows.map((r) => head.map((k) => r[k] ?? '').join(','))].join('\n') + '\n', 'text/csv');
+  }
+}
+
+async function loadBig() {
+  const [meta, lost, prot, pj] = await Promise.all([getJSON(`${BIG}big.json`), getJSON(`${BIG}lost.geojson`), getJSON(`${BIG}protected.geojson`), getJSON(`${BIG}big_protected.json`)]);
+  if (!meta || !Array.isArray(meta.dates) || !Array.isArray(meta.bounds_lonlat)) return;
+  state.bigMeta = meta;
+  state.big = { id: 'big', kind: 'big', name: 'BR-163 frontier, 60 km (forest map)', dates: meta.dates, bounds_lonlat: meta.bounds_lonlat,
+    notes: 'Forest / non-forest from one fixed NISAR HV threshold on every pass (track 2, frame 174, ascending), 100 m blocks; the swath edge cuts the west of the box. Out-of-sample: threshold fixed on a 10 km strip, tested here unchanged. Agreement with Hansen/GLAD, a reference, not ground truth.' };
+  $('loc').append(new Option(`${state.big.name} (${meta.dates.length} dates)`, 'big'));
+  const c = corners(meta.bounds_lonlat);
+  map.addSource('lost-img', { type: 'image', url: `${BIG}${meta.layers.lost}`, coordinates: c });
+  map.addLayer({ id: 'lost-img', type: 'raster', source: 'lost-img', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } });
+  if (lost && Array.isArray(lost.features)) {
+    const feats = lost.features.filter((f) => f && f.geometry && f.properties && Number.isInteger(f.properties.id));
+    state.lost = { features: feats, byId: new Map(feats.map((f) => [f.properties.id, f])) };
+    map.addSource('lostp', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
+    map.addLayer({ id: 'lost-fill', type: 'fill', source: 'lostp', layout: { visibility: 'none' }, paint: { 'fill-color': '#b4401c', 'fill-opacity': 0.01 } });
+    map.addLayer({ id: 'lost-line', type: 'line', source: 'lostp', layout: { visibility: 'none' }, minzoom: 12, paint: { 'line-color': '#f3b49b', 'line-width': 0.8 } });
+    $('dl-geojson').disabled = false; $('dl-csv').disabled = false;
+    $('dl-note').textContent = `${feats.length.toLocaleString()} patches; fields: id, centroid lon/lat, area_ha, first_flagged (${meta.first_flagged_definition}). Unverified radar flags.`;
+  }
+  if (prot && Array.isArray(prot.features)) {
+    map.addSource('prot', { type: 'geojson', data: prot });
+    map.addLayer({ id: 'prot-line', type: 'line', source: 'prot', layout: { visibility: 'none' }, paint: { 'line-color': '#e8d48a', 'line-width': 1.6 } });
+    const labels = { type: 'FeatureCollection', features: prot.features.filter((f) => Number.isFinite(f.properties.label_lon)).map((f) => ({ type: 'Feature', properties: { name: f.properties.name }, geometry: { type: 'Point', coordinates: [f.properties.label_lon, f.properties.label_lat] } })) };
+    map.addSource('prot-pt', { type: 'geojson', data: labels });
+    map.addLayer({ id: 'prot-label', type: 'symbol', source: 'prot-pt', layout: { visibility: 'none', 'text-field': ['get', 'name'], 'text-size': 13, 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#f1e3a6', 'text-halo-color': '#07150d', 'text-halo-width': 1.5 } });
+  } else { $('p-prot').hidden = false; $('t-prot').disabled = true; }
+  const b = meta.original_window_bbox, ring = [...corners(b), corners(b)[0]];
+  map.addSource('win', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ring } } });
+  map.addLayer({ id: 'win-line', type: 'line', source: 'win', layout: { visibility: 'none' }, paint: { 'line-color': '#fdd663', 'line-width': 1.8, 'line-dasharray': [3, 2] } });
+  map.addSource('win-pt', { type: 'geojson', data: { type: 'Feature', properties: { t: 'test window, excluded from scale scores' }, geometry: { type: 'Point', coordinates: [(b[0] + b[2]) / 2, b[3]] } } });
+  map.addLayer({ id: 'win-label', type: 'symbol', source: 'win-pt', layout: { visibility: 'none', 'text-field': ['get', 't'], 'text-size': 12, 'text-anchor': 'bottom', 'text-offset': [0, -0.3], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#07150d', 'text-halo-width': 1.5 } });
+  renderBigResults(meta);
+  renderBigProtected(pj);
+  $('dl-geojson').onclick = () => downloadWatchlist('geojson');
+  $('dl-csv').onclick = () => downloadWatchlist('csv');
 }
 
 // ---------- setup ----------
 async function selectLoc(id) {
   if (state.playing) { clearInterval(state.playing); state.playing = null; $('play').textContent = 'Play'; $('play').setAttribute('aria-label','Play'); }
-  state.loc = state.manifest.locations.find((l) => l.id === id);
+  state.loc = findLoc(id);
   const selected = state.loc;
   if (state.marker) { state.marker.remove(); state.marker = null; }
   state.i = state.loc.dates.length - 1;
   state.last = null;
-  const sp = state.loc.id === 'spara';
-  $('extras').hidden = !sp; $('extras-off').hidden = sp; $('results-h').hidden = false; $('results').hidden = false;
+  const sp = state.loc.id === 'spara', big = isBig();
+  $('extras').hidden = !sp; $('extras-off').hidden = sp || big; $('big-extras').hidden = !big;
+  $('radar-layers').hidden = big; $('big-layers').hidden = !big; $('big-panel').hidden = !big;
+  state.layer = big ? 'forest' : (['forest', 'median'].includes(state.layer) ? 'composite' : state.layer);
+  document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; }); $('results-h').hidden = false; $('results').hidden = false;
   applyVisibility();
-  $('chart').innerHTML = '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
+  $('chart').innerHTML = big ? '<div class="hint">Click a red "forest lost" patch on the 60 km map to see its HV series.</div>' : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
-  $('about').textContent = `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
+  $('about').textContent = big ? `${state.loc.name}. ${state.loc.notes}` : `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
   const b = state.loc.bounds_lonlat;
   if (map.getSource('boundary')) map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...corners(b), corners(b)[0]]] } });
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, duration: 0 });
   setImage();
+  if (isBig()) preload();
   await loadSeries();
   if (state.loc !== selected) return;
   $('map-status').hidden = true;
@@ -335,6 +483,7 @@ map.on('load', async () => {
   map.addSource('boundary', { type: 'geojson', data: { type:'FeatureCollection',features:[] } });
   map.addLayer({ id:'boundary',type:'line',source:'boundary',paint:{'line-color':'#c4d5ba','line-width':1.5,'line-dasharray':[4,3]} });
   story();
+  try { await loadBig(); } catch (e) { console.warn('60 km forest map not loaded', e); }
   try { await loadExtras(); } catch (e) { ['det', 'ref', 'han'].forEach((k) => pending(k, true)); }
   await selectLoc(first.id);
   ['loc','date','opacity','optical','play','boundary','reset-map'].forEach(id => { if ($(id)) $(id).disabled = false; });
@@ -347,9 +496,19 @@ $('date').oninput = (e) => { state.i = +e.target.value; setImage(); };
 $('opacity').oninput = () => setImage();
 $('optical').onchange = (e) => map.setLayoutProperty('esri', 'visibility', e.target.checked ? 'visible' : 'none');
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.onchange = () => { state.layer = r.value; setImage(); }));
-['det', 'ref', 'han'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
+['det', 'ref', 'han', 'lost', 'prot', 'win'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
 map.on('click', (e) => {
   if (!state.loc) return;
+  if (isBig()) {
+    if (state.lost && map.getLayer('lost-fill') && $('t-lost').checked) {
+      const r = 4;
+      const hits = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: ['lost-fill'] })
+        .map((h) => state.lost.byId.get(h.properties.id)).filter(Boolean);
+      if (hits.length) { hits.sort((a, b) => b.properties.area_ha - a.properties.area_ha); drawLost(hits[0], e.lngLat); return; }
+    }
+    drawChart(e.lngLat.lng, e.lngLat.lat);
+    return;
+  }
   if (state.loc && state.loc.id === 'spara' && state.det && map.getLayer('det-fill') && $('t-det').checked) {
     const r = 4; // px tolerance: the patches are small
     const hits = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: ['det-fill'] })
