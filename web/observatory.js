@@ -22,7 +22,7 @@
   nav.addEventListener('pointerleave', () => { hovered = null; glide(); });
   nav.addEventListener('focusout', e => { if (!nav.contains(e.relatedTarget)) { hovered = null; glide(); } });
   const trackSection = () => {
-    // the nav order is not the page order (Evidence sits above Detection): pick the section that passed the line most recently, not the last one in nav order
+    // pick the section that passed the line most recently (robust even if nav order and page order ever differ)
     let s = null, best = -Infinity; for (const sec of sections) { const t = sec.getBoundingClientRect().top; if (t <= innerHeight * 0.35 && t > best) { s = sec; best = t; } }
     const a = navLinks[sections.indexOf(s)] || null;
     if (a !== current) {
@@ -33,6 +33,36 @@
     document.body.classList.toggle('scrolled', scrollY > innerHeight * 0.6);
   };
   addEventListener('scroll', trackSection, {passive:true}); addEventListener('resize', trackSection); trackSection();
+
+  // in-page links (top bar, footer, "How it works"...): land the target just under the fixed header, and correct
+  // once scrolling settles, because images above the target can still load and push the page during the scroll
+  const headerGap = () => (document.querySelector('.top')?.getBoundingClientRect().bottom || 64) + 20;
+  let jumpToken = 0;
+  const jumpTo = (target) => {
+    const token = ++jumpToken;
+    const want = () => Math.round(target.getBoundingClientRect().top + scrollY - headerGap());
+    const maxY = () => document.documentElement.scrollHeight - innerHeight;
+    scrollTo({ top: want(), behavior: reduced ? 'auto' : 'smooth' });
+    let tries = 0, last = -1, still = 0;
+    const settle = () => {
+      if (token !== jumpToken) return;
+      if (Math.abs(scrollY - last) > 1) { last = scrollY; still = 0; return setTimeout(settle, 120); }
+      if (++still < 2) return setTimeout(settle, 120); // scrolling has stopped for ~240 ms
+      const y = Math.min(want(), maxY());
+      if (Math.abs(scrollY - y) > 4 && tries++ < 4) { last = -1; still = 0; scrollTo({ top: y, behavior: 'auto' }); setTimeout(settle, 200); }
+    };
+    setTimeout(settle, 200);
+  };
+  addEventListener('wheel', () => jumpToken++, { passive: true }); addEventListener('touchstart', () => jumpToken++, { passive: true }); // the visitor took over
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="#"]:not([data-go])');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const href = a.getAttribute('href'); if (href.length < 2) return;
+    const target = document.getElementById(decodeURIComponent(href.slice(1))); if (!target) return;
+    e.preventDefault(); history.pushState(null, '', href); jumpTo(target);
+    if (!target.hasAttribute('tabindex') && !/^(A|BUTTON|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(target.tagName)) target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+  });
 
   // scroll reveal: sections rise in once as they enter the viewport
   if ('IntersectionObserver' in window && !reduced) {
