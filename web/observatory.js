@@ -6,18 +6,39 @@
   const json = async path => { try { const r = await fetch(path); return r.ok ? await r.json() : null; } catch { return null; } };
   const fmt = n => Number.isFinite(n) ? n.toLocaleString(undefined, {maximumFractionDigits: 1}) : 'Not available';
   const imagePath = (loc, layer, date) => `data/explore/${loc.id}/${layer}_${date}.webp`;
-  const menu = el('menu');
-  menu.onclick = () => { const open = menu.getAttribute('aria-expanded') !== 'true'; menu.setAttribute('aria-expanded', String(open)); el('navlinks').classList.toggle('open', open); };
-  el('navlinks').addEventListener('click', e => { if (e.target.closest('a')) { menu.setAttribute('aria-expanded', 'false'); el('navlinks').classList.remove('open'); } });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { menu.setAttribute('aria-expanded','false'); el('navlinks').classList.remove('open'); } });
-  const navLinks = [...document.querySelectorAll('#navlinks a')];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // nav: a glass highlight that glides to the hovered link and rests on the section in view
+  const nav = document.querySelector('.top nav'), blob = el('nav-blob');
+  const navLinks = [...nav.querySelectorAll('a[href^="#"]')];
   const sections = navLinks.map(a => document.querySelector(a.getAttribute('href')));
-  const trackSection = () => { let current = sections[0]; for (const s of sections) if (s.getBoundingClientRect().top <= 160) current = s; navLinks.forEach(a => { const active = a.hash === '#' + current.id; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); }); };
-  window.addEventListener('scroll', trackSection, {passive:true}); trackSection();
-  const compactLayout = matchMedia('(max-width:800px)');
-  if (compactLayout.matches) el('side').open = false;
-  compactLayout.addEventListener('change', event => { if (event.matches) el('side').open = false; menu.setAttribute('aria-expanded','false'); el('navlinks').classList.remove('open'); });
-  el('side').addEventListener('toggle', () => { if (typeof map !== 'undefined') map.resize(); });
+  let hovered = null, current = null;
+  const glide = () => {
+    const target = hovered || current;
+    if (!target) { blob.style.opacity = 0; return; }
+    blob.style.opacity = 1; blob.style.transform = `translateX(${target.offsetLeft}px)`; blob.style.width = `${target.offsetWidth}px`;
+  };
+  nav.querySelectorAll('a').forEach(a => { a.addEventListener('pointerenter', () => { hovered = a; glide(); }); a.addEventListener('focus', () => { hovered = a; glide(); }); });
+  nav.addEventListener('pointerleave', () => { hovered = null; glide(); });
+  nav.addEventListener('focusout', e => { if (!nav.contains(e.relatedTarget)) { hovered = null; glide(); } });
+  const trackSection = () => {
+    let s = null; for (const sec of sections) if (sec.getBoundingClientRect().top <= innerHeight * 0.35) s = sec;
+    const a = navLinks[sections.indexOf(s)] || null;
+    if (a !== current) {
+      navLinks.forEach(l => { l.classList.toggle('active', l === a); if (l === a) l.setAttribute('aria-current', 'location'); else l.removeAttribute('aria-current'); });
+      current = a; glide();
+      if (a && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: a.offsetLeft - 40, behavior: reduced ? 'auto' : 'smooth' });
+    }
+    document.body.classList.toggle('scrolled', scrollY > innerHeight * 0.6);
+  };
+  addEventListener('scroll', trackSection, {passive:true}); addEventListener('resize', trackSection); trackSection();
+
+  // scroll reveal: sections rise in once as they enter the viewport
+  if ('IntersectionObserver' in window && !reduced) {
+    document.documentElement.classList.add('js-reveal');
+    const io = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -10% 0px' });
+    document.querySelectorAll('.reveal').forEach(n => io.observe(n));
+  } else document.querySelectorAll('.reveal').forEach(n => n.classList.add('in'));
 
   let manifest, compareVersion = 0;
   const compare = () => {
@@ -68,16 +89,16 @@
       const label = node('span', `Patch ${p.id}`); label.append(node('small',`${p.first_date} · ${p.split || 'Split not available'}`));
       const detail = node('span', `${fmt(p.area_ha)} ha`, p.stage); detail.append(node('small',p.stage === 'early' ? 'Early · HH rise' : 'Late · HV drop'));
       button.append(label,detail); button.onclick = async () => {
-        if (!manifest || typeof state === 'undefined' || !state.manifest || !map.getSource('radar')) { el('chart').textContent = 'Map is not ready. Wait for initialization or check your connection.'; return; }
+        if (!manifest || typeof state === 'undefined' || !state.manifest || !map.getSource('radarA')) { el('patch-count').textContent = 'Map is not ready yet. Wait a moment and try again.'; return; }
         button.disabled = true;
         try {
           if (state.loc.id !== 'spara') { el('loc').value = 'spara'; await selectLoc('spara'); }
           const ring = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
           const bounds = ring.reduce((b,c) => [Math.min(b[0],c[0]),Math.min(b[1],c[1]),Math.max(b[2],c[0]),Math.max(b[3],c[1])],[Infinity,Infinity,-Infinity,-Infinity]);
-          state.i = state.loc.dates.length - 1; el('date').value = state.i; el('t-det').checked = true; setImage(); applyVisibility();
-          map.fitBounds([[bounds[0],bounds[1]],[bounds[2],bounds[3]]], {padding:80,maxZoom:15,duration:0});
+          state.i = state.loc.dates.length - 1; el('date').value = state.i; el('t-det').checked = true; applyVisibility();
+          toTop(); setMode('exploring'); setImage(false);
+          focusBounds(bounds);
           drawDetection(f,{lng:(bounds[0]+bounds[2])/2,lat:(bounds[1]+bounds[3])/2});
-          el('chart').scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches ? 'instant' : 'smooth'});
         } catch { el('chart').textContent = 'Could not open this patch. Reload the map and try again.'; } finally { button.disabled = false; }
       }; box.append(button);
     });

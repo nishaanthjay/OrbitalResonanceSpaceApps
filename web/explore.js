@@ -5,20 +5,24 @@
 
 const DATA = 'data/explore/';
 const R = 6378137;
+const FADE = 420; // ms cross-fade between radar passes
 const $ = (id) => document.getElementById(id);
-const state = { manifest: null, loc: null, i: 0, layer: 'composite', series: null, playing: null, marker: null,
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = { manifest: null, loc: null, i: 0, layer: 'hv', series: null, playing: null, marker: null, mode: 'intro',
   last: null, det: null, ref: null, hansen: null, metrics: null, big: null, bigMeta: null, lost: null, bigProt: null };
 const isBig = () => !!state.loc && state.loc.kind === 'big';
 const findLoc = (id) => (state.big && id === state.big.id ? state.big : state.manifest.locations.find((l) => l.id === id));
 const COLORS = { early: '#b68b52', late: '#bd776a', ref: '#81989c' };
+const CHART = { hh: '#CED9DF', hv: '#93A889', grid: '#3E563E', text: '#7993A0', cur: '#93A889' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://tiles.openfreemap.org/styles/liberty',
+  style: 'https://tiles.openfreemap.org/styles/dark',
   center: [-54.699, -8.1995],
   zoom: 11,
   attributionControl: { compact: true },
+  fadeDuration: reduced ? 0 : 300,
 });
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
@@ -34,41 +38,156 @@ function url(layer, i) {
   if (layer === 'median') return `${DATA}${state.loc.id}/forest_median.webp`;
   return `${DATA}${state.loc.id}/${layer}_${state.loc.dates[i]}.webp`;
 }
+const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function setImage() {
-  const loc = state.loc, c = corners(loc.bounds_lonlat), op = +$('opacity').value / 100;
-  if (isBig()) {
-    map.getSource('radar').updateImage({ url: url(state.layer, state.i), coordinates: c });
-    map.setPaintProperty('radar', 'raster-opacity', op);
-    map.setPaintProperty('chg', 'raster-opacity', 0);
-    $('datelabel').textContent = state.layer === 'median' ? `9-pass median (${loc.dates[0]} to ${loc.dates[loc.dates.length - 1]}); slider marks ${loc.dates[state.i]}` : loc.dates[state.i];
-    drawLegend();
-    redrawLast();
-    return;
-  }
-  const isChg = state.layer.endsWith('chg');
-  // base radar image: the chosen layer, or HV under a change layer
-  map.getSource('radar').updateImage({ url: url(isChg ? 'hv' : state.layer, state.i), coordinates: c });
-  map.setPaintProperty('radar', 'raster-opacity', isChg ? 0.45 * op : op);
-  const showChg = isChg && hasImage(state.layer, state.i);
-  if (showChg) map.getSource('chg').updateImage({ url: url(state.layer, state.i), coordinates: c });
-  map.setPaintProperty('chg', 'raster-opacity', showChg ? 1 : 0);
-  $('datelabel').textContent = loc.dates[state.i] + (isChg && !showChg ? '  (first date: nothing earlier to compare)' : '');
-  drawLegend();
-  updateFilters();
-  redrawLast();
+// ---------- cross-fading image layers: each kind has two map layers, the new pass loads into the hidden one ----------
+const slots = { radar: { front: 'radarA', back: 'radarB', href: null, token: 0 }, chg: { front: 'chgA', back: 'chgB', href: null, token: 0 } };
+function sourceLoaded(id) {
+  return new Promise((res) => {
+    const done = () => { map.off('sourcedata', h); clearTimeout(t); res(); };
+    const h = (e) => { if (e.sourceId === id && e.isSourceLoaded) done(); };
+    const t = setTimeout(done, 900);
+    map.on('sourcedata', h);
+  });
+}
+async function show(kind, href, opacity) {
+  const s = slots[kind];
+  if (!href) { s.token++; map.setPaintProperty(s.front, 'raster-opacity', 0); return; }
+  if (href === s.href) { map.setPaintProperty(s.front, 'raster-opacity', opacity); return; }
+  s.href = href;
+  const token = ++s.token, back = s.back;
+  const loaded = sourceLoaded(back);
+  map.getSource(back).updateImage({ url: href, coordinates: corners(state.loc.bounds_lonlat) });
+  await loaded;
+  if (token !== s.token) return; // a newer pass was asked for meanwhile
+  map.setPaintProperty(back, 'raster-opacity', opacity);
+  map.setPaintProperty(s.front, 'raster-opacity', 0);
+  [s.front, s.back] = [back, s.front];
 }
 
-function preload() { // so the slider and play are smooth
+function setText(el, text) { // a small roll when a label changes
+  if (el.textContent === text) return;
+  el.textContent = text;
+  if (!reduced) el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+}
+
+const LAYER_NAME = { hv: 'HV', hh: 'HH', composite: 'HH + HV', hvchg: 'HV change', hhchg: 'HH change', forest: 'forest map', median: 'forest map' };
+function setImage(redraw = true) {
+  const loc = state.loc, op = +$('opacity').value / 100, date = loc.dates[state.i];
+  if (isBig()) {
+    show('radar', url(state.layer, state.i), op);
+    show('chg', null);
+    setText($('datelabel'), state.layer === 'median' ? `9-pass median · ${loc.dates[0]} to ${loc.dates[loc.dates.length - 1]}` : `${date} · pass ${state.i + 1} of ${loc.dates.length}`);
+    setText($('hero-what'), state.layer === 'median' ? 'its 9-pass forest map' : `its forest map from ${date}`);
+  } else {
+    const isChg = state.layer.endsWith('chg');
+    // base radar image: the chosen layer, or HV under a change layer
+    show('radar', url(isChg ? 'hv' : state.layer, state.i), isChg ? 0.45 * op : op);
+    const showChg = isChg && hasImage(state.layer, state.i);
+    show('chg', showChg ? url(state.layer, state.i) : null, 1);
+    setText($('datelabel'), `${date} · pass ${state.i + 1} of ${loc.dates.length}` + (isChg && !showChg ? ' · first pass, nothing earlier to compare' : ''));
+    setText($('hero-what'), `its ${LAYER_NAME[state.layer]} image from ${date}`);
+  }
+  const exploring = state.mode === 'exploring';
+  $('card-radar').setAttribute('aria-current', String(exploring && !isBig() && state.layer === 'composite'));
+  $('card-change').setAttribute('aria-current', String(exploring && !isBig() && state.layer === 'hvchg'));
+  $('card-big').setAttribute('aria-current', String(exploring && isBig()));
+  $('date').value = state.i;
+  document.querySelectorAll('.pass').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === state.i)));
+  const on = document.querySelector('.pass[aria-pressed=true]');
+  if (on) $('rail-cursor').style.setProperty('--p', on.style.getPropertyValue('--p'));
+  drawLegend();
+  updateFilters();
+  if (redraw) redrawLast();
+}
+
+function preload() { // so the passes and play are smooth
   if (isBig()) { state.loc.dates.forEach((_, i) => { const im = new Image(); im.src = url('forest', i); }); return; }
   for (const layer of ['composite', 'hv', 'hh', 'hvchg', 'hhchg'])
     state.loc.dates.forEach((_, i) => { if (hasImage(layer, i)) { const im = new Image(); im.src = url(layer, i); } });
 }
 
+// one tick per pass, placed by date; a dashed slot marks each 12-day repeat with no pass in the stack
+function drawPasses() {
+  const dates = state.loc.dates, t = dates.map((d) => Date.parse(d)), span = t[t.length - 1] - t[0], DAY = 864e5;
+  const x = (ms) => `--p:${(((ms - t[0]) / span) * 100).toFixed(2)}`;
+  let html = '<span class="rail-cursor" id="rail-cursor" aria-hidden="true"></span>';
+  for (let k = 1; k < t.length; k++)
+    for (let g = t[k - 1] + 12 * DAY; g < t[k] - 6 * DAY; g += 12 * DAY) html += `<span class="gap" style="${x(g)}" title="No pass in the stack"></span>`;
+  html += dates.map((d, i) => `<button class="pass" style="${x(t[i])};--d:${i}" data-i="${i}" aria-pressed="false" aria-label="Pass ${d}" tabindex="${i === state.i ? 0 : -1}"><i></i><span>${d.slice(5)}</span></button>`).join('');
+  $('passes').innerHTML = html;
+  $('pass-count').textContent = String(dates.length).padStart(2, '0');
+}
+
+// strip facts and thumbnails, all from the manifest and the exported layers
+function drawStrip() {
+  const d = state.loc.dates, last = d[d.length - 1], first = state.manifest.locations[0], fl = first.dates[first.dates.length - 1];
+  const mon = (s) => new Date(s + 'T00:00:00Z').toLocaleString('en', { month: 'short', timeZone: 'UTC' });
+  $('facts').innerHTML = `<span><b>L-band</b> radar, ~24 cm waves</span><span><b>${d.length} passes</b> &middot; ${mon(d[0])}&ndash;${mon(last)} ${last.slice(0, 4)}</span>` +
+    '<span><b>12-day</b> repeat orbit</span>';
+  $('thumb-radar').src = `${DATA}${first.id}/composite_${fl}.webp`;
+  $('thumb-change').src = `${DATA}${first.id}/hvchg_${fl}.webp`;
+  if (state.big) { $('thumb-big').src = `${DATA}big/forest_median.webp`; $('card-big').hidden = false; }
+}
+
+// ---------- intro (hero over the tinted radar) <-> exploring (controls panel) ----------
+function padding() {
+  const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight, mob = W <= 900;
+  return mob ? { top: 110, left: 16, right: 16, bottom: Math.round(H * (state.mode === 'intro' ? 0.5 : 0.58)) }
+    : { top: 80, right: 60, bottom: 150, left: state.mode === 'intro' ? Math.round(W * 0.22) : 76 + 372 + 40 };
+}
+function fit(duration = 1300) {
+  if (!state.loc) return;
+  const b = state.loc.bounds_lonlat, mob = map.getContainer().clientWidth <= 900;
+  const cam = map.cameraForBounds([[b[0], b[1]], [b[2], b[3]]], { padding: padding() });
+  if (!cam) return;
+  // intro on a wide screen: zoom past the fit so the radar bleeds off the right edge like a photograph
+  map.easeTo({ ...cam, zoom: cam.zoom + (state.mode === 'intro' && !mob && !isBig() ? 1 : 0), duration: reduced ? 0 : duration, easing: easeInOut });
+}
+function focusBounds(b) { // b = W S E N of a patch: zoom to it, clear of the panel
+  map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: padding(), maxZoom: 15, duration: reduced ? 0 : 1100, easing: easeInOut });
+}
+// in the intro the map is a picture you scroll past; it only takes gestures once you are exploring
+const HANDLERS = ['scrollZoom', 'dragPan', 'dragRotate', 'touchZoomRotate', 'doubleClickZoom', 'keyboard', 'boxZoom'];
+function setInteractive(on) { HANDLERS.forEach((h) => map[h][on ? 'enable' : 'disable']()); }
+setInteractive(false);
+
+function setMode(mode) {
+  if (state.mode === mode) return;
+  state.mode = mode;
+  document.body.classList.toggle('exploring', mode === 'exploring');
+  map.getCanvas().style.cursor = mode === 'exploring' ? 'crosshair' : '';
+  setInteractive(mode === 'exploring');
+  if (!state.loc) return;
+  applyVisibility();
+  fit();
+  setImage(false);
+}
+function toTop() { if (scrollY > 4) scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }
+async function go(target) {
+  toTop();
+  if (target === 'intro') return setMode('intro');
+  const first = state.manifest && state.manifest.locations[0];
+  if (target === 'big' && state.big) {
+    if (!isBig()) { $('loc').value = 'big'; await selectLoc('big'); }
+  } else if (['composite', 'hv', 'hh', 'hvchg', 'hhchg'].includes(target)) {
+    if (isBig() && first) { $('loc').value = first.id; await selectLoc(first.id); }
+    state.layer = target;
+    document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === target; });
+    if (state.mode === 'exploring') setImage();
+  }
+  setMode('exploring');
+}
+function goTo(i) {
+  state.i = (i + state.loc.dates.length) % state.loc.dates.length;
+  document.querySelectorAll('.pass').forEach((b) => (b.tabIndex = +b.dataset.i === state.i ? 0 : -1));
+  setImage();
+}
+
 function drawLegend() {
   const s = state.loc.stretch, L = state.layer, el = $('legend');
   if (isBig()) {
-    el.innerHTML = `<div class="note keyrow"><span class="sw" style="background:#2f6b4f"></span> forest (HV &ge; ${state.bigMeta.T_db.toFixed(2)} dB) <span class="sw" style="background:#b4401c"></span> non-forest. Transparent = outside the swath on at least one pass. 100 m blocks.</div>`;
+    el.innerHTML = `<div class="note keyrow" style="padding-left:0"><span class="sw" style="background:#2f6b4f"></span> forest (HV &ge; ${state.bigMeta.T_db.toFixed(2)} dB) <span class="sw" style="background:#b4401c"></span> non-forest. Transparent = outside the swath on at least one pass. 100 m blocks.</div>`;
     return;
   }
   const bar = (css, lo, hi, unit) => `<div class="legend" style="background:${css}"></div><div class="legend-lab"><span>${lo}</span><span>${hi}</span></div><div class="note">${unit}</div>`;
@@ -86,7 +205,7 @@ async function loadSeries() {
     const r = await fetch(`${DATA}${loc.id}/series.bin`);
     if (!r.ok) throw new Error('Series unavailable');
     const bytes = new Uint8Array(await r.arrayBuffer());
-    if (bytes.length !== loc.series_shape.reduce((a,b) => a*b, 1)) throw new Error('Invalid series size');
+    if (bytes.length !== loc.series_shape.reduce((a, b) => a * b, 1)) throw new Error('Invalid series size');
     if (state.loc === loc) state.series = bytes;
   } catch {
     if (state.loc === loc) $('chart').textContent = 'Pixel time series not available. Detection patch series may still be inspected.';
@@ -112,8 +231,8 @@ function valuesAt(row, col) {
 }
 
 // One chart for both a map click (series.bin cell) and a detection click (full-precision series).
-// v = {hh: [...], hv: [...]} of null | {db, clipped}, one per location date.
-function chartSVG(v, ref, dates) {
+// v = {hh: [...], hv: [...]} of null | {db, clipped}, one per location date. fresh = draw the lines in.
+function chartSVG(v, ref, dates, fresh) {
   const all = [...v.hh, ...v.hv].filter(Boolean).map((p) => p.db).concat(ref.hh, ref.hv);
   const lo = Math.floor(Math.min(...all)) - 1, hi = Math.ceil(Math.max(...all)) + 1;
   const W = 340, H = 190, ml = 34, mr = 8, mt = 10, mb = 26;
@@ -122,21 +241,37 @@ function chartSVG(v, ref, dates) {
   const Y = (db) => mt + (hi - db) / (hi - lo) * (H - mt - mb);
   const line = (vals, color, dash) => {
     const pts = vals.map((p, i) => (p == null ? null : [X(dates[i]), Y(typeof p === 'number' ? p : p.db)])).filter(Boolean);
-    return `<polyline fill="none" stroke="${color}" stroke-width="2" ${dash ? 'stroke-dasharray="4 3" opacity=".8"' : ''} points="${pts.map((q) => q.join(',')).join(' ')}"/>`;
+    return `<polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" ${dash ? 'stroke-dasharray="4 3" opacity=".8"' : 'pathLength="1" class="draw"'} points="${pts.map((q) => q.join(',')).join(' ')}"/>`;
   };
-  const dots = (vals, color) => vals.map((p, i) => (p ? `<circle cx="${X(dates[i])}" cy="${Y(p.db)}" r="${p.clipped ? 4 : 3}" fill="${p.clipped ? '#111' : color}" stroke="${color}" stroke-width="1.5"/>` : '')).join('');
+  const dots = (vals, color) => vals.map((p, i) => (p ? `<circle class="dot" style="--d:${i}" cx="${X(dates[i])}" cy="${Y(p.db)}" r="${p.clipped ? 4 : 3}" fill="${p.clipped ? '#1F2F22' : color}" stroke="${color}" stroke-width="1.5"/>` : '')).join('');
   let grid = '';
-  for (let g = Math.ceil(lo); g <= hi; g += 2) grid += `<line x1="${ml}" x2="${W - mr}" y1="${Y(g)}" y2="${Y(g)}" stroke="#333"/><text x="${ml - 4}" y="${Y(g) + 4}" fill="#9aa0a6" font-size="10" text-anchor="end">${g}</text>`;
-  const ticks = dates.map((d, i) => (i % 2 === 0 ? `<text x="${X(d)}" y="${H - 8}" fill="#9aa0a6" font-size="10" text-anchor="middle">${d.slice(5)}</text>` : '')).join('');
-  const cur = `<line x1="${X(dates[state.i])}" x2="${X(dates[state.i])}" y1="${mt}" y2="${H - mb}" stroke="#fdd663" stroke-dasharray="2 2"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="HH and HV backscatter over time at the clicked spot">${grid}${ticks}${cur}
-    ${line(ref.hh, '#bd998d', true)}${line(ref.hv, '#8fa58b', true)}${line(v.hh, '#bd998d')}${line(v.hv, '#8fa58b')}${dots(v.hh, '#bd998d')}${dots(v.hv, '#8fa58b')}</svg>`;
+  for (let g = Math.ceil(lo); g <= hi; g += 2) grid += `<line x1="${ml}" x2="${W - mr}" y1="${Y(g)}" y2="${Y(g)}" stroke="${CHART.grid}" stroke-opacity=".5"/><text x="${ml - 4}" y="${Y(g) + 4}" fill="${CHART.text}" font-size="10" text-anchor="end">${g}</text>`;
+  const ticks = dates.map((d, i) => (i % 2 === 0 ? `<text x="${X(d)}" y="${H - 8}" fill="${CHART.text}" font-size="10" text-anchor="${i === dates.length - 1 ? 'end' : 'middle'}">${d.slice(5)}</text>` : '')).join('');
+  const cur = `<line x1="${X(dates[state.i])}" x2="${X(dates[state.i])}" y1="${mt}" y2="${H - mb}" stroke="${CHART.cur}" stroke-opacity=".7" stroke-dasharray="2 3"/>`;
+  return `<svg class="${fresh ? 'fresh' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="HH and HV backscatter over time at the selected spot">${grid}${ticks}${cur}
+    ${line(ref.hh, CHART.hh, true)}${line(ref.hv, CHART.hv, true)}${line(v.hh, CHART.hh)}${line(v.hv, CHART.hv)}${dots(v.hh, CHART.hh)}${dots(v.hv, CHART.hv)}</svg>`;
 }
-function placeMarker(lon, lat) {
-  if (state.marker) state.marker.setLngLat([lon, lat]); else { const point = document.createElement('div'); point.className = 'map-point'; point.setAttribute('aria-label','Selected observation'); state.marker = new maplibregl.Marker({ element: point }).setLngLat([lon, lat]).addTo(map); }
+function placeMarker(lon, lat, fresh) {
+  if (state.marker) state.marker.setLngLat([lon, lat]);
+  else {
+    const el = document.createElement('div');
+    el.className = 'pin';
+    el.setAttribute('aria-label', 'Selected observation');
+    el.innerHTML = '<span></span>'; // MapLibre positions the outer element with transform; animate the inner one
+    state.marker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map);
+  }
+  if (!fresh) return;
+  if (!reduced) state.marker.getElement().firstChild.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+  setTimeout(() => { // bring the chart into view inside the panel (scrollIntoView would also scroll the page)
+    const box = document.querySelector('.side-scroll'), sec = $('chart').closest('section');
+    const top = sec.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 8;
+    const bottom = top + sec.offsetHeight + 16;
+    if (top < box.scrollTop || bottom > box.scrollTop + box.clientHeight) box.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' });
+  }, 250);
 }
 
-function drawChart(lon, lat) {
+const KEY = `<b style="color:${CHART.hh}">HH</b> and <b style="color:${CHART.hv}">HV</b>`;
+function drawChart(lon, lat, fresh = true) {
   state.last = { kind: 'point', lon, lat };
   if (isBig()) { $('chart').innerHTML = '<div class="hint">Click a red "forest lost" patch to see its HV series against the forest threshold.</div>'; return; }
   const c = cellAt(lon, lat), el = $('chart');
@@ -145,15 +280,15 @@ function drawChart(lon, lat) {
   const v = valuesAt(...c), ref = state.loc.stable_forest_ref;
   if (!v.hv.some(Boolean)) { el.innerHTML = '<div class="hint">No radar data at this spot.</div>'; return; }
   const clippedAny = [...v.hh, ...v.hv].some((p) => p && p.clipped);
-  el.innerHTML = `${chartSVG(v, ref, state.loc.dates)}
-    <div class="note"><b style="color:#bd998d">HH</b> and <b style="color:#8fa58b">HV</b> (dB) at ${lat.toFixed(4)}, ${lon.toFixed(4)}, ~80 m cell. Dashed = stable radar forest (median of ${ref.n_pixels.toLocaleString()} px with HV &ge; ${state.manifest.t_db_forest.toFixed(2)} dB on every date). Clearing usually shows as HV falling away from the dashed line.</div>
+  el.innerHTML = `${chartSVG(v, ref, state.loc.dates, fresh)}
+    <div class="note">${KEY} (dB) at ${lat.toFixed(4)}, ${lon.toFixed(4)}, ~80 m cell. Dashed = stable radar forest (median of ${ref.n_pixels.toLocaleString()} px with HV &ge; ${state.manifest.t_db_forest.toFixed(2)} dB on every date). Clearing usually shows as HV falling away from the dashed line.</div>
     ${clippedAny ? '<div class="warn">Hollow dots hit the display stretch limit: the true value is at or beyond it.</div>' : ''}`;
-  placeMarker(lon, lat);
+  placeMarker(lon, lat, fresh);
 }
 
 // A clicked detection: the series are patch means of the 5x5-multilooked full-precision stack (detections.geojson).
 const SPLIT_NAME = { tune: 'tune half', holdout: 'holdout half', buffer: 'buffer strip' };
-function drawDetection(f, lngLat) {
+function drawDetection(f, lngLat, fresh = true) {
   state.last = { kind: 'det', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates;
   const title = `Detection ${esc(p.id)}: ${esc(p.area_ha)} ha, first seen ${esc(p.first_date)}, ${esc(SPLIT_NAME[p.split] || p.split)}`;
@@ -163,33 +298,33 @@ function drawDetection(f, lngLat) {
     el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hh_series_db and hv_series_db must each hold ${dates.length} numbers (one per date).</div>`;
     return;
   }
-  el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh, hv }, state.loc.stable_forest_ref, dates)}
-    <div class="note"><b style="color:#bd998d">HH</b> and <b style="color:#8fa58b">HV</b> (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Whether this patch is clearing or radar noise is not established by the available optical chip check. Independent human review is needed.</div>`;
-  placeMarker(lngLat.lng, lngLat.lat);
+  el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh, hv }, state.loc.stable_forest_ref, dates, fresh)}
+    <div class="note">${KEY} (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Whether this patch is clearing or radar noise is not established by the available optical chip check. Independent human review is needed.</div>`;
+  placeMarker(lngLat.lng, lngLat.lat, fresh);
 }
 // A clicked lost patch on the 60 km map: patch-mean HV from the stack (lost.geojson hv_series_db) vs the fixed threshold.
-function drawLost(f, lngLat) {
+function drawLost(f, lngLat, fresh = true) {
   state.last = { kind: 'lost', id: f.properties.id, lon: lngLat.lng, lat: lngLat.lat };
   const p = f.properties, el = $('chart'), dates = state.loc.dates, T = state.bigMeta.T_db;
   const title = `Lost patch ${esc(p.id)}: ${esc(p.area_ha)} ha, non-forest from ${esc(p.first_flagged || 'n/a')}${p.in_original_window ? ', inside the test window' : ''}`;
   const hv = Array.isArray(p.hv_series_db) && p.hv_series_db.length === dates.length ? p.hv_series_db.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null;
   if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hv_series_db must hold ${dates.length} numbers.</div>`; return; }
-  el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates)}
-    <div class="note"><b style="color:#8fa58b">HV</b> (dB): mean over this patch's 100 m blocks from the full-precision stack. Dashed = the fixed forest threshold ${T.toFixed(2)} dB (above = forest). A drop below the line can also come from moisture or speckle; ${p.n_blocks === 1 ? 'this is a single 1 ha block, ' : ''}unverified.</div>`;
-  placeMarker(lngLat.lng, lngLat.lat);
+  el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates, fresh)}
+    <div class="note"><b style="color:${CHART.hv}">HV</b> (dB): mean over this patch's 100 m blocks from the full-precision stack. Dashed = the fixed forest threshold ${T.toFixed(2)} dB (above = forest). A drop below the line can also come from moisture or speckle; ${p.n_blocks === 1 ? 'this is a single 1 ha block, ' : ''}unverified.</div>`;
+  placeMarker(lngLat.lng, lngLat.lat, fresh);
 }
-function redrawLast() {
+function redrawLast() { // same selection, new pass: redraw without the entrance animation
   const l = state.last;
   if (!l) return;
   if (l.kind === 'lost') {
     const f = state.lost && state.lost.byId.get(l.id);
-    if (f) drawLost(f, { lng: l.lon, lat: l.lat });
+    if (f) drawLost(f, { lng: l.lon, lat: l.lat }, false);
     return;
   }
   if (l.kind === 'det') {
     const f = state.det && state.det.byId.get(l.id);
-    if (f) drawDetection(f, { lng: l.lon, lat: l.lat });
-  } else drawChart(l.lon, l.lat);
+    if (f) drawDetection(f, { lng: l.lon, lat: l.lat }, false);
+  } else drawChart(l.lon, l.lat, false);
 }
 
 // ---------- story ----------
@@ -229,6 +364,7 @@ function addHansen(meta) { // same corners as the radar image: the webp was writ
     if (!/^#[0-9a-f]{6}$/i.test(meta.years[y])) return;
     const sw = mk('span', undefined, 'sw');
     sw.style.background = meta.years[y];
+    sw.style.marginLeft = '6px';
     lg.append(sw, document.createTextNode(y));
   });
   pending('han', false);
@@ -313,15 +449,16 @@ function updateFilters() { // detections from their first date on, alerts from t
   if (map.getLayer('det-fill')) { const f = ['<=', ['get', 'first_date'], d]; map.setFilter('det-fill', f); map.setFilter('det-line', f); }
   if (map.getLayer('ref-line')) map.setFilter('ref-line', ['<=', ['get', 'date'], d]);
 }
-function applyVisibility() {
-  const spara = !!state.loc && state.loc.id === 'spara';
-  const vis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on && spara ? 'visible' : 'none'); };
+function applyVisibility() { // evidence overlays only while exploring: the intro shows the radar alone
+  const ex = state.mode === 'exploring', spara = !!state.loc && state.loc.id === 'spara';
+  if (map.getLayer('boundary')) map.setLayoutProperty('boundary', 'visibility', ex && $('boundary').checked ? 'visible' : 'none');
+  const vis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on && ex && spara ? 'visible' : 'none'); };
   vis('hansen', $('t-han').checked);
   vis('ref-line', $('t-ref').checked);
   vis('det-fill', $('t-det').checked);
   vis('det-line', $('t-det').checked);
   const big = isBig();
-  const bvis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on && big ? 'visible' : 'none'); };
+  const bvis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on && ex && big ? 'visible' : 'none'); };
   bvis('lost-img', $('t-lost').checked);
   bvis('lost-fill', $('t-lost').checked);
   bvis('lost-line', $('t-lost').checked);
@@ -416,13 +553,13 @@ async function loadBig() {
     map.addLayer({ id: 'prot-line', type: 'line', source: 'prot', layout: { visibility: 'none' }, paint: { 'line-color': '#e8d48a', 'line-width': 1.6 } });
     const labels = { type: 'FeatureCollection', features: prot.features.filter((f) => Number.isFinite(f.properties.label_lon)).map((f) => ({ type: 'Feature', properties: { name: f.properties.name }, geometry: { type: 'Point', coordinates: [f.properties.label_lon, f.properties.label_lat] } })) };
     map.addSource('prot-pt', { type: 'geojson', data: labels });
-    map.addLayer({ id: 'prot-label', type: 'symbol', source: 'prot-pt', layout: { visibility: 'none', 'text-field': ['get', 'name'], 'text-size': 13, 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#f1e3a6', 'text-halo-color': '#07150d', 'text-halo-width': 1.5 } });
+    map.addLayer({ id: 'prot-label', type: 'symbol', source: 'prot-pt', layout: { visibility: 'none', 'text-field': ['get', 'name'], 'text-size': 13, 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#f1e3a6', 'text-halo-color': '#091008', 'text-halo-width': 1.5 } });
   } else { $('p-prot').hidden = false; $('t-prot').disabled = true; }
   const b = meta.original_window_bbox, ring = [...corners(b), corners(b)[0]];
   map.addSource('win', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ring } } });
   map.addLayer({ id: 'win-line', type: 'line', source: 'win', layout: { visibility: 'none' }, paint: { 'line-color': '#fdd663', 'line-width': 1.8, 'line-dasharray': [3, 2] } });
   map.addSource('win-pt', { type: 'geojson', data: { type: 'Feature', properties: { t: 'test window, excluded from scale scores' }, geometry: { type: 'Point', coordinates: [(b[0] + b[2]) / 2, b[3]] } } });
-  map.addLayer({ id: 'win-label', type: 'symbol', source: 'win-pt', layout: { visibility: 'none', 'text-field': ['get', 't'], 'text-size': 12, 'text-anchor': 'bottom', 'text-offset': [0, -0.3], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#07150d', 'text-halo-width': 1.5 } });
+  map.addLayer({ id: 'win-label', type: 'symbol', source: 'win-pt', layout: { visibility: 'none', 'text-field': ['get', 't'], 'text-size': 12, 'text-anchor': 'bottom', 'text-offset': [0, -0.3], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#fdd663', 'text-halo-color': '#091008', 'text-halo-width': 1.5 } });
   renderBigResults(meta);
   renderBigProtected(pj);
   $('dl-geojson').onclick = () => downloadWatchlist('geojson');
@@ -430,27 +567,38 @@ async function loadBig() {
 }
 
 // ---------- setup ----------
+function stopPlay() {
+  if (!state.playing) return;
+  clearInterval(state.playing); state.playing = null;
+  $('play').classList.remove('playing');
+  $('play-ico').innerHTML = PLAY;
+  setText($('play-txt'), 'Play passes');
+  $('play').setAttribute('aria-label', 'Play through the passes');
+}
 async function selectLoc(id) {
-  if (state.playing) { clearInterval(state.playing); state.playing = null; $('play').textContent = 'Play'; $('play').setAttribute('aria-label','Play'); }
+  stopPlay();
   state.loc = findLoc(id);
   const selected = state.loc;
   if (state.marker) { state.marker.remove(); state.marker = null; }
   state.i = state.loc.dates.length - 1;
   state.last = null;
+  slots.radar.href = slots.chg.href = null;
   const sp = state.loc.id === 'spara', big = isBig();
   $('extras').hidden = !sp; $('extras-off').hidden = sp || big; $('big-extras').hidden = !big;
   $('radar-layers').hidden = big; $('big-layers').hidden = !big; $('big-panel').hidden = !big;
-  state.layer = big ? 'forest' : (['forest', 'median'].includes(state.layer) ? 'composite' : state.layer);
-  document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; }); $('results-h').hidden = false; $('results').hidden = false;
+  state.layer = big ? 'forest' : (['forest', 'median'].includes(state.layer) ? 'hv' : state.layer);
+  document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; });
   applyVisibility();
   $('chart').innerHTML = big ? '<div class="hint">Click a red "forest lost" patch on the 60 km map to see its HV series.</div>' : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
+  drawPasses();
+  drawStrip();
   $('about').textContent = big ? `${state.loc.name}. ${state.loc.notes}` : `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
   const b = state.loc.bounds_lonlat;
   if (map.getSource('boundary')) map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...corners(b), corners(b)[0]]] } });
-  map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, duration: 0 });
+  fit(state.mode === 'intro' ? 0 : 1100);
   setImage();
-  if (isBig()) preload();
+  preload();
   await loadSeries();
   if (state.loc !== selected) return;
   $('map-status').hidden = true;
@@ -458,47 +606,61 @@ async function selectLoc(id) {
 
 map.on('load', async () => {
   try {
-  // Contextual vector colors only. Radar imagery and evidence colors are unchanged.
-  for (const layer of map.getStyle().layers) {
-    const water = /water/i.test(layer.id);
-    if (layer.type === 'background') map.setPaintProperty(layer.id,'background-color','#0c2115');
-    if (layer.type === 'fill') { map.setPaintProperty(layer.id,'fill-color',water ? '#19313a' : '#193426'); map.setPaintProperty(layer.id,'fill-outline-color','#385640'); }
-    if (layer.type === 'line') map.setPaintProperty(layer.id,'line-color',water ? '#81989c' : '#627c65');
-    if (layer.type === 'symbol' && layer.layout?.['text-field']) { map.setPaintProperty(layer.id,'text-color','#c1cbbd'); map.setPaintProperty(layer.id,'text-halo-color','#07150d'); }
-  }
-  map.addSource('esri', { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
-    tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
-  map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' } });
-  const response = await fetch(DATA + 'explore.json');
-  if (!response.ok) throw new Error('Acquisition catalog unavailable');
-  state.manifest = await response.json();
-  if (!state.manifest.locations?.length) throw new Error('No study areas available');
-  const sel = $('loc');
-  state.manifest.locations.forEach((l) => sel.append(new Option(`${l.name} (${l.dates.length} dates)`, l.id)));
-  const first = state.manifest.locations[0];
-  map.addSource('radar', { type: 'image', url: `${DATA}${first.id}/composite_${first.dates[first.dates.length - 1]}.webp`, coordinates: corners(first.bounds_lonlat) });
-  map.addLayer({ id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } });
-  map.addSource('chg', { type: 'image', url: `${DATA}${first.id}/hvchg_${first.dates[first.dates.length - 1]}.webp`, coordinates: corners(first.bounds_lonlat) });
-  map.addLayer({ id: 'chg', type: 'raster', source: 'chg', paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest', 'raster-opacity': 0 } });
-  map.addSource('boundary', { type: 'geojson', data: { type:'FeatureCollection',features:[] } });
-  map.addLayer({ id:'boundary',type:'line',source:'boundary',paint:{'line-color':'#c4d5ba','line-width':1.5,'line-dasharray':[4,3]} });
-  story();
-  try { await loadBig(); } catch (e) { console.warn('60 km forest map not loaded', e); }
-  try { await loadExtras(); } catch (e) { ['det', 'ref', 'han'].forEach((k) => pending(k, true)); }
-  await selectLoc(first.id);
-  ['loc','date','opacity','optical','play','boundary','reset-map'].forEach(id => { if ($(id)) $(id).disabled = false; });
-  document.querySelectorAll('input[name=layer]').forEach(r => r.disabled = false);
+    // tint the dark basemap to the page palette (canopy ground, understory water); radar and evidence colors are unchanged
+    for (const l of map.getStyle().layers) {
+      if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', '#091008');
+      else if (l.type === 'fill' && /water/.test(l.id)) map.setPaintProperty(l.id, 'fill-color', '#1F2F22');
+    }
+    map.addSource('esri', { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
+    map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' } });
+    const response = await fetch(DATA + 'explore.json');
+    if (!response.ok) throw new Error('Acquisition catalog unavailable');
+    state.manifest = await response.json();
+    if (!state.manifest.locations?.length) throw new Error('No study areas available');
+    const sel = $('loc');
+    state.manifest.locations.forEach((l) => sel.append(new Option(`${l.name} (${l.dates.length} dates)`, l.id)));
+    const first = state.manifest.locations[0], c0 = corners(first.bounds_lonlat), d0 = first.dates[first.dates.length - 1];
+    const paint = { 'raster-fade-duration': 0, 'raster-resampling': 'nearest', 'raster-opacity': 0, 'raster-opacity-transition': { duration: reduced ? 0 : FADE, delay: 0 } };
+    for (const id of ['radarA', 'radarB']) {
+      map.addSource(id, { type: 'image', url: `${DATA}${first.id}/hv_${d0}.webp`, coordinates: c0 });
+      map.addLayer({ id, type: 'raster', source: id, paint });
+    }
+    for (const id of ['chgA', 'chgB']) {
+      map.addSource(id, { type: 'image', url: `${DATA}${first.id}/hvchg_${d0}.webp`, coordinates: c0 });
+      map.addLayer({ id, type: 'raster', source: id, paint });
+    }
+    map.addSource('boundary', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'boundary', type: 'line', source: 'boundary', paint: { 'line-color': '#93A889', 'line-opacity': 0.7, 'line-width': 1.2, 'line-dasharray': [4, 3] } });
+    story();
+    try { await loadBig(); } catch (e) { console.warn('60 km forest map not loaded', e); }
+    try { await loadExtras(); } catch (e) { ['det', 'ref', 'han'].forEach((k) => pending(k, true)); }
+    await selectLoc(first.id);
+    ['loc', 'date', 'opacity', 'optical', 'play', 'boundary', 'reset-map'].forEach((id) => { if ($(id)) $(id).disabled = false; });
+    document.querySelectorAll('input[name=layer]').forEach((r) => (r.disabled = false));
+    document.body.classList.add('ready');
+    // phones: keep the map credits behind the (i) button so they do not cover the hero
+    if (innerWidth <= 900) document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
   } catch (e) { $('map-status').hidden = false; $('map-status').textContent = `Map data not available: ${e.message}. Check the data files and reload.`; }
 });
 
 $('loc').onchange = (e) => selectLoc(e.target.value).catch(() => { $('map-status').hidden = false; $('map-status').textContent = 'Study area unavailable. Please reload.'; });
-$('date').oninput = (e) => { state.i = +e.target.value; setImage(); };
-$('opacity').oninput = () => setImage();
+$('date').oninput = (e) => goTo(+e.target.value);
+$('passes').onclick = (e) => { const b = e.target.closest('.pass'); if (b) goTo(+b.dataset.i); };
+$('passes').onkeydown = (e) => {
+  const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+  if (!step) return;
+  e.preventDefault();
+  goTo(state.i + step);
+  document.querySelector(`.pass[data-i="${state.i}"]`).focus();
+};
+$('opacity').oninput = () => setImage(false);
 $('optical').onchange = (e) => map.setLayoutProperty('esri', 'visibility', e.target.checked ? 'visible' : 'none');
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.onchange = () => { state.layer = r.value; setImage(); }));
 ['det', 'ref', 'han', 'lost', 'prot', 'win'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
 map.on('click', (e) => {
   if (!state.loc) return;
+  setMode('exploring');
   if (isBig()) {
     if (state.lost && map.getLayer('lost-fill') && $('t-lost').checked) {
       const r = 4;
@@ -509,7 +671,7 @@ map.on('click', (e) => {
     drawChart(e.lngLat.lng, e.lngLat.lat);
     return;
   }
-  if (state.loc && state.loc.id === 'spara' && state.det && map.getLayer('det-fill') && $('t-det').checked) {
+  if (state.loc.id === 'spara' && state.det && map.getLayer('det-fill') && $('t-det').checked) {
     const r = 4; // px tolerance: the patches are small
     const hits = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: ['det-fill'] })
       .map((h) => state.det.byId.get(h.properties.id)).filter(Boolean);
@@ -521,17 +683,23 @@ map.on('click', (e) => {
   }
   drawChart(e.lngLat.lng, e.lngLat.lat);
 });
+document.querySelectorAll('[data-go]').forEach((el) => (el.onclick = (e) => { e.preventDefault(); go(el.dataset.go); }));
+map.on('resize', () => { if (state.mode === 'intro') fit(0); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.mode === 'exploring') setMode('intro'); });
+const PLAY = '<path d="M1 1l10 6-10 6z" fill="currentColor"/>', PAUSE = '<path d="M1 1h3v12H1zM8 1h3v12H8z" fill="currentColor"/>';
 $('play').onclick = () => {
   if (!state.loc) return;
-  if (state.playing) { clearInterval(state.playing); state.playing = null; $('play').textContent = 'Play'; $('play').setAttribute('aria-label','Play'); return; }
-  $('play').textContent = 'Pause'; $('play').setAttribute('aria-label','Pause');
-  state.playing = setInterval(() => { state.i = (state.i + 1) % state.loc.dates.length; $('date').value = state.i; setImage(); }, 900);
+  if (state.playing) return stopPlay();
+  state.playing = setInterval(() => goTo(state.i + 1), 1100);
+  $('play').classList.add('playing');
+  $('play-ico').innerHTML = PAUSE;
+  setText($('play-txt'), 'Pause');
+  $('play').setAttribute('aria-label', 'Pause');
 };
 
 // Controls stay inactive until their map sources exist. Failed layers remain independently inspectable.
-['loc','date','opacity','optical','play','boundary','reset-map'].forEach(id => $(id).disabled = true);
-document.querySelectorAll('input[name=layer]').forEach(r => r.disabled = true);
-$('boundary').onchange = e => map.setLayoutProperty('boundary','visibility',e.target.checked ? 'visible' : 'none');
-$('reset-map').onclick = () => { const b = state.loc.bounds_lonlat; map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:30,duration:0}); };
-map.on('error', e => { $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });
-new ResizeObserver(() => map.resize()).observe($('map'));
+['loc', 'date', 'opacity', 'optical', 'play', 'boundary', 'reset-map'].forEach((id) => ($(id).disabled = true));
+document.querySelectorAll('input[name=layer]').forEach((r) => (r.disabled = true));
+$('boundary').onchange = applyVisibility;
+$('reset-map').onclick = () => fit();
+map.on('error', () => { $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });

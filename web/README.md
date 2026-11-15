@@ -18,7 +18,10 @@ cd web && npx http-server -p 8000   # open http://localhost:8000/explore.html (f
 - Not read by the page: `summary.json`, `locations.json`, and the COGs in `data/<id>/`.
 
 ## Libraries (pinned, from unpkg)
-MapLibre GL JS 5.9.0 (UMD build; MapLibre 6 is ESM-only). Basemap: OpenFreeMap `liberty`, no API key.
+MapLibre GL JS 5.9.0 (UMD build; MapLibre 6 is ESM-only). Basemap: OpenFreeMap `dark`, recoloured to the page palette, no API key. Fonts: Manrope + IBM Plex Mono (Google Fonts).
+
+## Layout
+The page opens on the radar itself: a full-screen hero over the tinted HV image, a pass rail (one tick per date) and a glass strip (cards, play). "Explore" or a map click switches to the explorer: tint off, map gestures on, controls panel slides in (location, layers, evidence overlays, click chart, 60 km results). Esc or "Intro" goes back. Below it: Compare, Detection, Analysis, Validation (`observatory.js`). Styles in `observatory.css`; motion respects `prefers-reduced-motion`.
 
 ## Deploying
 ```bash
