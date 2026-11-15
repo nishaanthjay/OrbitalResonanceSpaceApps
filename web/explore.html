@@ -1,77 +1,34 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The Next Frontier: NISAR radar at the Amazon forest edge</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
-  <style>
-    * { box-sizing: border-box; }
-    [hidden] { display: none !important; }
-    html, body { margin: 0; height: 100%; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #e8eaed; background: #111; }
-    #map { position: absolute; inset: 0 0 0 380px; }
-    #side { position: absolute; top: 0; left: 0; bottom: 0; width: 380px; overflow-y: auto; padding: 14px 16px 40px; background: #1a1c1f; border-right: 1px solid #333; }
-    h1 { font-size: 18px; margin: 0 0 2px; }
-    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #9aa0a6; margin: 18px 0 6px; }
-    .sub { color: #9aa0a6; margin: 0 0 8px; }
-    label { display: block; margin: 3px 0; cursor: pointer; }
-    select, button { font: inherit; background: #2a2d31; color: #e8eaed; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; }
-    input[type=range] { width: 100%; }
-    .row { display: flex; gap: 8px; align-items: center; }
-    #datelabel { font-weight: 600; font-variant-numeric: tabular-nums; }
-    .legend { height: 10px; border-radius: 2px; margin: 4px 0 2px; }
-    .legend-lab { display: flex; justify-content: space-between; font-size: 12px; color: #9aa0a6; }
-    .note { font-size: 12px; color: #9aa0a6; }
-    .warn { font-size: 12px; color: #fdd663; }
-    #chart svg { width: 100%; height: 190px; background: #202226; border-radius: 4px; }
-    #chart .hint { color: #9aa0a6; font-size: 13px; padding: 10px 0; }
-    .story p { margin: 6px 0; }
-    .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; vertical-align: -1px; margin: 0 3px 0 6px; }
-    .sw.ref { background: transparent; border: 1.5px solid #22d3ee; }
-    .keyrow { margin: 0 0 6px 22px; }
-    .ctitle { font-weight: 600; margin: 4px 0; }
-    .kv { display: grid; grid-template-columns: 1fr auto; gap: 1px 12px; margin: 4px 0; }
-    .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-    .kv dt { color: #9aa0a6; }
-    .problems { margin: 4px 0 0; padding-left: 16px; color: #fdd663; font-size: 12px; }
-    .tag { display: inline-block; font-size: 11px; padding: 0 5px; border-radius: 3px; background: #3c4043; color: #fdd663; }
-    a { color: #8ab4f8; }
-    @media (max-width: 760px) {
-      #map { inset: 0 0 45% 0; }
-      #side { top: 55%; width: 100%; border-right: 0; border-top: 1px solid #333; }
-    }
-  </style>
-</head>
-<body>
-<div id="map"></div>
-<aside id="side">
-  <h1>The Next Frontier</h1>
-  <p class="sub">NISAR L-band radar at the Amazon forest edge, seen through clouds. NASA Space Apps 2026, "Dancing with the SARs".</p>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Explore real NISAR radar observations of the Amazon forest edge. Compare acquisitions, inspect potential disturbances, and understand the evidence.">
+<meta name="theme-color" content="#07120B"><title>The Next Frontier · Forest Observatory</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css"><link rel="stylesheet" href="observatory.css?v=20261114-editorial-3"></head>
+<body><a class="skip" href="#explore">Skip to forest map</a>
+<header class="nav"><a class="brand" href="#home">THE NEXT FRONTIER<span class="brand-sub">FOREST OBSERVATORY</span></a><button id="menu" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navlinks">Menu</button><nav id="navlinks" aria-label="Main navigation"><a href="#home">Home</a><a href="#explore">Explore Map</a><a href="#compare">Compare</a><a href="#detection">Detection</a><a href="#analysis">Analysis</a><a href="#impact">Impact & Validation</a></nav></header>
+<main>
+<section id="home" class="hero"><div class="hero-copy"><p class="eyebrow">NASA SPACE APPS 2026 <span> / </span> DANCING WITH THE SARS</p><h1>Forest disturbance,<br><em>observed by radar.</em></h1><p class="intro">Explore NISAR L-band backscatter observations near Novo Progresso, Brazil. Inspect potential forest disturbance, compare acquisitions, and examine agreement with GLAD-L alerts.</p><div class="actions"><a class="button primary" href="#explore">Open the observatory</a><a class="button" href="#method">Read the method</a></div><p class="hero-caption">RESEARCH PROTOTYPE / NISAR L2 GCOV PROVISIONAL</p></div><div class="hero-foot"><span>01 / AMAZON FOREST EDGE<br><small>Novo Progresso · Pará, Brazil</small></span><a href="#explore">Explore the observations</a><span class="photo-credit">Forest atmosphere · <a href="https://unsplash.com/photos/trees-on-forest-with-sun-rays-sp-p7uuT0tw">Sebastian Unrau / Unsplash</a><br><small>Illustrative forest photograph, Germany; not study-area imagery.</small></span></div></section>
+<section id="explore" class="section wide"><div class="section-head"><div><p class="eyebrow">01 / OBSERVE</p><h2>Forest monitoring map</h2></div><p>Look through clouds with radar. Choose an observation, reveal the layers, then click inside the study area to inspect the evidence.</p></div>
+<div class="map-shell"><div id="map" role="region" aria-label="Interactive NISAR forest monitoring map"></div><div id="map-status" class="map-status" role="status">Loading map and radar observations…</div><details id="side" open><summary>Observation controls</summary><div class="control-body">  <div class="row"><select id="loc" aria-label="Location"></select></div>
 
-  <div class="row"><select id="loc" aria-label="Location"></select></div>
-
-  <h2>1. What the radar sees</h2>
+  <h3>Radar observation</h3>
   <label><input type="radio" name="layer" value="composite" checked> Composite (R = HH, G = HV, B = HH&minus;HV)</label>
-  <label><input type="radio" name="layer" value="hv"> HV only (forest bright, cleared dark)</label>
-  <label><input type="radio" name="layer" value="hh"> HH only</label>
-  <h2>2. What changed</h2>
+  <label><input type="radio" name="layer" value="hv" title="HV: horizontal transmit, vertical receive. Sensitive to vegetation structure."> HV only (forest bright, cleared dark)</label>
+  <label><input type="radio" name="layer" value="hh" title="HH: horizontal transmit and receive. Changes can reflect surface or structural effects."> HH only</label>
+  <h3>Change preview</h3>
   <label><input type="radio" name="layer" value="hvchg"> HV change vs earlier dates</label>
   <label><input type="radio" name="layer" value="hhchg"> HH change vs earlier dates</label>
   <div id="legend"></div>
-  <div class="row" style="margin-top:6px"><span class="note">Opacity</span><input type="range" id="opacity" min="0" max="100" value="100"></div>
+  <div class="row" style="margin-top:6px"><label class="note" for="opacity">Opacity</label><input type="range" id="opacity" min="0" max="100" value="100"></div>
   <label><input type="checkbox" id="optical"> Optical basemap underneath (Esri imagery, not the same date)</label>
 
-  <h2>Date</h2>
-  <div class="row"><button id="play" aria-label="Play">&#9654;</button><span id="datelabel"></span></div>
+  <h3>Acquisition date</h3>
+  <div class="row"><button id="play" aria-label="Play">Play</button><span id="datelabel"></span></div>
   <input type="range" id="date" min="0" max="0" value="0" aria-label="Date">
 
-  <h2>3. What happened here</h2>
-  <div id="chart"><div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div></div>
-
-  <h2>4. What else we know</h2>
+<details class="overlay-controls" open><summary>Evidence overlays</summary>  <h3>Reference layers</h3>
   <div id="extras">
     <label><input type="checkbox" id="t-det" disabled> Our detections <span class="tag" id="p-det" hidden>pending</span></label>
-    <div class="note keyrow"><span class="sw" style="background:#f59e0b"></span> early (HH rise) <span class="sw" style="background:#be123c"></span> late (HV drop) &middot; shown from the date they first appear. Click one for its HH and HV series.</div>
+    <div class="note keyrow"><span class="sw" style="background:#b68b52"></span> early (HH rise) <span class="sw" style="background:#bd776a"></span> late (HV drop) &middot; shown from the date they first appear. Click one for its HH and HV series.</div>
     <label><input type="checkbox" id="t-ref" disabled> GLAD-L alert events <span class="tag" id="p-ref" hidden>pending</span></label>
     <div class="note keyrow"><span class="sw ref"></span> outline, shown from the alert's first date</div>
     <label><input type="checkbox" id="t-han" disabled> Hansen forest loss 2021&ndash;2025 <span class="tag" id="p-han" hidden>pending</span></label>
@@ -79,16 +36,10 @@
   </div>
   <p class="note" id="extras-off" hidden>Detections, alerts and Hansen loss are computed for S Para only.</p>
 
-  <h2 id="results-h">Results (S Para)</h2>
-  <div id="results"><span class="tag">pending</span></div>
-
-  <h2>What we found so far</h2>
-  <div class="story" id="story"></div>
-
-  <h2>About these layers</h2>
-  <p class="note" id="about"></p>
-</aside>
-<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="explore.js"></script>
-</body>
-</html>
+<label><input id="boundary" type="checkbox" checked> Radar coverage boundary</label></details><button id="reset-map">Reset map view</button></div></details><div class="map-caption">NISAR GCOV · provisional product <span>Click a patch or radar pixel for its time series</span></div></div><p class="note" id="about"></p></section>
+<section id="compare" class="section"><div class="section-head"><div><p class="eyebrow">02 / COMPARE</p><h2>Compare radar acquisitions</h2></div><p>Slide between actual radar acquisitions on the same geographic grid. A change in backscatter is evidence to investigate, not proof of clearing.</p></div><div class="compare-toolbar"><label>Study area<select id="compare-loc" disabled aria-label="Comparison study area"></select></label><label>Radar layer<select id="compare-layer"><option value="composite">Composite · HH / HV / HH−HV</option><option value="hv">HV backscatter</option><option value="hh">HH backscatter</option><option value="hvchg">HV change preview</option><option value="hhchg">HH change preview</option></select></label><label>Before<select id="before-date" disabled></select></label><label>After<select id="after-date" disabled></select></label></div>
+<div id="comparison" class="comparison" style="--split:50%"><div class="compare-image after-image"><img id="after-image" alt="Later dated NISAR radar acquisition"></div><div class="compare-image before-image"><img id="before-image" alt="Earlier dated NISAR radar acquisition"></div><div class="compare-label before-label">BEFORE <span id="before-label"></span></div><div class="compare-label after-label">AFTER <span id="after-label"></span></div><div class="divider" aria-hidden="true"><span>‹ ›</span></div><input id="swipe" type="range" min="0" max="100" value="50" aria-label="Before and after divider position"><p id="compare-status" class="compare-status" role="status">Loading available acquisitions…</p></div><div class="compare-footer"><span>Drag the divider · or use arrow keys</span><span>Same bounds · fixed display stretch across dates</span></div><p id="compare-note" class="note"></p><p class="note">Optical comparison: not available. This frontend has no dated, aligned optical observation pair. The map’s Esri basemap is context only.</p></section>
+<section id="detection" class="section"><div class="section-head"><div><p class="eyebrow">03 / INVESTIGATE</p><h2>Inspect potential disturbances</h2></div><p>Potential disturbances from a JJ-FAST-inspired method. Inspect patch-level HH and HV histories alongside a stable radar forest reference.</p></div><div id="method" class="method-sequence"><article><span>01 / OBSERVATION</span><h3>Observe the canopy</h3><p>L-band radar measures backscatter: microwave energy returned from the landscape. HH and HV describe different transmit/receive polarizations.</p></article><article><span>02 / DETECTION</span><h3>Identify a change</h3><p>An HH rise can indicate an early-stage disturbance; an HV drop can indicate a late stage. Rain, fire and flooding can also change the signal.</p></article><article><span>03 / VALIDATION</span><h3>Check the evidence</h3><p>Compare patches with GLAD-L reference alerts and inspect the time series. Potential radar disturbance is distinct from confirmed deforestation.</p></article></div><div class="detection-grid"><article class="panel"><div class="panel-heading"><h3>Patch explorer</h3><span>SOUTHERN PARÁ</span></div><div class="filter-row"><label>First seen by<select id="patch-date"><option value="all">All available dates</option></select></label><label>Stage<select id="patch-stage"><option value="all">All stages</option><option value="early">Early · HH rise</option><option value="late">Late · HV drop</option></select></label></div><p id="patch-count" class="note" role="status">Loading detection patches…</p><div id="patches" class="patches"></div></article><article class="panel"><p class="eyebrow">BACKSCATTER HISTORY / dB</p><h3>HH and HV time series</h3><div id="chart"><p class="hint">Select a detection card or click the map to inspect its HH/HV observations.</p></div><p class="note">Solid lines: selected observation. Dashed lines: stable radar forest. Display-derived pixel values can clip at the stretch limits; patch series use the full-precision stack.</p><a class="text-link" href="#explore">Return to the map</a></article></div></section>
+<section id="analysis" class="section"><div class="section-head"><div><p class="eyebrow">04 / UNDERSTAND</p><h2>Forest disturbance analysis</h2></div><p>Measured values from the repository’s southern Pará datasets. Whole-window map patches and holdout scoring use different counting units.</p></div><div id="analysis-metrics" class="metric-grid"><p>Data pending</p></div><div class="analysis-grid"><article class="panel"><h3>First-observed patch area</h3><p class="note">Hectares by first detection date, from summary.json. Patches are counted once, on their first date.</p><div id="area-chart">Not available</div></article><article class="panel"><h3>Forest-mask and loss context</h3><p>Use the map overlays to compare potential disturbances with GLAD-L events and Hansen forest loss from 2021–2025.</p><p>The forest-only method excludes previously cleared land. Its results do not describe all land-cover change.</p><p class="note">Forest-mask coverage percentage: not included in the frontend datasets. Historical loss is context, not a current forest classification.</p><a class="text-link" href="#explore">Explore contextual layers</a></article></div></section>
+<section id="impact" class="section"><div class="section-head"><div><p class="eyebrow">05 / VALIDATE</p><h2>Validation and limitations</h2></div><p>A transparent prototype for investigating forest change. Alert agreement is a comparison with another product, not independently verified accuracy.</p></div><div class="analysis-grid"><article class="panel"><h3 id="results-h">Held-out reference agreement</h3><div id="results">Pending</div><p id="metrics-notes" class="note"></p><p class="warn">The optical chip check was performed by the same AI assistant that ran detection, not an independent human reviewer. Human re-labeling is needed.</p><button id="download-report" disabled>Download data report</button></article><article class="panel"><h3>What this prototype demonstrates</h3><p>Real radar acquisitions, aligned temporal exploration, inspectable detection patches, and explicit reference comparisons in one open workflow.</p><h3>What remains uncertain</h3><ul class="limits"><li>Rain, soil moisture, fire and flooded forest can mimic disturbances.</li><li>Selective logging is not detected. Detection was tested on one study area.</li><li>Provisional radar products and compressed display layers introduce limitations.</li><li>Low reference agreement does not establish new forest clearing. Independent verification remains essential.</li></ul><h3>Where it could go next</h3><p>Human-reviewed labels, improved noise rejection, and further study areas could support a better-tested monitoring workflow.</p></article></div><details class="story-panel"><summary>Research context and supporting findings</summary><div class="story" id="story"></div></details><div class="sources" id="sources"><h3>Data sources and acknowledgments</h3><p>NASA–ISRO NISAR L2 GCOV provisional · GLAD-L alerts · Hansen Global Forest Change · MapLibre GL JS · OpenFreeMap / OpenStreetMap · Esri contextual imagery.</p><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md">Sources & acknowledgments</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md">Methods & validation record</a><p class="note">RADD comparison is not available in the shipped frontend datasets.</p></div></section></main><footer><a class="brand" href="#home">THE NEXT FRONTIER</a><div><p>NASA Space Apps 2026 · Dancing with the SARs</p><p>Independent challenge project. No NASA endorsement is implied.</p></div><nav aria-label="Research links"><a href="#sources">Data credits</a><a href="#method">Methodology</a><a href="#impact">Limitations</a></nav><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps">GitHub repository</a></footer>
+<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script><script src="explore.js?v=20261114-editorial-3"></script><script src="observatory.js?v=20261114-editorial-3"></script></body></html>

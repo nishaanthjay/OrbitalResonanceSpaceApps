@@ -1,4 +1,4 @@
-// explore.js — NISAR surface-change explorer. Reads only files written by web/tools/make_explore.py.
+// explore.js : NISAR surface-change explorer. Reads only files written by web/tools/make_explore.py.
 // No data is invented here: every pixel and number comes from web/data/explore/ or validation/fnf_metrics.json values
 // copied into the story text below (with the file named).
 'use strict';
@@ -8,7 +8,7 @@ const R = 6378137;
 const $ = (id) => document.getElementById(id);
 const state = { manifest: null, loc: null, i: 0, layer: 'composite', series: null, playing: null, marker: null,
   last: null, det: null, ref: null, hansen: null, metrics: null };
-const COLORS = { early: '#f59e0b', late: '#be123c', ref: '#22d3ee' };
+const COLORS = { early: '#b68b52', late: '#bd776a', ref: '#81989c' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const map = new maplibregl.Map({
@@ -60,8 +60,17 @@ function drawLegend() {
 
 // ---------- time series ----------
 async function loadSeries() {
-  const r = await fetch(`${DATA}${state.loc.id}/series.bin`);
-  state.series = new Uint8Array(await r.arrayBuffer());
+  const loc = state.loc;
+  state.series = null;
+  try {
+    const r = await fetch(`${DATA}${loc.id}/series.bin`);
+    if (!r.ok) throw new Error('Series unavailable');
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    if (bytes.length !== loc.series_shape.reduce((a,b) => a*b, 1)) throw new Error('Invalid series size');
+    if (state.loc === loc) state.series = bytes;
+  } catch {
+    if (state.loc === loc) $('chart').textContent = 'Pixel time series not available. Detection patch series may still be inspected.';
+  }
 }
 function cellAt(lon, lat) {
   const loc = state.loc, b = loc.bounds_lonlat;
@@ -101,21 +110,22 @@ function chartSVG(v, ref, dates) {
   const ticks = dates.map((d, i) => (i % 2 === 0 ? `<text x="${X(d)}" y="${H - 8}" fill="#9aa0a6" font-size="10" text-anchor="middle">${d.slice(5)}</text>` : '')).join('');
   const cur = `<line x1="${X(dates[state.i])}" x2="${X(dates[state.i])}" y1="${mt}" y2="${H - mb}" stroke="#fdd663" stroke-dasharray="2 2"/>`;
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="HH and HV backscatter over time at the clicked spot">${grid}${ticks}${cur}
-    ${line(ref.hh, '#f28b82', true)}${line(ref.hv, '#81c995', true)}${line(v.hh, '#f28b82')}${line(v.hv, '#81c995')}${dots(v.hh, '#f28b82')}${dots(v.hv, '#81c995')}</svg>`;
+    ${line(ref.hh, '#bd998d', true)}${line(ref.hv, '#8fa58b', true)}${line(v.hh, '#bd998d')}${line(v.hv, '#8fa58b')}${dots(v.hh, '#bd998d')}${dots(v.hv, '#8fa58b')}</svg>`;
 }
 function placeMarker(lon, lat) {
-  if (state.marker) state.marker.setLngLat([lon, lat]); else state.marker = new maplibregl.Marker({ color: '#fdd663' }).setLngLat([lon, lat]).addTo(map);
+  if (state.marker) state.marker.setLngLat([lon, lat]); else { const point = document.createElement('div'); point.className = 'map-point'; point.setAttribute('aria-label','Selected observation'); state.marker = new maplibregl.Marker({ element: point }).setLngLat([lon, lat]).addTo(map); }
 }
 
 function drawChart(lon, lat) {
   state.last = { kind: 'point', lon, lat };
   const c = cellAt(lon, lat), el = $('chart');
-  if (!c || !state.series) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
+  if (!c) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
+  if (!state.series) { el.textContent = 'Pixel time series not available. Try a detection patch or reload.'; return; }
   const v = valuesAt(...c), ref = state.loc.stable_forest_ref;
   if (!v.hv.some(Boolean)) { el.innerHTML = '<div class="hint">No radar data at this spot.</div>'; return; }
   const clippedAny = [...v.hh, ...v.hv].some((p) => p && p.clipped);
   el.innerHTML = `${chartSVG(v, ref, state.loc.dates)}
-    <div class="note"><b style="color:#f28b82">HH</b> and <b style="color:#81c995">HV</b> (dB) at ${lat.toFixed(4)}, ${lon.toFixed(4)}, ~80 m cell. Dashed = stable radar forest (median of ${ref.n_pixels.toLocaleString()} px with HV &ge; ${state.manifest.t_db_forest.toFixed(2)} dB on every date). Clearing usually shows as HV falling away from the dashed line.</div>
+    <div class="note"><b style="color:#bd998d">HH</b> and <b style="color:#8fa58b">HV</b> (dB) at ${lat.toFixed(4)}, ${lon.toFixed(4)}, ~80 m cell. Dashed = stable radar forest (median of ${ref.n_pixels.toLocaleString()} px with HV &ge; ${state.manifest.t_db_forest.toFixed(2)} dB on every date). Clearing usually shows as HV falling away from the dashed line.</div>
     ${clippedAny ? '<div class="warn">Hollow dots hit the display stretch limit: the true value is at or beyond it.</div>' : ''}`;
   placeMarker(lon, lat);
 }
@@ -133,7 +143,7 @@ function drawDetection(f, lngLat) {
     return;
   }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh, hv }, state.loc.stable_forest_ref, dates)}
-    <div class="note"><b style="color:#f28b82">HH</b> and <b style="color:#81c995">HV</b> (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Whether this patch is clearing or radar noise is not known until the hand check.</div>`;
+    <div class="note"><b style="color:#bd998d">HH</b> and <b style="color:#8fa58b">HV</b> (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Whether this patch is clearing or radar noise is not established by the available optical chip check. Independent human review is needed.</div>`;
   placeMarker(lngLat.lng, lngLat.lat);
 }
 function redrawLast() {
@@ -150,7 +160,7 @@ function story() {
   $('story').innerHTML = `
     <p><b>The new frontier, twice.</b> The place: the forest edge along the BR-163 highway near Novo Progresso, Pará, a frontier town where forest is being cut for cattle pasture (Mongabay; see submission/sources.md). The sensor: NISAR's L-band radar, which sees through the cloud that hides this forest from optical satellites for much of the year.</p>
     <p><b>Radar separates forest from cleared land.</b> One HV threshold, chosen on the north half of the window and tested once on the south half, put 83.1% of 100 m blocks in the same class as the Hansen forest map (kappa 0.66), against 52.4% for calling everything forest. The same threshold, unchanged, scored 95.6% in Rondônia. <span class="note">(validation/fnf_metrics.json; pre-registered in validation/PREREG_fnf.md. This is agreement with an optical map that ends in 2025, not ground truth.)</span></p>
-    <p><b>Catching new clearing is harder, and we say so.</b> On the held-out south half, 2 of 57 detections agree with GLAD-L alerts, and 0 of 179 GLAD-L events of 1 ha or more are caught. 92.5% of 2026 GLAD-L alert pixels fall on land Hansen already mapped as cleared 2001&ndash;2025, which our forest-only method excludes by design. By pixel area, 98.0% to 99.1% of our detections fall on Hansen-intact forest. Whether they are new clearing or radar noise is not known until the hand check. Our threshold, 1.0 dB, is the lowest value we tested and is close to the per-date noise (about 0.4 dB standard deviation on stable forest). We make no claim that these detections are clearing. <span class="note">(validation/results_final.md. Agreement with an alert product is a reference, not ground truth.)</span></p>
+    <p><b>Catching new clearing is harder, and we say so.</b> On the held-out south half, 2 of 57 detections agree with GLAD-L alerts, and 0 of 179 GLAD-L events of 1 ha or more are caught. 92.5% of 2026 GLAD-L alert pixels fall on land Hansen already mapped as cleared 2001&ndash;2025, which our forest-only method excludes by design. By pixel area, 98.0% to 99.1% of our detections fall on Hansen-intact forest. Whether they are new clearing or radar noise is not established by the available optical chip check. Independent human review is needed. Our threshold, 1.0 dB, is the lowest value we tested and is close to the per-date noise (about 0.4 dB standard deviation on stable forest). We make no claim that these detections are clearing. <span class="note">(validation/results_final.md. Agreement with an alert product is a reference, not ground truth.)</span></p>
     <p class="note">We do not claim this stops deforestation or works everywhere. Rain, fire, flooding and selective logging are not handled.</p>`;
 }
 
@@ -235,9 +245,9 @@ function renderResults() {
     box.append(dl);
   }
   if (!('hand_labeled' in m)) problems.push('hand_labeled is missing');
-  else if (m.hand_labeled === null) box.append(mk('p', 'Hand-checked precision: pending', 'note'));
+  else if (m.hand_labeled === null) box.append(mk('p', 'Optical chip-label precision: pending', 'note'));
   else if (m.hand_labeled && num(m.hand_labeled.precision)) {
-    box.append(mk('p', `Hand-checked precision: ${m.hand_labeled.precision.toFixed(3)} (n_sample ${m.hand_labeled.n_sample}, n_unsure ${m.hand_labeled.n_unsure})`, 'note'));
+    box.append(mk('p', `Optical chip-label precision (AI review): ${m.hand_labeled.precision.toFixed(3)} (sample ${m.hand_labeled.n_sample}, unsure ${m.hand_labeled.n_unsure}; unsure excluded). Not independently human validated.`, 'note'));
   } else problems.push('hand_labeled.precision is missing or not a number');
   if (m.reference_source !== undefined && m.reference_source !== 'GLAD-L') problems.push(`reference_source is ${m.reference_source}, but the caption says GLAD-L`);
   if (problems.length) {
@@ -277,27 +287,44 @@ function applyVisibility() {
 
 // ---------- setup ----------
 async function selectLoc(id) {
+  if (state.playing) { clearInterval(state.playing); state.playing = null; $('play').textContent = 'Play'; $('play').setAttribute('aria-label','Play'); }
   state.loc = state.manifest.locations.find((l) => l.id === id);
+  const selected = state.loc;
+  if (state.marker) { state.marker.remove(); state.marker = null; }
   state.i = state.loc.dates.length - 1;
   state.last = null;
   const sp = state.loc.id === 'spara';
-  $('extras').hidden = !sp; $('extras-off').hidden = sp; $('results-h').hidden = !sp; $('results').hidden = !sp;
+  $('extras').hidden = !sp; $('extras-off').hidden = sp; $('results-h').hidden = false; $('results').hidden = false;
   applyVisibility();
   $('chart').innerHTML = '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
   $('about').textContent = `${state.loc.name}. ${state.loc.notes} Change previews and time series are computed from these display layers (web/tools/make_explore.py), not from detect.py.`;
   const b = state.loc.bounds_lonlat;
+  if (map.getSource('boundary')) map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...corners(b), corners(b)[0]]] } });
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, duration: 0 });
-  await loadSeries();
   setImage();
-  preload();
+  await loadSeries();
+  if (state.loc !== selected) return;
+  $('map-status').hidden = true;
 }
 
 map.on('load', async () => {
+  try {
+  // Contextual vector colors only. Radar imagery and evidence colors are unchanged.
+  for (const layer of map.getStyle().layers) {
+    const water = /water/i.test(layer.id);
+    if (layer.type === 'background') map.setPaintProperty(layer.id,'background-color','#0c2115');
+    if (layer.type === 'fill') { map.setPaintProperty(layer.id,'fill-color',water ? '#19313a' : '#193426'); map.setPaintProperty(layer.id,'fill-outline-color','#385640'); }
+    if (layer.type === 'line') map.setPaintProperty(layer.id,'line-color',water ? '#81989c' : '#627c65');
+    if (layer.type === 'symbol' && layer.layout?.['text-field']) { map.setPaintProperty(layer.id,'text-color','#c1cbbd'); map.setPaintProperty(layer.id,'text-halo-color','#07150d'); }
+  }
   map.addSource('esri', { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
     tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
   map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' } });
-  state.manifest = await (await fetch(DATA + 'explore.json')).json();
+  const response = await fetch(DATA + 'explore.json');
+  if (!response.ok) throw new Error('Acquisition catalog unavailable');
+  state.manifest = await response.json();
+  if (!state.manifest.locations?.length) throw new Error('No study areas available');
   const sel = $('loc');
   state.manifest.locations.forEach((l) => sel.append(new Option(`${l.name} (${l.dates.length} dates)`, l.id)));
   const first = state.manifest.locations[0];
@@ -305,18 +332,24 @@ map.on('load', async () => {
   map.addLayer({ id: 'radar', type: 'raster', source: 'radar', paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } });
   map.addSource('chg', { type: 'image', url: `${DATA}${first.id}/hvchg_${first.dates[first.dates.length - 1]}.webp`, coordinates: corners(first.bounds_lonlat) });
   map.addLayer({ id: 'chg', type: 'raster', source: 'chg', paint: { 'raster-fade-duration': 0, 'raster-resampling': 'nearest', 'raster-opacity': 0 } });
+  map.addSource('boundary', { type: 'geojson', data: { type:'FeatureCollection',features:[] } });
+  map.addLayer({ id:'boundary',type:'line',source:'boundary',paint:{'line-color':'#c4d5ba','line-width':1.5,'line-dasharray':[4,3]} });
   story();
   try { await loadExtras(); } catch (e) { ['det', 'ref', 'han'].forEach((k) => pending(k, true)); }
   await selectLoc(first.id);
+  ['loc','date','opacity','optical','play','boundary','reset-map'].forEach(id => { if ($(id)) $(id).disabled = false; });
+  document.querySelectorAll('input[name=layer]').forEach(r => r.disabled = false);
+  } catch (e) { $('map-status').hidden = false; $('map-status').textContent = `Map data not available: ${e.message}. Check the data files and reload.`; }
 });
 
-$('loc').onchange = (e) => selectLoc(e.target.value);
+$('loc').onchange = (e) => selectLoc(e.target.value).catch(() => { $('map-status').hidden = false; $('map-status').textContent = 'Study area unavailable. Please reload.'; });
 $('date').oninput = (e) => { state.i = +e.target.value; setImage(); };
 $('opacity').oninput = () => setImage();
 $('optical').onchange = (e) => map.setLayoutProperty('esri', 'visibility', e.target.checked ? 'visible' : 'none');
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.onchange = () => { state.layer = r.value; setImage(); }));
 ['det', 'ref', 'han'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
 map.on('click', (e) => {
+  if (!state.loc) return;
   if (state.loc && state.loc.id === 'spara' && state.det && map.getLayer('det-fill') && $('t-det').checked) {
     const r = 4; // px tolerance: the patches are small
     const hits = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: ['det-fill'] })
@@ -330,7 +363,16 @@ map.on('click', (e) => {
   drawChart(e.lngLat.lng, e.lngLat.lat);
 });
 $('play').onclick = () => {
-  if (state.playing) { clearInterval(state.playing); state.playing = null; $('play').innerHTML = '&#9654;'; return; }
-  $('play').innerHTML = '&#10074;&#10074;';
+  if (!state.loc) return;
+  if (state.playing) { clearInterval(state.playing); state.playing = null; $('play').textContent = 'Play'; $('play').setAttribute('aria-label','Play'); return; }
+  $('play').textContent = 'Pause'; $('play').setAttribute('aria-label','Pause');
   state.playing = setInterval(() => { state.i = (state.i + 1) % state.loc.dates.length; $('date').value = state.i; setImage(); }, 900);
 };
+
+// Controls stay inactive until their map sources exist. Failed layers remain independently inspectable.
+['loc','date','opacity','optical','play','boundary','reset-map'].forEach(id => $(id).disabled = true);
+document.querySelectorAll('input[name=layer]').forEach(r => r.disabled = true);
+$('boundary').onchange = e => map.setLayoutProperty('boundary','visibility',e.target.checked ? 'visible' : 'none');
+$('reset-map').onclick = () => { const b = state.loc.bounds_lonlat; map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:30,duration:0}); };
+map.on('error', e => { $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });
+new ResizeObserver(() => map.resize()).observe($('map'));
