@@ -49,8 +49,8 @@
     return fc.features.map(f=>({feature:f,distance_km:distanceKm(point,f.geometry.coordinates)})).filter(o=>o.distance_km<=5 && Date.parse(o.feature.properties.date)>=low && Date.parse(o.feature.properties.date)<=high).sort((a,b)=>a.distance_km-b.distance_km);
   }
   function interpretation(kind,p) {
-    if (kind !== 'det' && p.category==='alert_supported') return {category:'Radar flag with independent alert-product agreement',rule:'The shipped patch category reports at least one constituent block with a GLAD-L or GLAD-S2 alert in the pre-registered 2026-06-26 to 2026-11-05 window. That means the products agree. It isn\'t confirmation from the field.'};
-    return {category:'Insufficient evidence for confirmation',rule:'A radar flag by itself doesn\'t confirm clearing, and neither does a clear optical image or environmental data nearby. We have no calibrated probability and no automatic optical label.'};
+    if (kind !== 'det' && p.category==='alert_supported') return {category:'Possible clearing, in agreement with a separate alert system',rule:'At least one square in this patch has a GLAD-L or GLAD-S2 deforestation alert between 2026-06-26 and 2026-11-05. We fixed that window before looking at any results. So two separate systems agree. It isn\'t confirmation from the ground.'};
+    return {category:'Insufficient evidence to confirm a clearing',rule:'A radar flag alone doesn\'t confirm a clearing. Neither does a clear photo or weather data nearby. We have no calibrated probability and no automatic photo label.'};
   }
   function opticalPair(meta,lon,lat,d) {
     if (!meta || !covered(lon,lat,meta.bounds_lonlat) || !dateOK(d)) return {before:null,after:null};
