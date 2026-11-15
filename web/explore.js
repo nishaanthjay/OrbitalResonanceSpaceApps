@@ -818,7 +818,7 @@ map.on('load', async () => {
     }
     map.addSource('esri', { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
-    map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: 'none' } });
+    map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: $('optical').checked ? 'visible' : 'none' } }); // satellite photo map on by default
     const response = await fetch(DATA + 'explore.json');
     if (!response.ok) throw new Error('the list of radar passes is missing');
     state.manifest = await response.json();
