@@ -35,9 +35,21 @@ def forest_from_layers(treecover: np.ndarray, lossyear: np.ndarray, datamask: np
     return ((treecover >= tc_min) & (lossyear == 0) & (datamask == 1)).astype(np.uint8)
 
 
-def build(stack_path: str, out_path: str, tc_min: float = 30.0) -> dict:
+def native_grid(c: np.ndarray, n: int) -> np.ndarray:
+    """Pixel centres of the n x n native pixels behind block centres c (block = mean of n native centres)."""
+    d = (c[1] - c[0]) / n
+    return (c[:, None] + (np.arange(n) - (n - 1) / 2) * d).ravel()
+
+
+def build(stack_path: str, out_path: str, tc_min: float = 30.0, subdivide: int = 1) -> dict:
+    """subdivide > 1: the stack pixels are n x n blocks (load_big.py); write the mask on the native grid behind them."""
     ds = xr.open_dataset(stack_path)
-    template = ds["hh_db"].isel(time=0).rio.write_crs(ds.attrs["crs"])
+    template = ds["hh_db"].isel(time=0)
+    if subdivide > 1:
+        template = xr.DataArray(np.zeros((ds.sizes["y"] * subdivide, ds.sizes["x"] * subdivide), np.float32),
+                                coords={"y": native_grid(ds["y"].values, subdivide),
+                                        "x": native_grid(ds["x"].values, subdivide)}, dims=("y", "x"))
+    template = template.rio.write_crs(ds.attrs["crs"])
     w, s, e, n = template.rio.transform_bounds("EPSG:4326")
     corners = {hansen_tile(x, y) for x in (w, e) for y in (s, n)}
     if len(corners) != 1:
@@ -62,8 +74,10 @@ def main() -> None:
     p.add_argument("--stack", required=True, help="data/stack_<tile>.nc (grid template)")
     p.add_argument("--out", required=True, help="output GeoTIFF, e.g. data/forest_mask_<tile>.tif")
     p.add_argument("--treecover-min", type=float, default=30.0, help="minimum treecover2000 %% to count as forest")
+    p.add_argument("--subdivide", type=int, default=1,
+                   help="stack pixels are N x N blocks (load_big.py --block N): write the mask on the native grid")
     a = p.parse_args()
-    print(build(a.stack, a.out, a.treecover_min))
+    print(build(a.stack, a.out, a.treecover_min, a.subdivide))
 
 
 if __name__ == "__main__":

@@ -97,3 +97,52 @@ Scoring (`C="python validation/compute_sample_precision.py --csv validation/labe
 | Controls (stable forest, no detection) | same | 15 | 0 | 10 | 5 | false-positive rate 0 of 10 | 0.00-0.28 |
 
 Reading: no labelled detection showed visible clearing, and the controls look the same as the detections, so the chips show no difference between detected and undetected forest. Only 6 of 15 holdout detections have usable images, so the holdout precision is weakly determined. `metrics.json` `hand_labeled` = `{n_sample: 15, precision: 0.0, n_unsure: 9}`. Tests: `python -m pytest -q validation` -> 26 passed.
+
+## Forest map at scale (60 x 60 km, out-of-sample)
+Run 2026-11-14, once, rules fixed in `validation/PREREG_scale.md` (committed in 1a8197a before the stack existed). T_db = -11.250146865844727 dB, unchanged from `fnf_metrics.json`. Every number below is in `validation/scale_metrics.json`, printed by:
+`python validation/scale.py --stack data/stack_big_t2f174.nc --mask data/forest_mask_big_t2f174.tif --out validation/scale_metrics.json`
+(inputs: `cd pipeline/load && python load_big.py --x0 62370 --y0 9121770 --nx 3000 --ny 3000 --block 5 --start 2026-06-20 --end 2026-10-20 --track 2 --frame 174 --direction ASCENDING --mode 20+5 --tile big_t2f174 --out-dir ../../data`, sha256 a33aaf28...d399c; `python pipeline/load/forest_mask.py --stack data/stack_big_t2f174.nc --out data/forest_mask_big_t2f174.tif --subdivide 5`). The original 20 km window is excluded from every score.
+
+### Band choice
+`cd pipeline/load && python freq_compare.py --bbox -54.7900 -8.2900 -54.6080 -8.1090 --start 2026-06-20 --end 2026-10-20 --track 2 --frame 174 --direction ASCENDING --mode 20+5 --out ../../data/freq_compare_spara.json`: frequencyB HV vs 4x4-averaged frequencyA HV, median |difference| 0.713 to 0.732 dB per date, **0.720 dB pooled** (528,101 px) > 0.3 dB, so frequencyA with 5x5 linear block averaging was used.
+
+### Area
+| Item | Value |
+|---|---|
+| Grid | EPSG:32722, 600 x 600 blocks of 100 m, lon/lat -54.9725 -8.4722 -54.4248 -7.9266 |
+| Blocks valid on all 9 dates | 199,204 of 360,000 (55.3 %; the swath's west edge cuts the box) |
+| of which in the original window (excluded) | 40,284 |
+| **Scored blocks** | **158,920** (~1,589 km2) |
+
+### (a) Forest map vs Hansen v1.13 (block forest if >= 50 % of 25 px)
+| Map | n | OA | kappa | forest precision | forest recall | all-forest baseline |
+|---|---|---|---|---|---|---|
+| **9-date median** | 158,920 | **0.9543** | **0.8562** | 0.9856 | 0.9577 | 0.8133 |
+| median, pure blocks (Hansen fraction <= 0.1 or >= 0.9) | 150,660 | 0.9683 | 0.8922 | 0.9934 | 0.9683 | 0.8314 |
+
+Median confusion: TP 123,786, FP 1,804, FN 5,465, TN 27,865 (all-non-forest baseline 0.1867).
+
+Per date, same frozen T (OA / kappa; baseline 0.8133 for every date): 06-26 0.9397 / 0.8143; 07-08 0.9349 / 0.8027; 07-20 0.9417 / 0.8198; 08-13 0.9404 / 0.8160; 08-25 0.9399 / 0.8163; 09-06 0.9369 / 0.8053; 09-18 0.9256 / 0.7796; 09-30 0.9183 / 0.7621; 10-12 0.9185 / 0.7629.
+
+Reading: every single pass and the median beat the all-forest baseline (0.8133) on ground the threshold never saw. Single-pass OA drifts down from 0.94 to 0.92 over 09-18..10-12 (late dry season); the cause is not tested here.
+
+### (b) Class-switch lost blocks vs GLAD alerts
+Rule: forest on >= 2 of 06-26 / 07-08 / 07-20 AND non-forest on 09-30 and 10-12. **2,816 lost blocks** (2,816 ha, 1.77 % of scored blocks; 2,272 of them Hansen forest). Control: 2,816 blocks drawn (seed 20261114) from 101,293 stable-forest blocks (forest on all 9 dates, Hansen forest, not lost).
+Reference blocks = alert dated 2026-07-20..10-12; precision window 2026-06-26..11-05 (+/- 24 days).
+
+| Source | Set | blocks with alert / blocks | precision_like | reference blocks hit / reference | recall_like |
+|---|---|---|---|---|---|
+| GLAD-L | **lost** | 244 / 2,816 | **0.0866** | 177 / 3,550 | **0.0499** |
+| GLAD-L | control | 10 / 2,816 | 0.0036 | 3 / 3,550 | 0.0008 |
+| GLAD-S2 | **lost** | 406 / 2,816 | **0.1442** | 323 / 4,843 | **0.0667** |
+| GLAD-S2 | control | 44 / 2,816 | 0.0156 | 32 / 4,843 | 0.0066 |
+
+Recall on reference blocks that are Hansen forest: GLAD-L lost 66 / 389 = 0.1697 (control 3 / 389 = 0.0077); GLAD-S2 lost 201 / 2,851 = 0.0705 (control 32 / 2,851 = 0.0112).
+Alert pixels read in the AOI box (all dates): GLAD-L 148,423 (2026 file), GLAD-S2 6,774,396; none undated.
+
+Reading: the lost blocks agree with alerts far more often than random stable forest does (precision_like 24x the control for GLAD-L, 9x for GLAD-S2), but in absolute terms most lost blocks have no alert (91 % for GLAD-L, 86 % for GLAD-S2) and most alerted blocks are not flagged (recall_like 5 % and 7 %). 2,299 of the 2,999 merged lost patches in `web/data/explore/big/lost.geojson` are a single 1 ha block, consistent with speckle or moisture flips on single blocks; this was not filtered because the pre-registered rule has no size filter. Agreement numbers, not accuracy.
+
+### Web files
+`python web/tools/make_big.py --stack data/stack_big_t2f174.nc --metrics validation/scale_metrics.json --out-dir web/data/explore/big`: 9 `forest_<date>.webp`, `forest_median.webp`, `lost.webp` (603 x 607 px, EPSG:3857, lossless RGBA, 4.8 to 11.6 KB each), `lost.geojson` (2,999 patches, 4,618 ha incl. 923 patches touching the original window, flagged `in_original_window`; 1.39 MB), `big.json` (bounds, grid, dates, T_db, original window, scores copied from `scale_metrics.json`). All of `web/data` = 58,624,727 bytes (under 60 MB).
+
+Tests: `python -m pytest -q pipeline/load validation web/tools` -> 45 passed.
