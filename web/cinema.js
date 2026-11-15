@@ -161,7 +161,7 @@
   // ================= shared: the 9 per-pass 60 km forest maps, decoded once =================
   let passes = null, passesP = null; // { dates, imgs, share[], valid9 }
   function loadImg(src) {
-    return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+    return new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = src; });
   }
   function loadPasses() { return passesP || (passesP = decodePasses()); }
   async function decodePasses() {
