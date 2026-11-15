@@ -69,7 +69,7 @@
       if (version !== compareVersion) return;
       ['before-image','after-image'].forEach((id,i) => { el(id).src = loaded[i].src; el(id).alt = `${loc.name}, ${layer}, ${[before,after][i]}, NISAR radar`; el(id).hidden = false; });
       status.hidden = true; el('swipe').disabled = false;
-    } catch { if (version !== compareVersion) return; status.textContent = 'Imagery not available for this pair. Choose another date or layer.'; }
+    } catch { if (version !== compareVersion) return; status.textContent = 'No imagery for this pair. Try another date or layer.'; }
   }
   el('compare-loc').onchange = () => { el('before-date').replaceChildren(); el('after-date').replaceChildren(); compare(); };
   el('compare-layer').onchange = compare;
@@ -101,7 +101,7 @@
           toTop(); setMode('exploring'); setImage(false);
           focusBounds(bounds);
           drawDetection(f,{lng:(bounds[0]+bounds[2])/2,lat:(bounds[1]+bounds[3])/2});
-        } catch { el('chart').textContent = 'Could not open this patch. Reload the map and try again.'; } finally { button.disabled = false; }
+        } catch { el('chart').textContent = 'This patch wouldn\'t open. Reload the map and try again.'; } finally { button.disabled = false; }
       }; box.append(button);
     });
   }
@@ -144,7 +144,7 @@
     io.observe(box);
   }
   el('download-report').onclick = () => {
-    const report = {title:'The Next Frontier : frontend data report',sources:['data/detections.geojson','data/summary.json','data/metrics.json','data/explore/explore.json'],scope:'Southern Para; map patches span the whole window; agreement is scored only on holdout per-date detections.',caveats:['Radar disturbance is not confirmed deforestation.','GLAD-L alerts are a reference, not ground truth.','Optical chip labels were made by the same AI assistant that ran detection; not independently human validated.'],map_patch_count:detections?.features.length ?? null,map_patch_area_ha:detections?.features.every(f=>Number.isFinite(f.properties.area_ha)) ? detections.features.reduce((s,f)=>s+f.properties.area_ha,0) : null,summary,metrics};
+    const report = {title:'The Next Frontier : frontend data report',sources:['data/detections.geojson','data/summary.json','data/metrics.json','data/explore/explore.json'],scope:'Southern Para; map patches span the whole window; agreement is scored only on holdout per-date detections.',caveats:['Radar disturbance is not confirmed deforestation.','GLAD-L alerts are a reference, not ground truth.','The same AI assistant that ran detection also labelled the optical chips. No independent person has checked them.'],map_patch_count:detections?.features.length ?? null,map_patch_area_ha:detections?.features.every(f=>Number.isFinite(f.properties.area_ha)) ? detections.features.reduce((s,f)=>s+f.properties.area_ha,0) : null,summary,metrics};
     const a = document.createElement('a'), url = URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'})); a.href=url;a.download='forest-observatory-data-report.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
   // ================= headline results: every number below is read from these files at runtime =================
@@ -224,16 +224,16 @@
     const hl = m.hand_labeled, hc = el('hand-check');
     if (hl && Number.isFinite(hl.precision) && Number.isFinite(hl.n_sample) && Number.isFinite(hl.n_unsure)) {
       const usable = hl.n_sample - hl.n_unsure, cleared = Math.round(hl.precision * usable);
-      hc.textContent = `Hand check: ${cleared} of ${usable} checkable held-out flags showed clearing in Sentinel-2 (${hl.n_unsure} of ${hl.n_sample} had no clear image). Labelled by our AI assistant blind to the key; independent human re-label pending.`;
+      hc.textContent = `Hand check: ${cleared} of ${usable} checkable held-out flags showed clearing in Sentinel-2 (${hl.n_unsure} of ${hl.n_sample} had no clear image). Our AI assistant labelled these without seeing the answer key. A re-label by an independent person is still to come.`;
     } else hc.textContent = 'Hand check: pending (metrics.json hand_labeled).';
-    if (d) el('detector-intro').textContent = `The first method flagged a change when HH rose or HV fell by ${d.threshold_db.toFixed(1)} dB against earlier passes. It did not work: see the validation section. By pixel area ${d.detections_on_hansen_intact_pct.south}% (south) to ${d.detections_on_hansen_intact_pct.north}% (north) of its detections were on Hansen-intact forest, and the optical check could not tell them from undisturbed forest. Kept here for the record.`;
+    if (d) el('detector-intro').textContent = `The first method flagged a change when HH rose or HV fell by ${d.threshold_db.toFixed(1)} dB against earlier passes. It didn't work (see the validation section). By pixel area ${d.detections_on_hansen_intact_pct.south}% (south) to ${d.detections_on_hansen_intact_pct.north}% (north) of its detections were on Hansen-intact forest, and the optical check couldn't tell them apart from undisturbed forest. We left it here for the record.`;
   }
 
   function limits() {
     const pd = H.frame?.scores?.a_forest_map?.per_date, ds = pd && Object.keys(pd).sort();
     if (!ds?.length) return;
     const f = pd[ds[0]], l = pd[ds[ds.length - 1]];
-    el('lim-seasonal').textContent = `Flags compare the last two passes with the first three, so many are likely seasonal drying rather than clearing. Over the full frame the single-pass forest map agrees with Hansen ${pc(f.oa)} on ${ds[0]} but ${pc(l.oa)} on ${ds[ds.length - 1]}, against an all-forest baseline of ${pc(l.all_forest_baseline)}: late in the dry season, forest looks less like forest to the radar.`;
+    el('lim-seasonal').textContent = `Flags compare the last two passes with the first three, so many are likely seasonal drying rather than clearing. Over the full frame the single-pass forest map agrees with Hansen ${pc(f.oa)} on ${ds[0]} but ${pc(l.oa)} on ${ds[ds.length - 1]}, against an all-forest baseline of ${pc(l.all_forest_baseline)}. Late in the dry season, forest just looks less like forest to the radar.`;
   }
 
   function story() {
@@ -244,12 +244,12 @@
     const p = (title, text, src) => { const n = node('p', ''); n.append(node('b', title), document.createTextNode(text)); if (src) n.append(node('span', ` (${src})`, 'note')); return n; };
     const pd = fr?.a_forest_map?.per_date, ds = pd && Object.keys(pd).sort();
     fill('story', [
-      p('1. The Next Frontier: a place and a sensor.', `The forest edge along the BR-163 highway near Novo Progresso, Pará, where forest is being cut for cattle pasture, watched by NISAR's L-band radar, which sees through cloud. All ${np ?? 'n/a'} passes here from June to October were usable; Sentinel-2 had ${cl ?? 'n/a'} fully clouded scenes of ${sc?.length ?? 'n/a'} in the same dry-season months, and saw the area well the rest of the time.`, 'submission/sources.md; big/cloud.json'),
-      p('2. Radar maps forest well, and the threshold transfers.', `One HV threshold, never refit, agrees with the Hansen forest map on ${pc(ho?.oa)} of held-out blocks in the 20 km window (all-forest baseline ${pc(ho?.all_forest_baseline)}), ${pc(ro?.oa)} in Rondônia (${pc(ro?.all_forest_baseline)}), ${pc(big?.oa)} over 60 km (${pc(big?.all_forest_baseline)}) and ${pc(fm?.oa)} over the full frame (${pc(fm?.all_forest_baseline)}).`, 'headline.json, big.json, frame.json'),
-      p('3. Forest-to-non-forest flags point at real alerts, but most are unconfirmed.', `Flagged blocks over the full frame are ${times(gl?.lost?.precision_like, gl?.control?.precision_like)} more likely than random stable forest to overlap a GLAD-L alert, yet only ${pc(gl?.lost?.precision_like)} of them do.${cats ? ` On the 60 km map ${int(cats.radar_only_unconfirmed?.patches)} of ${int(cats.radar_only_unconfirmed?.patches + cats.alert_supported?.patches)} flagged patches have no alert at all.` : ''}${ds ? ` The map's agreement falls from ${pc(pd[ds[0]].oa)} on the first pass to ${pc(pd[ds[ds.length - 1]].oa)} on the last, so many flags are likely seasonal drying.` : ''}`, 'frame.json, big.json'),
+      p('1. The Next Frontier: a place and a sensor.', `The forest edge along the BR-163 highway near Novo Progresso, Pará, where forest is being cut for cattle pasture. NISAR's L-band radar watches it through the cloud. All ${np ?? 'n/a'} passes from June to October were usable. Over the same dry-season months Sentinel-2 had ${cl ?? 'n/a'} fully clouded scenes out of ${sc?.length ?? 'n/a'}, and saw the area well the rest of the time.`, 'submission/sources.md; big/cloud.json'),
+      p('2. Radar maps forest well, and the threshold carries over.', `We picked one HV threshold and never refit it. It agrees with the Hansen forest map on ${pc(ho?.oa)} of held-out blocks in the 20 km window (all-forest baseline ${pc(ho?.all_forest_baseline)}), ${pc(ro?.oa)} in Rondônia (${pc(ro?.all_forest_baseline)}), ${pc(big?.oa)} over 60 km (${pc(big?.all_forest_baseline)}) and ${pc(fm?.oa)} over the full frame (${pc(fm?.all_forest_baseline)}).`, 'headline.json, big.json, frame.json'),
+      p('3. Forest-to-non-forest flags point at real alerts, but most are unconfirmed.', `Flagged blocks over the full frame are ${times(gl?.lost?.precision_like, gl?.control?.precision_like)} more likely than random stable forest to overlap a GLAD-L alert, but only ${pc(gl?.lost?.precision_like)} of them actually do.${cats ? ` On the 60 km map ${int(cats.radar_only_unconfirmed?.patches)} of ${int(cats.radar_only_unconfirmed?.patches + cats.alert_supported?.patches)} flagged patches have no alert at all.` : ''}${ds ? ` The map's agreement falls from ${pc(pd[ds[0]].oa)} on the first pass to ${pc(pd[ds[ds.length - 1]].oa)} on the last, so many flags are likely seasonal drying.` : ''}`, 'frame.json, big.json'),
       p('4. Our first detector failed, and why.', m?.agreement ? `A 1 dB change detector on the 20 km window matched ${Math.round(m.agreement.precision_like * m.n_detections)} of ${m.n_detections} held-out detections to GLAD-L alerts and caught ${Math.round(m.agreement.recall_like * m.n_reference)} of ${m.n_reference} alert events.${d ? ` Its threshold sat close to the ${d.stable_forest_noise_sd_db.join('–')} dB per-pass noise on stable forest.` : ''}` : 'Pending (metrics.json).', 'data/metrics.json; validation/results_final.md'),
-      p('5. Most new alerts are not in old-growth forest.', gp ? `${gp.share_pct}% of 2026 GLAD-L alert pixels in the 20 km window (${int(gp.on_hansen_loss_2001_2025)} of ${int(gp.alert_pixels)}) fall on land Hansen had already mapped as cleared in 2001–2025: re-clearing of old pasture, which a forest-only method excludes by design.` : 'Pending (headline.json).', 'validation/results_final.md'),
-      p('6. What would fix it.', 'Wet-season and multi-year passes, so seasonal drying can be told apart from clearing; a seasonal correction; a pasture-aware method that also watches re-clearing; and independent human labels instead of our AI check.'),
+      p('5. Most new alerts are not in old-growth forest.', gp ? `${gp.share_pct}% of 2026 GLAD-L alert pixels in the 20 km window (${int(gp.on_hansen_loss_2001_2025)} of ${int(gp.alert_pixels)}) fall on land Hansen had already mapped as cleared in 2001–2025. That's old pasture being cleared again, and a forest-only method leaves it out on purpose.` : 'Pending (headline.json).', 'validation/results_final.md'),
+      p('6. What would fix it.', 'Passes from the wet season and from more than one year, so seasonal drying can be told apart from clearing. A correction for the seasons. A method that knows about pasture and watches it get cleared again. And labels from independent people instead of our AI check.'),
     ]);
   }
 

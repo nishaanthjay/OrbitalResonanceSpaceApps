@@ -250,7 +250,7 @@
       return b;
     }));
     const min = Math.min(...p.share), max = Math.max(...p.share);
-    $('clock-note').textContent = `Share of 100 m blocks classed forest on each pass, among the ${p.valid9.toLocaleString()} display pixels valid on all ${p.dates.length} passes (counted in your browser from the forest_<date>.webp layers). It moves between ${pct(min)} and ${pct(max)}: pass-to-pass swings this size include moisture and speckle, not only clearing, and the dip on the last passes falls in the late dry season, when HV tends to drop as vegetation dries. This is not a forest-loss curve.`;
+    $('clock-note').textContent = `Share of 100 m blocks classed forest on each pass, among the ${p.valid9.toLocaleString()} display pixels valid on all ${p.dates.length} passes (counted in your browser from the forest_<date>.webp layers). It moves between ${pct(min)} and ${pct(max)}: swings this big from one pass to the next come partly from moisture and speckle, not only clearing. The dip at the end falls in the late dry season, when HV tends to drop as plants dry out. Don\'t read this as a forest-loss curve.`;
     $('clock-status').hidden = true;
     $('clock-play').disabled = false;
     clockShow(p.dates.length - 1);
@@ -271,7 +271,7 @@
     const inDays = n.days === 0 ? 'today' : n.days === 1 ? 'tomorrow' : `in ${n.days} days`;
     $('countdown').innerHTML = '';
     $('countdown').append(node('span', 'Next pass, planned repeat cycle', 'cd-k'), node('strong', `${when} · ${inDays}`),
-      node('small', `Counted in 12-day steps from the last pass in this stack (${n.last}). A planned repeat, not a confirmed acquisition.${n.skipped ? ` ${n.skipped} planned pass${n.skipped > 1 ? 'es' : ''} since then ${n.skipped > 1 ? 'are' : 'is'} not processed here.` : ''} This site does not update itself.`));
+      node('small', `Counted in 12-day steps from the last pass in this stack (${n.last}). A planned repeat, not a confirmed acquisition.${n.skipped ? ` ${n.skipped} planned pass${n.skipped > 1 ? 'es' : ''} since then ${n.skipped > 1 ? 'are' : 'is'} not processed here.` : ''} The site doesn\'t update itself.`));
     const cap = document.querySelector('.hero .caption');
     if (cap && !cap.querySelector('.cd')) cap.append(node('span', ` · next planned pass ${inDays}`, 'cd'));
   }
@@ -302,7 +302,7 @@
     const o = optFor(d), cmp = $('ovr');
     const ns = nearestScene(d), gapDays = ns ? Math.round(Math.abs(Date.parse(ns.date) - Date.parse(d)) / DAY) : null;
     if (o && o.file) {
-      $('ovr-optical').onerror = () => { cmp.classList.add('no-opt'); $('ovr-status').hidden = false; $('ovr-status').textContent = 'Sentinel-2 image failed to load. Choose another acquisition.'; };
+      $('ovr-optical').onerror = () => { cmp.classList.add('no-opt'); $('ovr-status').hidden = false; $('ovr-status').textContent = 'The Sentinel-2 image didn\'t load. Try another date.'; };
       $('ovr-optical').src = `${OPT}${o.file}`;
       $('ovr-opt-label').textContent = `${o.date || ''}${Number.isFinite(o.clear_fraction) ? ` · ${(100*o.clear_fraction).toFixed(1)}% of box clear` : Number.isFinite(o.cloud_pct) ? ` · ${o.cloud_pct.toFixed(0)}% cloud` : ''}`;
       cmp.classList.remove('no-opt');
@@ -362,7 +362,7 @@
         ['Median clear share per Sentinel-2 scene', pct(s.median_clear_fraction)],
         ['Sentinel-2 scenes fully clouded (clear < 2%)', `${c.scenes.filter((x) => x.clear_fraction_aoi < 0.02).length} of ${c.scenes.length}`],
       ]));
-      $('ovr-note').textContent = 'June to October is the dry season here, and Sentinel-2 saw this box well: it was not blinded in this window. What radar adds is that no pass is lost to cloud, so every 12-day map is usable without screening. The wet season (about November to May), when cloud is heavier, was not measured. Clear shares come from Sentinel-2 scene classification, which misses haze and small clouds. Source: big/cloud.json.';
+      $('ovr-note').textContent = 'June to October is the dry season here, and Sentinel-2 saw this box fine. Cloud didn\'t blind it. What radar adds is that cloud never costs you a pass, so every 12-day map works without screening. We didn\'t measure the wet season (about November to May), when there\'s more cloud. The clear shares come from Sentinel-2\'s scene classification, which misses haze and small clouds. Source: big/cloud.json.';
     } else $('ovr-timeline').replaceChildren(node('span', 'pending', 'tag'));
     ovrShow(meta.dates.length - 1);
   }
@@ -409,7 +409,7 @@
       };
       rows.forEach((a, i) => areas.append(row(`${i + 1}. ${a.name}`, `${a.kind.split(' (')[0]} · ${a.etnia_nome || ''}`.replace(/ · $/, ''), `${int(a.lost_blocks_inside)} ha`, a.lost_share_of_valid_blocks)));
       if (o.lost_blocks != null) areas.append(row('Outside all protected areas', 'for comparison', `${int(o.lost_blocks)} ha`, o.lost_share_of_valid_blocks, 'ref'));
-      areas.append(node('p', `Bar = share of the area's mapped 100 m blocks flagged forest-to-non-forest June to October (${rows.map((a) => `${a.name} ${pct(a.lost_share_of_valid_blocks)}`).join(', ')}; outside ${pct(o.lost_share_of_valid_blocks)}). Whole 60 km map, test window included; a block counts when its centre is inside the official FUNAI boundary. MMA CNUC lists no conservation unit in this box. Flags are unconfirmed radar change, and some are likely seasonal drying.`, 'note'));
+      areas.append(node('p', `Bar = share of the area's mapped 100 m blocks flagged forest-to-non-forest June to October (${rows.map((a) => `${a.name} ${pct(a.lost_share_of_valid_blocks)}`).join(', ')}; outside ${pct(o.lost_share_of_valid_blocks)}). Whole 60 km map, test window included; a block counts when its centre is inside the official FUNAI boundary. MMA CNUC lists no conservation unit in this box. Nobody has confirmed these flags, and some are probably seasonal drying.`, 'note'));
     } else areas.append(node('span', 'pending', 'tag'));
 
     const box = $('threat-clusters');
@@ -470,7 +470,7 @@
     $('tour').hidden = false;
     const steps = [
       async () => {
-        caption('NISAR L-band radar observations of this Amazon frontier: nine exported passes, with a 24-day maximum gap. Cloud does not obscure the radar signal.', 1, 9);
+        caption('NISAR\'s L-band radar over this stretch of Amazon frontier: nine passes, never more than 24 days apart. Cloud doesn\'t get in the radar\'s way.', 1, 9);
         toTop(); setMode('intro'); set3D(false, 0);
         if (!reduced) { map.jumpTo(START()); spin(); await flyIn(); } else await wait(4000, tok);
         await wait(1200, tok);
@@ -488,7 +488,7 @@
       },
       async () => {
         if (!meta) return;
-        caption('Blocks flagged as switching from forest to non-forest rise as columns: height is patch area, colour is the pass they first switched. Unconfirmed radar change.', 4, 9);
+        caption('Blocks flagged as going from forest to non-forest pop up as columns. Taller means a bigger patch, and the colour is the pass where it first switched. None of this is confirmed.', 4, 9);
         set3D(true, 2000); await wait(2200, tok);
         if (!reduced) map.easeTo({ bearing: map.getBearing() + 70, duration: 6500, easing: (t) => t });
         await wait(6800, tok); set3D(false, 1200); await wait(1300, tok);
@@ -505,16 +505,16 @@
         await go('frame'); await wait(7000, tok);
       },
       async () => {
-        caption('The frontier clock: the 60 km forest map redrawn from each pass, with its forest share.', 7, 9);
+        caption('The frontier clock: the 60 km forest map drawn again for each pass, with how much of it is forest.', 7, 9);
         setMode('intro'); await wait(300, tok); scrollToId('frontier'); await wait(1200, tok);
         clockStop(); clockShow(0); clockPlay(); await wait(7200, tok); clockStop();
       },
       async () => {
-        caption('Where to look first: flagged blocks inside Indigenous lands and the largest flagged patches, pass by pass. It does not stop deforestation; it shows where to check.', 8, 9);
+        caption('Where to look first: flagged blocks inside Indigenous lands and the biggest flagged patches, pass by pass. This won\'t stop deforestation. It shows people where to check.', 8, 9);
         scrollToId('threats'); await wait(8000, tok);
       },
       async () => {
-        caption('Investigate evidence before assigning a cause: dated optical context, alert agreement, and explicit rainfall, soil moisture and fire availability. Regional context is not patch-level confirmation.', 9, 9);
+        caption('Look at the evidence before you name a cause: dated optical images, whether alerts agree, and whether rainfall, soil moisture and fire data exist for that date. Regional context doesn\'t confirm anything at the patch.', 9, 9);
         scrollToId('environment'); document.dispatchEvent(new Event('evidence:tour')); await wait(7500, tok);
       },
     ];

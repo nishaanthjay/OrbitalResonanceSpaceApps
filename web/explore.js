@@ -213,7 +213,7 @@ function drawLegend() {
   }
   const bar = (css, lo, hi, unit) => `<div class="legend" style="background:${css}"></div><div class="legend-lab"><span>${lo}</span><span>${hi}</span></div><div class="note">${unit}</div>`;
   if (L === 'hv' || L === 'hh') el.innerHTML = bar('linear-gradient(90deg,#000,#fff)', `${s[L].lo} dB`, `${s[L].hi} dB`, `${L.toUpperCase()} gamma0, one fixed stretch for all dates (values outside are clipped)`);
-  else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, 'This date minus the mean of all earlier dates. Computed on ~80 m cells; changes under 1 dB are transparent (per-date noise ~0.4 dB at 20 m). Display preview from the clipped layers: real drops can be larger.');
+  else if (L.endsWith('chg')) el.innerHTML = bar('linear-gradient(90deg,#00f,#fff,#f00)', `-${state.manifest.change_range_db} dB (drop)`, `+${state.manifest.change_range_db} dB (rise)`, 'This date minus the average of all earlier dates, on ~80 m cells. Changes under 1 dB are left transparent (noise on a single date is ~0.4 dB at 20 m). It\'s a preview built from the clipped display layers, so real drops can be bigger.');
   else el.innerHTML = `<div class="note">Red = HH (${s.hh.lo} to ${s.hh.hi} dB), green = HV (${s.hv.lo} to ${s.hv.hi} dB), blue = HH&minus;HV (${s.ratio.lo} to ${s.ratio.hi} dB). Green/yellow = forest, purple/blue = cleared or bare.</div>`;
 }
 
@@ -297,7 +297,7 @@ function drawChart(lon, lat, fresh = true) {
   if (isForestLoc()) { $('chart').innerHTML = `<div class="hint">Click a ${isFrame() ? 'magenta' : 'red'} flagged patch to see its HV series against the forest threshold.</div>`; return; }
   const c = cellAt(lon, lat), el = $('chart');
   if (!c) { el.innerHTML = '<div class="hint">Outside the radar window. Click inside the image.</div>'; return; }
-  if (!state.series) { el.textContent = 'Pixel time series not available. Try a detection patch or reload.'; return; }
+  if (!state.series) { el.textContent = 'No pixel time series here. Try a detection patch, or reload.'; return; }
   const v = valuesAt(...c), ref = state.loc.stable_forest_ref;
   if (!v.hv.some(Boolean)) { el.innerHTML = '<div class="hint">No radar data at this spot.</div>'; return; }
   const clippedAny = [...v.hh, ...v.hv].some((p) => p && p.clipped);
@@ -321,7 +321,7 @@ function drawDetection(f, lngLat, fresh = true) {
     return;
   }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh, hv }, state.loc.stable_forest_ref, dates, fresh)}
-    <div class="note">${KEY} (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. Whether this patch is clearing or radar noise is not established by the available optical chip check. Independent human review is needed.</div>`;
+    <div class="note">${KEY} (dB): mean over this patch from the full-precision stack (5&times;5 multilook), ${esc(p.stage)} stage. Dashed = stable radar forest from the display layers (median of ${state.loc.stable_forest_ref.n_pixels.toLocaleString()} px), for scale only. The optical chip check we have can't tell whether this patch is clearing or radar noise. Someone independent needs to review it.</div>`;
   placeMarker(lngLat.lng, lngLat.lat, fresh);
 }
 // A clicked lost patch on the 60 km map: patch-mean HV from the stack (lost.geojson hv_series_db) vs the fixed threshold.
@@ -334,7 +334,7 @@ function drawLost(f, lngLat, fresh = true) {
   const hv = Array.isArray(p.hv_series_db) && p.hv_series_db.length === dates.length ? p.hv_series_db.map((x) => (Number.isFinite(x) ? { db: x, clipped: false } : null)) : null;
   if (!hv) { el.innerHTML = `<div class="ctitle">${title}</div><div class="warn">Series not drawn: hv_series_db must hold ${dates.length} numbers.</div>`; return; }
   el.innerHTML = `<div class="ctitle">${title}</div>${chartSVG({ hh: dates.map(() => null), hv }, { hh: [], hv: dates.map(() => T) }, dates, fresh)}
-    <div class="note"><b style="color:${CHART.hv}">HV</b> (dB): mean over this patch's 100 m blocks from the full-precision stack. Dashed = the fixed forest threshold ${T.toFixed(2)} dB (above = forest). A drop below the line can also come from moisture or speckle; ${p.n_blocks === 1 ? 'this is a single 1 ha block, ' : ''}unverified.</div>`;
+    <div class="note"><b style="color:${CHART.hv}">HV</b> (dB): mean over this patch's 100 m blocks from the full-precision stack. Dashed = the fixed forest threshold ${T.toFixed(2)} dB (above = forest). Moisture or speckle can also push it below the line. ${p.n_blocks === 1 ? 'This is a single 1 ha block, and ' : 'It\'s '}unverified.</div>`;
   placeMarker(lngLat.lng, lngLat.lat, fresh);
 }
 function redrawLast() { // same selection, new pass: redraw without the entrance animation
@@ -490,7 +490,7 @@ function renderBigResults(meta) {
   rows.forEach(([k, v]) => dl.append(mk('dt', k), mk('dd', v)));
   box.append(dl);
   const w = sc.alert_windows || {};
-  box.append(mk('p', 'Flagged blocks are unconfirmed radar change: the rule compares the last two passes (late dry season), so some flags are likely seasonal drying. Enrichment vs random stable forest is the signal; the flagged area is not forest loss.', 'note'));
+  box.append(mk('p', 'Nobody has confirmed these flagged blocks. The rule compares the last two passes, which fall late in the dry season, so some flags are probably the forest drying out. What counts is how they compare with random stable forest. Don\'t read the flagged area as forest loss.', 'note'));
   box.append(mk('p', `Alerts dated ${w.precision ? w.precision.join(' to ') : 'n/a'} (±24 days around ${w.reference ? w.reference.join(' to ') : 'n/a'}). Scored once, rules pre-registered in validation/PREREG_scale.md; full numbers in validation/scale_metrics.json.`, 'note'));
 }
 
@@ -592,12 +592,12 @@ function renderBigExtras(meta, cloud) {
     cats.append(kvList([
       ['Alert-supported (GLAD-L or GLAD-S2 in the patch)', `${int(a.patches)} patches · ${int(a.ha)} ha`],
       ['Radar only, unconfirmed', `${int(r.patches)} patches · ${int(r.ha)} ha`],
-    ]), mk('p', 'Radar-only patches are unconfirmed radar change, not deforestation. Alerts dated 2026-06-26 to 2026-11-05; whole 60 km map incl. the test window.', 'note'));
+    ]), mk('p', 'Radar-only patches are radar change that nobody has confirmed. They aren\'t deforestation. Alerts are dated 2026-06-26 to 2026-11-05, over the whole 60 km map including the test window.', 'note'));
   } else cats.append(mk('span', 'pending', 'tag'));
 
   const wp = meta.watch_priorities, list = $('big-watch'); list.replaceChildren();
   if (wp && Array.isArray(wp.items)) {
-    $('big-watch-note').textContent = 'The 20 largest flagged patches. Distance = to land already non-forest at the start (100 m = touching). Places to check first, not confirmed clearing. Click one to fly there.';
+    $('big-watch-note').textContent = 'The 20 biggest flagged patches. Distance is to land that was already non-forest at the start (100 m means touching). Check these first, but none is confirmed clearing. Click one to fly to it.';
     wp.items.forEach((it) => {
       const li = mk('li'), b = mk('button', undefined, 'watch-item'); b.type = 'button';
       b.append(mk('b', `${it.area_ha} ha`), mk('span', `${it.category === 'alert_supported' ? 'alert-supported' : 'radar only'} · from ${it.first_switch_date} · ${int(it.distance_m)} m from cleared land${it.in_original_window ? ' · test window' : ''}`));
@@ -638,7 +638,7 @@ function renderCloud(c) {
     ['Median clear share per scene', pct(s.median_clear_fraction)],
     ['Longest gap between clear Sentinel-2 views', `${s.longest_gap_days_between_good_views} days`],
   ]));
-  box.append(mk('p', 'This window is the dry season and Sentinel-2 saw this area well: Sentinel-2 was not blinded here between June and October. NISAR\'s edge in this window is that every pass is usable with no cloud screening. Cloud builds from September; the wet season (about November to May) was not measured. Scene classification misses haze and small clouds, so clear shares are upper bounds. validation/cloud_blindness.json.', 'note'));
+  box.append(mk('p', 'This is the dry season, and Sentinel-2 actually saw this area well from June to October. Cloud didn\'t blind it. What NISAR adds here is that every pass is usable without screening for cloud. Cloud starts building in September, and we didn\'t measure the wet season (about November to May). Scene classification misses haze and small clouds, so treat the clear shares as upper bounds. validation/cloud_blindness.json.', 'note'));
 }
 
 // ---------- full NISAR frame (web/data/explore/frame/, frame.json + layers; scores copied there from validation/frame_metrics.json) ----------
@@ -710,7 +710,7 @@ function renderFrameResults(meta) {
   $('frame-note').textContent = `Map shows ${int(pg.patches)} flagged patches of at least ${n.geojson_min_area_ha_applied} ha (${int(pg.alert_supported)} alert-supported, ${int(pg.radar_only_unconfirmed)} radar only); smaller patches are in the flag image but not clickable. Full numbers: validation/frame_metrics.json and results_final.md "Forest map, full frame".`;
   const pd = (sc.a_forest_map || {}).per_date || {}, ds = Object.keys(pd).sort();
   if (ds.length >= 2 && typeof pd[ds[0]].oa === 'number' && typeof pd[ds[ds.length - 1]].oa === 'number') {
-    $('frame-note').textContent += ` Caution: single-pass agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (all-forest baseline ${pct(fm.all_forest_baseline)}): HV drops as the dry season goes on. The class-switch rule compares the last two passes, so many flags are likely seasonal drying, not clearing. Flags are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? (al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like).toFixed(1) : 'n/a'}× more likely than random stable forest to overlap a GLAD-L alert, but most are unconfirmed. Never read the flagged area as forest loss.`;
+    $('frame-note').textContent += ` Caution: single-pass agreement with Hansen falls from ${pct(pd[ds[0]].oa)} on ${ds[0]} to ${pct(pd[ds[ds.length - 1]].oa)} on ${ds[ds.length - 1]} (all-forest baseline ${pct(fm.all_forest_baseline)}): HV drops as the dry season goes on. The class-switch rule compares the last two passes, so a lot of the flags are probably seasonal drying, not clearing. Flags are about ${typeof (al['GLAD-L'] || {}).lost === 'object' && al['GLAD-L'].control.precision_like > 0 ? (al['GLAD-L'].lost.precision_like / al['GLAD-L'].control.precision_like).toFixed(1) : 'n/a'}× more likely than random stable forest to overlap a GLAD-L alert, but most of them are unconfirmed. Don\'t read the flagged area as forest loss.`;
   }
 }
 
@@ -740,7 +740,7 @@ async function selectLoc(id) {
   if (frame) loadFrameLost();
   document.querySelectorAll('input[name=layer]').forEach((r) => { r.checked = r.value === state.layer; });
   applyVisibility();
-  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} flagged patch to see its HV series.</div>` : '<div class="hint">Click the map to see HH and HV over all dates at that spot, next to stable forest.</div>';
+  $('chart').innerHTML = forest ? `<div class="hint">Click a ${frame ? 'magenta' : 'red'} flagged patch to see its HV series.</div>` : '<div class="hint">Click anywhere on the map to see HH and HV at that spot on every date, with stable forest next to it.</div>';
   const s = $('date'); s.max = state.loc.dates.length - 1; s.value = state.i;
   drawPasses();
   drawStrip();
@@ -858,4 +858,4 @@ $('boundary').onchange = applyVisibility;
 $('reset-map').onclick = () => fit();
 map.on('error', (e) => { if (/abort/i.test(String(e && e.error && (e.error.name + ' ' + e.error.message)))) return; // a newer image replaced this one
   console.warn('map layer error', e.sourceId || '', e.error);
-  $('map-status').hidden = false; $('map-status').textContent = 'A map layer could not load. Other observations may still be available. Check your connection or try another layer.'; });
+  $('map-status').hidden = false; $('map-status').textContent = 'A map layer didn\'t load. The other layers may still work. Check your connection or pick another layer.'; });
