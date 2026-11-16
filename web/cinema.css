@@ -121,3 +121,55 @@ svg .axis { stroke: var(--moss); stroke-opacity: .55; }
 
 /* four hero cards + facts no longer fit next to each other below 1600 px */
 @media (max-width: 1600px) { .facts, .facts + .divider { display: none; } }
+
+/* frontier clock (Agent B) */
+.clock-stage .clock-date { top: 14px; left: 14px; padding: 8px 16px; font: 800 clamp(26px, 4vw, 40px)/1 var(--sans); letter-spacing: -.02em; color: #fff; font-variant-numeric: proportional-nums; }
+.clock-date small { display: block; margin-top: 4px; font: 600 12px/1.2 var(--sans); letter-spacing: 0; color: var(--text-soft, #b3c1b8); }
+.frontier-head .sp-takeaway, #frontier .sp-takeaway { margin-top: 14px; }
+.clock-stage .sp-callout { bottom: 14px; }
+.clock-stage .sp-callout.forest { left: 14px; }
+.clock-stage .sp-callout.cleared { right: 14px; }
+.clock-stage .compare-status { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; }
+.clock-side p.eyebrow { font-family: var(--sans); text-transform: none; letter-spacing: 0; font-size: 14px; }
+.clock-spark svg .grid { stroke: rgba(206, 217, 223, .16); stroke-width: 1; }
+.clock-spark svg .band { fill: #5fbf6a; fill-opacity: .16; stroke: #5fbf6a; stroke-opacity: .45; stroke-width: 1; }
+.clock-spark svg .band-lab { font: 700 11px var(--sans); fill: var(--text-body, #d3ddd6); }
+.clock-spark svg .lab { font: 500 10.5px var(--sans); fill: var(--text-soft, #b3c1b8); }
+.clock-cap { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-body, #d3ddd6); }
+.clock-steps button { font-family: var(--sans); font-size: 12px; min-height: 30px; }
+.clock-steps button:focus-visible, .clock-play:focus-visible { outline: 2px solid var(--c-spot, #ffe14d); outline-offset: 2px; }
+#clock-how { margin-top: 18px; }
+@media (max-width: 900px) { .clock-stage .clock-date { font-size: 26px; padding: 6px 12px; } .clock-stage .sp-callout { font-size: 13px; bottom: 10px; } .clock-stage .sp-callout.forest { left: 10px; } .clock-stage .sp-callout.cleared { right: 10px; } }
+@media (prefers-reduced-motion: reduce) { .clock-imgs img { transition: none; } .reveal.in .spark-line { animation: none; stroke-dasharray: none; } }
+
+/* photos vs radar + compare (Agent C) */
+.ovr-figure { margin: 0; min-width: 0; width: min(680px, 74vh); max-width: 100%; }
+.ovr-figure .comparison { width: 100%; }
+.ovr-sides { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
+.ovr-sides strong { font: 700 clamp(16px, 1.6vw, 20px)/1.25 var(--sans); color: var(--text-strong, #fff); min-width: 0; }
+.ovr-sides strong:last-child { text-align: right; }
+.ovr-look { margin: 12px 0 0; font-size: 16px; line-height: 1.5; color: var(--text-body, #d3ddd6); max-width: 60ch; }
+.ovr-look b { color: var(--text-strong, #fff); }
+.ovr-look .sp-swatch { margin: 0 4px 0 2px; }
+.ovr-side { display: grid; gap: 10px; align-content: start; min-width: 0; overflow-wrap: anywhere; }
+.ovr-side h3 { margin: 6px 0 0; font: 700 18px/1.3 var(--sans); color: var(--text-strong, #fff); }
+.ovr-side .ovr-passes { margin: 0; }
+.ovr-sentence { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text-body, #d3ddd6); }
+.ovr-timeline .sp-bars { margin-top: 2px; }
+.sp-hint { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--text-soft, #b3c1b8); }
+.sp-limits-wrap { margin: 4px 0 0; font-size: 15px; }
+.compare-layout > * { min-width: 0; }
+#ovr-how, #compare .sp-how { max-width: 860px; }
+@media (max-width: 900px) {
+  .ovr-figure { width: 100%; }
+  .ovr-sides strong { font-size: 15px; }
+}
+
+/* where to look (Agent E) */
+.cl-txt .cat { justify-self: start; padding: 2px 10px; border-radius: 999px; color: #0c1a11; font: 700 13px/1.3 var(--sans); }
+.cat.al { background: var(--c-alert, #35d0e0); color: #0c1a11; } .cat.ro { background: var(--c-cleared, #e8893a); color: #0c1a11; }
+.cl-txt b { font-size: 24px; font-variant-numeric: proportional-nums; }
+.cl-txt small { font: 500 13px/1.4 var(--sans); color: var(--text-soft, #b3c1b8); }
+.threat-row b { font-size: 17px; } .threat-row small { font: 500 13px var(--sans); color: var(--text-soft, #b3c1b8); }
+.threat-row strong { font-variant-numeric: proportional-nums; }
+#threats .sp-how { margin-top: 18px; }

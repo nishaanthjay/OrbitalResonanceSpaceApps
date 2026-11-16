@@ -31,7 +31,23 @@
     const rain=id('env-rain-detail');rain.replaceChildren();if(data.imerg){facts(rain,[3,7,14].map(n=>{const r=E.rain(data.imerg.observations,date,n);return [`Last ${n} full days (UTC)`,r.value===null?`Not available (${r.complete_days} of ${n} days present)`:`${nf(r.value)} mm`];}));}
     const sm=data.smap&&E.smapAt(data.smap,date);id('env-soil-detail').textContent=sm?`${nf(sm.value)} m³/m³ on ${sm.date}, the closest daily regional value within ±3 days. It is a 9 km estimate, partly from a model, not moisture measured at the patch.`:'No checked soil-moisture value within ±3 days. We hold back dates hit by the May–July location error until a fix is documented.';
     id('env-fire-state').textContent=data.fire?'Available: every date downloaded':!data.fireTried?'Checking data':data.access?.datasets?.firms?.status_label||'Not available';id('env-fire-reason').textContent=data.fire?`${data.fire.features.length.toLocaleString('en-US')} NASA fire detections in the area and dates we downloaded. ${data.fire.provenance?.processing_note||''} "Confidence" is the provider's own code, not a chance of clearing.`:!data.fireTried?'':data.access?.datasets?.firms?.reason||'No checked past NASA fire detections are installed.';
-    id('env-fire-toggle').disabled=!data.fire;updateFireMap();if(selected)renderInvestigation(false);
+    id('env-fire-toggle').disabled=!data.fire;updateFireMap();renderFireSummary();if(selected)renderInvestigation(false);
+  }
+  // Takeaway + strip: the count is E.firesNear (5 km, +/-7 days) for the selected patch and the chosen radar date, the same rule as the investigation panel.
+  function renderFireSummary(){
+    const t=id('env-takeaway'),strip=id('env-fire-strip');if(!t||!strip)return;strip.replaceChildren();
+    if(!selected){t.textContent='Pick a possible clearing to see the fires detected near it.';return;}
+    const d=id('env-date').value,near=E.firesNear(data.fire,selected.point,d);
+    if(near===null){t.textContent=data.fire||!data.fireTried?'Fire detections are not available for this spot and date.':'Fire detections are not available.';return;}
+    t.textContent=`Fires detected near this spot: ${near.length}, within 7 days of this date.`;
+    const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),mid=Date.parse(d),W=360,X=ms=>20+(ms-(mid-7*E.DAY))/(14*E.DAY)*(W-40);
+    svg.setAttribute('viewBox','0 0 360 70');svg.setAttribute('role','img');
+    svg.setAttribute('aria-label',`Timeline from 7 days before to 7 days after ${d}: ${near.length} fire detections within 5 km of this spot.`);
+    const mk=(n,o)=>{const e=document.createElementNS(ns,n);for(const [k,v] of Object.entries(o))e.setAttribute(k,v);return e;};
+    svg.append(mk('line',{x1:20,x2:W-20,y1:38,y2:38,stroke:'#8f9c94','stroke-width':2}),mk('line',{x1:X(mid),x2:X(mid),y1:14,y2:62,stroke:'#e5e9df','stroke-dasharray':'3 3'}));
+    for(const [x,y,txt,anchor] of [[20,10,'7 days before','start'],[X(mid),10,'radar pass','middle'],[W-20,10,'7 days after','end']]){const tx=mk('text',{x,y:y+58,'text-anchor':anchor});tx.textContent=txt;svg.append(tx);}
+    near.forEach((o,i)=>{const c=mk('circle',{cx:X(Date.parse(o.feature.properties.date)),cy:38-(i%3-1)*9,r:5,fill:'#e8893a',stroke:'#0c1a11'});const ti=document.createElementNS(ns,'title');ti.textContent=`${o.feature.properties.acquired_at_utc||o.feature.properties.date}, ${nf(o.distance_km)} km from the centre`;c.append(ti);svg.append(c);});
+    strip.append(svg);
   }
   function updateFireMap(){
     if(typeof map==='undefined'||!map.isStyleLoaded()||!data.fire)return;
@@ -61,6 +77,10 @@
   function renderInvestigation(images=true){
     if(!selected)return;const {feature:f,kind,point,dates:ds}=selected,p=f.properties,first=p.first_switch_date||p.first_date||p.first_flagged,d=id('env-date').value||first;
     id('invest-title').textContent=`${kind==='det'?'Radar change patch':'Possible clearing'} ${p.id}`;const interpretation=E.interpretation(kind,p);id('invest-category').textContent=interpretation.category;id('invest-rule').textContent=interpretation.rule;
+    {const area=Number.isFinite(p.area_ha)?` About ${Math.round(p.area_ha).toLocaleString('en-US')} ha.`:'',when=first?` after ${first}`:'',nearS=E.firesNear(data.fire,point,d);
+      id('invest-saw').textContent=(kind==='det'?(p.stage==='early'?'The ground signal rose':p.stage==='late'?'The tree signal dropped':'The radar signal changed'):'The tree signal dropped and the area turned from forest to open land')+when+'.'+area;
+      id('invest-agree').textContent=(interpretation.category.includes('agreement')?'Yes: a separate alert system (GLAD) also flagged it.':'No: no alert matches it.')+' '+(nearS===null?'Fire check not available.':`Fires nearby: ${nearS.length}.`);
+      id('invest-verdict').textContent='Not confirmed';}
     const radar=id('invest-radar');radar.replaceChildren();facts(radar,[['First flagged (first pass seen as open land)',first||'Not available'],['Patch area',`${nf(p.area_ha)} ha`],['Radar passes',String(ds.length)],['Radar method',kind==='det'?'Our first detector (1 dB change rule), kept for the record.':'Fixed forest-to-open-land rule on 100 m squares.'],['How sure we are','Not calibrated: we calculate no probability.']]);
     const details=node('details'),summary=node('summary','Ground and tree signal values, and the change since the first pass'),table=node('table'),head=node('tr');['NISAR date','Ground (HH) dB','Tree (HV) dB','Tree change (ΔHV) dB'].forEach(t=>head.append(node('th',t)));table.append(head);const hv=p.hv_series_db,hh=p.hh_series_db;ds.forEach((date,i)=>{const tr=node('tr'),v=hv?.[i],base=hv?.[0];[date,nf(hh?.[i]),nf(v),nf(Number.isFinite(v)&&Number.isFinite(base)?v-base:null)].forEach(v=>tr.append(node('td',String(v))));table.append(tr);});details.append(summary,table);radar.append(details);
     if(images){const box=id('invest-optical');box.replaceChildren();const token=++opticalVersion,pair=E.opticalPair(data.optical,...point,first);box.append(opticalFigure(pair.before,'Before',point,f,token),opticalFigure(pair.after,'After',point,f,token));id('invest-optical-note').textContent='The closest photo before, and on or after, the first-change date, within 30 days. Each crop is a 3.2 km square (EPSG:3857 grid), redrawn at about 100 m. Yellow outline: the radar patch. We don\'t remove cloud, and nobody has labelled the patch by eye. Photo support: unassessed. Someone independent has to check the dates and the local cloud.';}

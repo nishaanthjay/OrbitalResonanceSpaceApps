@@ -192,13 +192,25 @@
     const big = H.big?.scores?.forest_map_vs_hansen, fr = H.frame?.scores, fm = fr?.a_forest_map?.median, gl = fr?.b_alerts?.['GLAD-L'];
     const sc = H.cloud?.scenes, cl = Array.isArray(sc) ? sc.filter(s => s.clear_fraction_aoi < 0.02).length : null;
     const np = H.cloud?.nisar_passes?.length;
-    const item = (k, big1, vs, txt, tips = []) => { const a = node('article', '', 'fact'), s = node('small', txt); tips.forEach(t => s.append(Glossary.tipEl(t))); a.append(node('span', k, 'k'), node('strong', big1), node('span', vs, 'vs'), s); return a; };
+    const g = n => Number.isFinite(n) ? SP.pct(n) : 'n/a';
+    const item = (k, big1, vs, txt, tip, exact) => { const a = node('article', '', 'fact'), s = node('small', txt); if (tip) s.append(Glossary.tipEl(tip)); if (exact) a.title = exact; a.append(node('span', k, 'k'), node('strong', big1), node('span', vs, 'vs'), s); return a; };
+    const ratio = Number.isFinite(gl?.lost?.precision_like) && Number.isFinite(gl?.control?.precision_like) && gl.control.precision_like > 0 ? SP.times(gl.lost.precision_like / gl.control.precision_like) : 'n/a';
     fill('facts', [
-      item('60 km forest map', pc(big?.oa), `agreement with the Hansen map, versus ${pc(big?.all_forest_baseline)} if you just guessed "forest" everywhere`, 'Tested on an area the method had never seen, using the typical map over all 9 passes.', ['hansen', 'holdout', 'median']),
-      item(`Whole radar image, ${int(fr?.blocks?.scored_km2)} km² scored`, pc(fm?.oa), `agreement, versus ${pc(fm?.all_forest_baseline)} if you just guessed "forest" everywhere`, `Same brightness cut-off, tested once. Agreement score without lucky guesses: ${Number.isFinite(fm?.kappa) ? fm.kappa.toFixed(2) : 'n/a'}.`, ['frame', 'threshold', 'kappa']),
-      item('Possible clearings, whole image', times(gl?.lost?.precision_like, gl?.control?.precision_like), `more likely than random forest that didn't change to match a GLAD-L alert (${pc(gl?.lost?.precision_like)} vs ${pc(gl?.control?.precision_like, 2)})`, 'This is not accuracy: possible clearings are not confirmed.', ['flag', 'enrichment', 'glad']),
-      item('Dry season, June to October', np ? `${np} of ${np}` : 'n/a', `radar passes usable · Sentinel-2 photos: ${cl ?? 'n/a'} of ${sc?.length ?? 'n/a'} fully hidden by cloud (clear < 2%)`, 'Still, the European photo satellite saw this area well most of the time.', ['dryseason', 'sentinel2']),
+      item('60 km forest map', g(big?.oa), `agrees with the standard map (Hansen). Guessing "forest" everywhere gets ${g(big?.all_forest_baseline)}.`, 'Tested on an area it had never seen.', 'hansen', `Exact: ${pc(big?.oa)} vs ${pc(big?.all_forest_baseline)} guessing. Full figures in How good is it.`),
+      item('Whole radar image', g(fm?.oa), `agrees with the standard map. Guessing "forest" gets ${g(fm?.all_forest_baseline)}.`, `About ${Number.isFinite(fr?.blocks?.scored_km2) ? SP.about(fr.blocks.scored_km2, 1000).replace('about ', '') : 'n/a'} km² scored, same settings, tested once.`, 'frame', `Exact: ${pc(fm?.oa)} vs ${pc(fm?.all_forest_baseline)} guessing; kappa ${Number.isFinite(fm?.kappa) ? fm.kappa.toFixed(2) : 'n/a'}; ${int(fr?.blocks?.scored_km2)} km² scored.`),
+      item('Possible clearings', ratio, 'more likely than untouched forest to match a deforestation alert (GLAD-L).', 'Not confirmed, so this is not accuracy.', 'flag', `Exact: ${pc(gl?.lost?.precision_like)} vs ${pc(gl?.control?.precision_like, 2)} (${times(gl?.lost?.precision_like, gl?.control?.precision_like)}).`),
+      item('Dry season, June to October', np ? `${np} of ${np}` : 'n/a', `radar passes usable. Photo satellite: ${cl ?? 'n/a'} of ${sc?.length ?? 'n/a'} scenes fully hidden by cloud.`, 'The photo satellite still saw this area well most of the time.', 'dryseason', 'Fully hidden = under 2% clear sky (Sentinel-2).'),
     ]);
+  }
+  // "In 30 seconds" cards: numbers come from big.json at runtime
+  function in30() {
+    const big = H.big?.scores?.forest_map_vs_hansen, t = el('in30-t2'), box = el('in30-bars');
+    if (!t || !box || !Number.isFinite(big?.oa)) return;
+    t.textContent = `Its forest map agrees with the standard map about ${Math.round(big.oa * 100)} times out of 100.`;
+    box.replaceChildren(SP.bar([
+      { value: big.oa, label: 'Our map', tone: 'forest' },
+      { value: big.all_forest_baseline, label: 'Guessing "forest" everywhere', tone: 'muted' },
+    ], { max: 1, format: SP.pct, label: `Agreement with the standard map: ours ${SP.pct(big.oa)}, guessing forest everywhere ${SP.pct(big.all_forest_baseline)}` }));
   }
 
   function scales() {
@@ -225,7 +237,7 @@
       const tr = document.createElement('tr'); tr.title = src;
       if (!c) { tr.append(node('td', label), node('td', 'pending')); tb2.append(tr); return; }
       const [np, nr] = nfPR(c);
-      [label, `${int(c.n / 100)} km²`, pc(c.oa), pc(c.all_forest_baseline), c.kappa.toFixed(2), `${pc(c.forest_precision)} / ${pc(c.forest_recall)}`, `${pc(np)} / ${pc(nr)}`]
+      [label, `${int(c.n / 100)} km²`, pc(c.oa), pc(c.all_forest_baseline), c.kappa.toFixed(3), `${pc(c.forest_precision)} / ${pc(c.forest_recall)}`, `${pc(np)} / ${pc(nr)}`]
         .forEach((v, i) => tr.append(node(i ? 'td' : 'th', v)));
       tb2.append(tr);
     });
@@ -235,17 +247,26 @@
 
   function validation() {
     const big = H.big?.scores?.forest_map_vs_hansen, fm = H.frame?.scores?.a_forest_map?.median;
-    const dl = node('dl', '', 'kv');
-    [['60 km map: agrees with Hansen', big && `${pc(big.oa)}, versus ${pc(big.all_forest_baseline)} if you just guessed 'forest' · score without lucky guesses ${big.kappa.toFixed(2)}`, 'agreement'],
-     ['Whole radar image: agrees with Hansen', fm && `${pc(fm.oa)}, versus ${pc(fm.all_forest_baseline)} if you just guessed 'forest' · score without lucky guesses ${fm.kappa.toFixed(2)}`, 'agreement'],
-     ["Whole radar image: when we say 'not forest', how often Hansen does too", fm && pc(nfPR(fm)[0]), 'precision']].forEach(([k, v, tk]) => { const dt = node('dt', k); dt.append(Glossary.tipEl(tk)); dl.append(dt, node('dd', v || 'pending')); });
-    fill('val-forest', [dl]);
-    const t = document.createElement('table'), hr = document.createElement('tr');
+    const gl = H.frame?.scores?.b_alerts?.['GLAD-L'], lp = gl?.lost?.precision_like, cp = gl?.control?.precision_like;
+    const small = v => Number.isFinite(v) && v < 0.005 ? 'under 1%' : SP.pct(v); // a share that rounds to 0% reads "under 1%"
+    const card = (bigText, lines, bars, label) => { const c = node('article', '', 'sp-card'); c.append(node('span', bigText, 'sp-big')); lines.forEach(l => c.append(l)); c.append(SP.bar(bars, { max: 1, format: SP.pct, label })); return c; };
+    const line = (txt, tip) => { const p = node('p', txt); if (tip) p.append(Glossary.tipEl(tip)); return p; };
+    const timesBig = Number.isFinite(lp) && Number.isFinite(cp) && cp > 0 ? SP.times(lp / cp) : 'not available';
+    fill('val-forest', [
+      card(SP.outOf100(big?.oa), [line('Our 60 km map agrees with the standard forest map.', 'agreement')],
+        [{ value: big?.oa, label: 'Our map', tone: 'forest' }, { value: big?.all_forest_baseline, label: "Just guessing 'forest' everywhere", tone: 'muted' }], 'Our 60 km map agrees with the Hansen map; compared with guessing forest everywhere'),
+      card(SP.outOf100(fm?.oa), [line(`Whole radar image, ${SP.about(H.frame?.scores?.blocks?.scored_km2)} km².`)],
+        [{ value: fm?.oa, label: 'Our map', tone: 'forest' }, { value: fm?.all_forest_baseline, label: "Just guessing 'forest' everywhere", tone: 'muted' }], 'Our whole-image map agrees with the Hansen map; compared with guessing forest everywhere'),
+      card(timesBig.charAt(0).toUpperCase() + timesBig.slice(1), [line(`Possible clearings are ${timesBig} more likely than random forest to match a real deforestation alert.`, 'enrichment'), line("That means they're not random. It doesn't mean they're right.")],
+        [{ value: lp, label: 'Possible clearings with an alert', tone: 'alert', text: small(lp) }, { value: cp, label: 'Random forest with an alert', tone: 'muted', text: small(cp) }], 'Share of possible clearings with a GLAD-L alert, compared with random unchanged forest'),
+    ]);
+    const sub = el('analysis-sub'); if (sub) sub.innerHTML = `Tested against the Hansen map and GLAD-L alerts. ${SP.limitsLink()}`;
+    const t = document.createElement('table'), hr = document.createElement('tr'); t.className = 'sp-table';
     [['Area'], ['Alerts from', 'glad'], ['Possible clearings (squares)', 'flag'], ['With an alert'], ['Random unchanged forest with an alert', 'stable'], ['Times more likely (not accuracy)', 'enrichment']].forEach(([h, k]) => { const th = node('th', h); if (k) th.append(Glossary.tipEl(k)); hr.append(th); });
     t.append(hr);
     for (const [name, al] of [['60 km', H.big?.scores?.alerts], ['Whole radar image', H.frame?.scores?.b_alerts]]) for (const src of ['GLAD-L', 'GLAD-S2']) {
       const a = al?.[src], tr = document.createElement('tr');
-      [name, src, int(a?.lost?.n_blocks), pc(a?.lost?.precision_like), pc(a?.control?.precision_like, 2), times(a?.lost?.precision_like, a?.control?.precision_like)].forEach(v => tr.append(node('td', v)));
+      [name, src, int(a?.lost?.n_blocks), pc(a?.lost?.precision_like), pc(a?.control?.precision_like, 2), times(a?.lost?.precision_like, a?.control?.precision_like)].forEach((v, i) => tr.append(node(i ? 'td' : 'th', v)));
       t.append(tr);
     }
     fill('val-enrich', [t]);
@@ -263,14 +284,14 @@
       const usable = hl.n_sample - hl.n_unsure, cleared = Math.round(hl.precision * usable);
       hc.textContent = `Hand check: ${cleared} of ${usable} flags we could check from the unseen half showed clearing in Sentinel-2 photos (${hl.n_unsure} of ${hl.n_sample} had no clear photo). Our AI assistant labelled these without seeing the answer key. An independent human re-label is still pending.`;
     } else hc.textContent = 'Hand check: not loaded yet (metrics.json hand_labeled).';
-    if (d) el('detector-intro').innerHTML = `Our first method flagged a change when the ground signal${Glossary.tip('hh')} rose or the tree signal${Glossary.tip('hv')} fell by ${d.threshold_db.toFixed(1)} dB, compared with earlier passes. It didn't work (see "How good is it" below). By area, ${d.detections_on_hansen_intact_pct.south}% (south) to ${d.detections_on_hansen_intact_pct.north}% (north) of what it flagged was forest Hansen calls untouched. In the photos, these spots looked just like untouched forest. We kept it here for the record.`;
+    if (d) el('detector-intro').innerHTML = `Our first method flagged a change when the ground signal${Glossary.tip('hh')} rose or the tree signal${Glossary.tip('hv')} fell by ${d.threshold_db.toFixed(1)} dB, compared with earlier passes. It didn't work (numbers above). By area, ${d.detections_on_hansen_intact_pct.south}% (south) to ${d.detections_on_hansen_intact_pct.north}% (north) of what it flagged was forest Hansen calls untouched. In the photos, these spots looked just like untouched forest. We kept it here for the record.`;
   }
 
   function limits() {
     const pd = H.frame?.scores?.a_forest_map?.per_date, ds = pd && Object.keys(pd).sort();
     if (!ds?.length) return;
     const f = pd[ds[0]], l = pd[ds[ds.length - 1]];
-    el('lim-seasonal').textContent = `Flags compare the last two passes with the first three, so many are likely seasonal drying, not clearing. Over the whole radar image, a one-pass forest map agrees with Hansen ${pc(f.oa)} on ${ds[0]} but only ${pc(l.oa)} on ${ds[ds.length - 1]}. Just guessing 'forest' gives ${pc(l.all_forest_baseline)}. Late in the dry season, forest just looks less like forest to the radar.`;
+    el('lim-seasonal').innerHTML = `Flags compare the last two passes with the first three, so many are likely seasonal drying, not clearing. Over the whole radar image, a one-pass forest map agrees with Hansen about ${SP.outOf100(f.oa)} on the first pass but only ${SP.outOf100(l.oa)} on the last. Just guessing 'forest' gives ${SP.outOf100(l.all_forest_baseline)}. Late in the dry season, forest looks less like forest to the radar.<br><small class="note">Exact: ${pc(f.oa)} on ${ds[0]}, ${pc(l.oa)} on ${ds[ds.length - 1]}; guessing 'forest' ${pc(l.all_forest_baseline)}.</small>`;
   }
 
   function story() {
@@ -278,6 +299,7 @@
     const hd = H.head, ho = hd?.fnf_holdout_20km?.value, ro = hd?.rondonia_transfer?.value, gp = hd?.glad_l_on_prior_clearing?.value, d = hd?.detector?.value;
     const sc = H.cloud?.scenes, cl = Array.isArray(sc) ? sc.filter(s => s.clear_fraction_aoi < 0.02).length : null, np = H.cloud?.nisar_passes?.length;
     const cats = H.big?.lost_categories?.patches, m = metrics;
+    const pc = v => SP.pct(v), times = (a, b) => Number.isFinite(a) && Number.isFinite(b) && b > 0 ? SP.times(a / b) : 'n/a'; // main text is rounded; exact values live in How we know
     const p = (title, text, src) => { const n = node('p', ''); n.append(node('b', title), document.createTextNode(text)); if (src) n.append(node('span', ` (${src})`, 'note')); return n; };
     const pd = fr?.a_forest_map?.per_date, ds = pd && Object.keys(pd).sort();
     fill('story', [
@@ -304,6 +326,6 @@
       mn.textContent = met.notes ? 'We scored this once, on the unseen south half. We chose the settings on the north half first. Alerts are another map to compare with, not the final word. This is not accuracy. Full record: validation/results_final.md.' : '';
       if (met.notes) { const sm = document.createElement('small'); sm.textContent = ` Technical note: ${met.notes}`; mn.append(sm); }
       el('download-report').disabled = false; }
-    for (const f of [facts, scales, validation, detector, limits, story]) { try { f(); } catch (e) { console.warn(f.name, e); } }
+    for (const f of [facts, in30, scales, validation, detector, limits, story]) { try { f(); } catch (e) { console.warn(f.name, e); } }
   }).catch(() => { el('compare-status').textContent = 'Data unavailable. Check your connection and reload.'; });
 })();

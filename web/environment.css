@@ -31,3 +31,33 @@
 .invest-optical figcaption strong{display:block;color:#e5e9df;font:600 12px/1.5 inherit;margin-bottom:2px}
 .invest-optical figcaption span{display:block}
 .invest-cloudy{margin:0;padding:20px 16px;border:1px dashed #8fa58b77;background:#10201a;font-size:13px!important;line-height:1.55!important;color:#e5e9df!important}
+
+/* shared small section header for Agent E sections (where to look, fires & weather, spots to check) */
+.sp-sechead { max-width: 900px; margin: 0 0 26px; }
+.sp-sechead h2 { font: 600 15px/1.3 var(--sans, sans-serif); color: var(--text-soft, #b3c1b8); margin: 0 0 14px; letter-spacing: 0; }
+.sp-sechead .sp-takeaway { max-width: 32ch; }
+.sp-how-h { font-size: 16px; margin: 18px 0 8px; }
+.sp-how-body .env-dataset p, .sp-how-body p { font-size: 15px; line-height: 1.55; color: var(--text-soft, #b3c1b8); }
+
+/* fires & weather (Agent E) */
+.env-tools label { font: 600 14px/1.4 var(--sans, sans-serif); }
+.env-fire-strip svg { width: 100%; max-width: 560px; height: auto; display: block; }
+.env-fire-strip svg text { fill: #b3c1b8; font: 12px var(--sans, sans-serif); }
+.env-fire-visual { min-height: 8px; }
+.env-planned { font-size: 15px; color: var(--text-soft, #b3c1b8); }
+
+/* spots to check (Agent E) */
+.method-steps { list-style: none; margin: 0 0 26px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.method-steps li { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline; padding: 16px 18px; border-radius: 14px; background: rgba(206, 217, 223, .045); font-size: 16px; line-height: 1.45; color: var(--text-body, #d3ddd6); }
+.method-steps b { font-size: 19px; color: #fff; }
+.method-steps li > span:last-child { grid-column: 1 / -1; }
+.ms-n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--c-forest, #5fbf6a); color: #0c1a11; font-weight: 800; }
+@media (max-width: 760px) { .method-steps { grid-template-columns: 1fr; } }
+
+/* investigation panel summary (Agent E) */
+.invest-summary { padding: 18px 0 !important; }
+.invest-summary ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.invest-summary li { display: grid; gap: 3px; }
+.invest-summary b { font: 700 13px var(--sans, sans-serif); color: #8fa58b; text-transform: uppercase; letter-spacing: .04em; }
+.invest-summary span { font: 600 17px/1.4 var(--sans, sans-serif); color: #fff; }
+.invest-summary .invest-verdict { color: var(--c-cleared, #e8893a); font-size: 20px; }

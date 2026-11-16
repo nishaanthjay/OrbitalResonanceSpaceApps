@@ -508,3 +508,42 @@ table.scales tbody th { color: var(--mist); font: 600 13px var(--sans); }
 /* final pass: strip card captions truncate with an ellipsis instead of running into the next card */
 .card > span:last-child { min-width: 0; overflow: hidden; }
 .card b, .card small { overflow: hidden; text-overflow: ellipsis; }
+
+/* in30 + headline (Agent A) */
+.in30 { padding: 56px 7% 8px; }
+.in30-head h2 { margin: 0 0 22px; font-size: clamp(28px, 3.4vw, 42px); }
+.in30 .sp-card { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.in30 .sp-big { font-size: clamp(22px, 2.2vw, 30px); line-height: 1.2; margin: 0; overflow-wrap: break-word; }
+.in30 .sp-visual { margin: 0; }
+.in30 .sp-visual img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 12px; }
+.in30 figcaption { margin-top: 8px; font-size: 14px; color: var(--text-soft, #b3c1b8); }
+.facts-band .fact strong { font-size: 34px; letter-spacing: -.03em; }
+.facts-band .fact .vs { font-size: 15px; line-height: 1.4; color: var(--text-body, #d3ddd6); }
+.facts-band .fact small { font-size: 13px; color: var(--text-soft, #b3c1b8); }
+@media (min-width: 1600px) { .in30 { padding-left: max(7%, calc((100vw - 1400px) / 2)); padding-right: max(7%, calc((100vw - 1400px) / 2)); } }
+@media (max-width: 560px) { .in30 { padding: 40px 16px 4px; } .facts-band .fact strong { font-size: 28px; } }
+@media (min-width: 901px) { .top nav a { padding: 7px 12px; } }
+
+/* how good is it (Agent D) */
+#analysis .sp-takeaway, #analysis .sp-sub, #analysis .sp-visual { max-width: 1100px; }
+#val-forest.sp-cards { margin-top: 20px; }
+#val-forest .sp-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+#val-forest .sp-card .sp-bars { margin-top: auto; padding-top: 8px; }
+#val-forest .sp-big { margin-bottom: 2px; overflow-wrap: anywhere; }
+#val-forest .sp-card p { margin: 0; }
+#analysis-how { max-width: 1100px; }
+#analysis-how .sp-how-body { max-width: none; }
+#analysis-how .sp-how-body h3 { margin: 22px 0 6px; font-size: 16px; color: var(--text-strong, #fff); }
+#analysis-how .sp-how-body > p, #analysis-how .sp-how-body .note { max-width: 75ch; }
+#analysis-how .sp-table th, #analysis-how .sp-table td { font: 13px var(--sans); font-variant-numeric: tabular-nums; }
+#analysis-how .sp-table thead th { white-space: normal; min-width: 9ch; vertical-align: bottom; }
+#analysis-how .sp-table tbody th { text-align: left; color: var(--mist); font-weight: 600; min-width: 14ch; }
+#analysis-how #detector-first { max-width: none; margin-top: 18px; }
+#analysis-how .metric-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+#analysis-how .analysis-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+#analysis-how #download-report { margin-top: 12px; }
+.sp-limits-box { max-width: 860px; }
+.sp-limits-box .limits { color: var(--text-body, #d3ddd6); font-size: 16px; line-height: 1.5; }
+.sp-limits-box .limits small { display: block; margin-top: 4px; }
+.sp-limits-claim { margin: 14px 0 18px; font: 700 17px/1.4 var(--sans); color: var(--text-strong, #fff); }
+@media (max-width: 600px) { #analysis-how .sp-table th, #analysis-how .sp-table td { padding: 7px 8px; } }
