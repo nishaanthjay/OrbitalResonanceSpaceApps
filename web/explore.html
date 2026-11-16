@@ -24,11 +24,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="observatory.css?v=20261115-plain-3">
-  <link rel="stylesheet" href="cinema.css?v=20261115-plain-3">
-  <link rel="stylesheet" href="environment.css?v=20261115-plain-3">
-  <link rel="stylesheet" href="glossary.css?v=20261115-plain-3">
-  <link rel="stylesheet" href="section-pattern.css?v=20261115-plain-3">
+  <link rel="stylesheet" href="observatory.css?v=20261116-sections-1">
+  <link rel="stylesheet" href="cinema.css?v=20261116-sections-1">
+  <link rel="stylesheet" href="environment.css?v=20261116-sections-1">
+  <link rel="stylesheet" href="glossary.css?v=20261116-sections-1">
+  <link rel="stylesheet" href="section-pattern.css?v=20261116-sections-1">
 </head>
 <body data-environment-registry="data/environment/access-connected.json">
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -42,7 +42,7 @@
     <a href="#optical-radar">Photos vs radar</a>
     <a href="#threats">Where to look</a>
     <a href="#environment">Fires &amp; weather</a>
-    <a href="#impact">How good is it</a>
+    <a href="#analysis">How good is it</a>
     <a href="#limits">Limits</a>
   </nav>
   <button type="button" class="glossary-link" data-open-glossary aria-label="Glossary">Glossary</button>
@@ -72,7 +72,7 @@
   <div class="hero">
     <p class="eyebrow" id="place">Novo Progresso, Par&aacute; &middot; BR-163</p>
     <h1><span class="ln"><span>Amazon Forest Watch</span></span><span class="ln"><span>The Next Frontier.</span></span></h1>
-    <p class="lede">Clouds hide the Amazon from photo satellites. NISAR<button type="button" class="tip" data-tip="nisar">?</button>, a radar satellite, sees through them. Behind this text: <em id="hero-what">its tree-signal image</em>, where forest is bright and cleared land is dark.</p>
+    <p class="lede">Clouds hide the Amazon from photo satellites. NISAR<button type="button" class="tip" data-tip="nisar">?</button>, a radar satellite, sees through them. Behind this text: <em id="hero-what">its tree-signal image</em>.</p>
     <div class="actions">
       <button class="cta" data-go="explore">Explore the map
         <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
@@ -430,9 +430,9 @@
   </details>
       <p class="note">We wrote the rules down before scoring<button type="button" class="tip" data-tip="prereg">?</button> and scored each row once: validation/PREREG_fnf.md, validation/PREREG_scale.md, validation/PREREG_frame.md.</p>
       <p id="metrics-notes" class="note"></p>
-      <button id="download-report" class="mini" disabled>Download data report</button>
     </div>
   </details>
+  <p class="sp-download"><button id="download-report" class="mini" disabled>Download data report</button> <span class="note">All the numbers on this page, with their source files (JSON).</span></p>
 </section>
 
 <!-- ================= validation ================= -->
@@ -461,17 +461,17 @@
 <footer>
   <a class="brand" href="#explore" data-go="intro">Amazon Forest <span>Watch</span></a>
   <div><p>Amazon Forest Watch &middot; The Next Frontier</p><p>By team OrbitalResonance &middot; NASA Space Apps 2026 &middot; challenge: Dancing with the SARs</p><p>An independent challenge project. NASA has not endorsed it.</p></div>
-  <nav aria-label="Research links"><a href="#compare">Compare</a><a href="#detection">Spots to check</a><a href="#sources">Data credits</a><a href="#method">How it works</a><a href="#impact">How good is it</a><a href="#limits">Limits</a><button type="button" class="glossary-link" data-open-glossary>Glossary</button></nav>
+  <nav aria-label="Research links"><a href="#compare">Compare</a><a href="#detection">Spots to check</a><a href="#sources">Data credits</a><a href="#method">How it works</a><a href="#analysis">How good is it</a><a href="#limits">Limits</a><button type="button" class="glossary-link" data-open-glossary>Glossary</button></nav>
   <nav aria-label="Project links"><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps" target="_blank" rel="noopener">GitHub repository</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/submission/sources.md" target="_blank" rel="noopener">Sources</a><a href="https://github.com/nishaanthjay/OrbitalResonanceSpaceApps/blob/main/validation/results_final.md" target="_blank" rel="noopener">Test results</a></nav>
 </footer>
 
 <script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-<script src="glossary.js?v=20261115-plain-3"></script>
-<script src="section-pattern.js?v=20261115-plain-3"></script>
-<script src="explore.js?v=20261115-plain-3"></script>
-<script src="observatory.js?v=20261115-plain-3"></script>
-<script src="cinema.js?v=20261115-plain-3"></script>
-<script src="evidence-core.js?v=20261115-plain-3"></script>
-<script src="environment.js?v=20261115-plain-3"></script>
+<script src="glossary.js?v=20261116-sections-1"></script>
+<script src="section-pattern.js?v=20261116-sections-1"></script>
+<script src="explore.js?v=20261116-sections-1"></script>
+<script src="observatory.js?v=20261116-sections-1"></script>
+<script src="cinema.js?v=20261116-sections-1"></script>
+<script src="evidence-core.js?v=20261116-sections-1"></script>
+<script src="environment.js?v=20261116-sections-1"></script>
 </body>
 </html>
