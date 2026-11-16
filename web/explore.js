@@ -33,6 +33,35 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
 
+// ---------- basemap: Esri satellite imagery is the base everywhere (globe, hero, explorer, 3D) ----------
+// The OpenFreeMap dark style still supplies the glyphs (our labels use them) and the country/state names and borders,
+// which sit above the imagery. Its other vector layers (water, land cover, roads, small places) are the fallback
+// when "Photo map underneath" is unchecked: then the imagery hides and the page-tinted dark map shows instead.
+const OVERLAY = /^(boundary_|place_country|place_state)/; // stays above the imagery in both modes
+let darkBase = []; // vector layers of the dark style shown only without the imagery
+function showImagery(on) {
+  if (!map.getLayer('esri')) return;
+  map.setLayoutProperty('esri', 'visibility', on ? 'visible' : 'none');
+  darkBase.forEach((id) => map.setLayoutProperty(id, 'visibility', on ? 'none' : 'visible'));
+}
+map.on('style.load', () => {
+  if (map.getLayer('esri')) return;
+  const layers = map.getStyle().layers;
+  // tint the dark map to the page palette (canopy ground, understory water); radar and evidence colors are unchanged
+  for (const l of layers) {
+    if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', '#091008');
+    else if (l.type === 'fill' && /water/.test(l.id)) map.setPaintProperty(l.id, 'fill-color', '#1F2F22');
+    else if (OVERLAY.test(l.id) && l.type === 'symbol') { map.setPaintProperty(l.id, 'text-color', '#DDE5D8'); map.setPaintProperty(l.id, 'text-halo-color', 'rgba(9,16,8,0.85)'); }
+    else if (OVERLAY.test(l.id) && l.type === 'line') map.setPaintProperty(l.id, 'line-color', 'rgba(221,229,216,0.45)');
+  }
+  darkBase = layers.filter((l) => l.type !== 'background' && !OVERLAY.test(l.id) && l.layout?.visibility !== 'none').map((l) => l.id);
+  map.addSource('esri', { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+    tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
+  // directly above the background, so the borders/names and everything explore.js adds later (radar, detections, outlines) stay on top
+  map.addLayer({ id: 'esri', type: 'raster', source: 'esri' }, layers.find((l) => l.type !== 'background')?.id);
+  showImagery($('optical').checked); // satellite photo map on by default
+});
+
 function merc(lon, lat) {
   return [R * lon * Math.PI / 180, R * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360))];
 }
@@ -811,14 +840,6 @@ async function selectLoc(id) {
 
 map.on('load', async () => {
   try {
-    // tint the dark basemap to the page palette (canopy ground, understory water); radar and evidence colors are unchanged
-    for (const l of map.getStyle().layers) {
-      if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', '#091008');
-      else if (l.type === 'fill' && /water/.test(l.id)) map.setPaintProperty(l.id, 'fill-color', '#1F2F22');
-    }
-    map.addSource('esri', { type: 'raster', tileSize: 256, maxzoom: 18, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
-      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] });
-    map.addLayer({ id: 'esri', type: 'raster', source: 'esri', layout: { visibility: $('optical').checked ? 'visible' : 'none' } }); // satellite photo map on by default
     const response = await fetch(DATA + 'explore.json');
     if (!response.ok) throw new Error('the list of radar passes is missing');
     state.manifest = await response.json();
@@ -861,7 +882,7 @@ $('passes').onkeydown = (e) => {
   document.querySelector(`.pass[data-i="${state.i}"]`).focus();
 };
 $('opacity').oninput = () => setImage(false);
-$('optical').onchange = (e) => map.setLayoutProperty('esri', 'visibility', e.target.checked ? 'visible' : 'none');
+$('optical').onchange = (e) => showImagery(e.target.checked);
 document.querySelectorAll('input[name=layer]').forEach((r) => (r.onchange = () => { state.layer = r.value; setImage(); }));
 ['det', 'ref', 'han', 'lost', 'prot', 'win', 'fs', 'flost', 'ffs', 'fout'].forEach((k) => ($(`t-${k}`).onchange = applyVisibility));
 $('t-ref').addEventListener('change', () => { if ($('t-ref').checked) ensureRef(); });
