@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Amazon Forest Watch: NASA-ISRO's NISAR radar sees the Amazon through clouds. See a forest map of one whole radar image, possible clearings to check, and what is still not confirmed.">
-  <meta name="theme-color" content="#091008">
+  <meta name="theme-color" content="#0b0d0b">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Amazon Forest Watch">
@@ -23,12 +23,13 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Jost:wght@200;300;400;500;600&family=Pinyon+Script&display=swap">
   <link rel="stylesheet" href="observatory.css?v=20261116-sections-1">
   <link rel="stylesheet" href="cinema.css?v=20261116-sections-1">
   <link rel="stylesheet" href="environment.css?v=20261116-sections-1">
   <link rel="stylesheet" href="glossary.css?v=20261116-sections-1">
   <link rel="stylesheet" href="section-pattern.css?v=20261116-sections-1">
+  <link rel="stylesheet" href="atlas.css?v=20261116-atlas-2">
 </head>
 <body data-environment-registry="data/environment/access-connected.json">
 <a class="skip" href="#explore">Skip to forest map</a>
@@ -220,7 +221,7 @@
 
 <!-- ================= frontier clock ================= -->
 <section id="frontier" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">02 / Over time</p><h2>The forest, pass by pass</h2><p class="sp-takeaway wide" id="frontier-takeaway">Over the radar passes, the forest share stayed about the same.</p></div></div>
+  <div class="section-head reveal"><div><p class="eyebrow"><span class="num">01</span>Over time</p><h2>The forest, pass by pass</h2><p class="sp-takeaway wide" id="frontier-takeaway">Over the radar passes, the forest share stayed about the same.</p></div></div>
   <div class="clock reveal">
     <figure class="clock-stage sp-visual">
       <div class="clock-imgs" id="clock-imgs"></div>
@@ -248,7 +249,7 @@
 
 <!-- ================= optical vs radar ================= -->
 <section id="optical-radar" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">03 / Photos vs radar</p><h2>Same forest, nearby dates</h2></div></div>
+  <div class="section-head reveal"><div><p class="eyebrow"><span class="num">02</span>Photos vs radar</p><h2>Same forest, nearby dates</h2></div></div>
   <p class="sp-takeaway wide reveal" id="ovr-takeaway">Photos can be blocked by cloud. Radar sees the ground on every pass.</p>
   <p class="sp-sub reveal">Pick a radar pass. Drag the divider to compare it with the closest Sentinel-2 photo.</p>
   <div class="compare-layout reveal">
@@ -279,7 +280,7 @@
 
 <!-- ================= threat board ================= -->
 <section id="threats" class="section">
-  <div class="sp-sechead reveal"><p class="eyebrow">04 / Where to look</p><h2>Where to look first</h2>
+  <div class="sp-sechead reveal"><p class="eyebrow"><span class="num">03</span>Where to look</p><h2>Where to look first</h2>
     <p class="sp-takeaway wide" id="threats-takeaway">These are the biggest spots to check first. None is confirmed.</p>
     <p class="sp-sub">Each is a possible clearing<button type="button" class="tip" data-tip="flag">?</button> picked by size. A cyan ring means an alert matches; orange means only the radar flagged it. <a class="sp-limits-link" href="#limits">See what this can't tell you</a></p></div>
   <div class="threat-grid">
@@ -298,7 +299,7 @@
 
 <!-- ================= compare ================= -->
 <section id="compare" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">05 / Compare</p><h2>Compare two radar passes</h2></div></div>
+  <div class="section-head reveal"><div><p class="eyebrow"><span class="num">04</span>Compare</p><h2>Compare two radar passes</h2></div></div>
   <p class="sp-takeaway wide reveal" id="compare-takeaway">Slide to see how the radar view changed between two passes.</p>
   <p class="sp-sub reveal">A change is a reason to look closer, not proof of clearing.</p>
   <div class="compare-layout reveal">
@@ -335,7 +336,7 @@
 <!-- ================= detection ================= -->
 
 <section id="environment" class="section">
-  <div class="sp-sechead"><p class="eyebrow">Fires &amp; weather</p><h2>Check the signal, then what else was going on</h2>
+  <div class="sp-sechead"><p class="eyebrow"><span class="num">05</span>Fires &amp; weather</p><h2>Check the signal, then what else was going on</h2>
     <p class="sp-takeaway wide" id="env-takeaway" aria-live="polite">Pick a possible clearing to see the fires detected near it.</p>
     <p class="sp-sub" id="env-sub">Fires near a spot don't prove they caused the change. The data is NASA's fire detections<button type="button" class="tip" data-tip="firms">?</button>, downloaded afterwards.</p></div>
   <div class="env-tools"><label>Radar pass date<select id="env-date" disabled aria-label="Date to check fires and weather"></select></label><button id="invest-example" disabled type="button">Explore a real disturbance</button><label><input id="env-fire-toggle" type="checkbox" disabled> Show NASA fire detections, ±7 days (looked up afterwards)</label></div>
@@ -355,7 +356,7 @@
 <dialog id="investigation" aria-labelledby="invest-title"><header class="invest-head"><h2 id="invest-title" tabindex="-1">Check a possible clearing</h2><button id="invest-close" type="button" aria-label="Close this panel">Close</button></header><div class="invest-body"><section class="invest-summary" aria-label="Summary"><ol><li><b>What we saw</b><span id="invest-saw"></span></li><li><b>Does anything else agree?</b><span id="invest-agree"></span></li><li><b>Verdict</b><span class="invest-verdict" id="invest-verdict">Not confirmed</span></li></ol></section><section><p class="eyebrow">What the evidence says</p><h3 id="invest-category"></h3><p id="invest-rule"></p></section><section><h3>What the radar saw</h3><div id="invest-radar" class="invest-series"></div><p>Here the change in tree signal<button type="button" class="tip" data-tip="hv">?</button> is measured from the first pass only. The detector compares with the average of several earlier passes instead. The full interactive chart is in the map panel.</p></section><section><h3>Sentinel-2 photos<button type="button" class="tip" data-tip="sentinel2">?</button>, before and after</h3><div id="invest-optical" class="invest-optical"></div><p id="invest-optical-note"></p></section><section><h3>Fires and weather nearby</h3><div id="invest-environment"></div></section></div></dialog>
 
 <section id="detection" class="section">
-  <div class="sp-sechead reveal"><p class="eyebrow">06 / Spots to check</p><h2>Look at possible clearings</h2>
+  <div class="sp-sechead reveal"><p class="eyebrow"><span class="num">06</span>Spots to check</p><h2>Look at possible clearings</h2>
     <p class="sp-takeaway wide" id="detection-takeaway">Open a possible clearing to see its radar history and what else agrees.</p>
     <p class="sp-sub">None of these is confirmed. Pick one below and the map zooms to it. <a class="sp-limits-link" href="#limits">See what this can't tell you</a></p></div>
   <ol id="method" class="method-steps reveal" aria-label="How a spot is found in three steps">
@@ -396,7 +397,7 @@
 
 <!-- ================= analysis ================= -->
 <section id="analysis" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">07 / How good is it</p><h2>How good is our forest map?</h2></div><p>We compared our radar forest map with the Hansen map<button type="button" class="tip" data-tip="hansen">?</button>, the standard forest map made from satellite photos. It is another map, not the final word.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow"><span class="num">07</span>How good is it</p><h2>How good is our forest map?</h2></div><p>We compared our radar forest map with the Hansen map<button type="button" class="tip" data-tip="hansen">?</button>, the standard forest map made from satellite photos. It is another map, not the final word.</p></div>
   <p class="sp-takeaway reveal" id="analysis-takeaway">Our forest map agrees with the standard map most of the time. Our clearing flags are only leads.</p>
   <p class="sp-sub reveal" id="analysis-sub"></p>
   <figure class="sp-visual reveal" aria-label="Three results">
@@ -437,7 +438,7 @@
 
 <!-- ================= validation ================= -->
 <section id="impact" class="section">
-  <div class="section-head reveal"><div><p class="eyebrow">08 / Limits</p><h2>What this can't tell you</h2></div><p>Agreeing with Hansen or GLAD means we match other maps. It is not proof we are right.</p></div>
+  <div class="section-head reveal"><div><p class="eyebrow"><span class="num">08</span>Limits</p><h2>What this can't tell you</h2></div><p>Agreeing with Hansen or GLAD means we match other maps. It is not proof we are right.</p></div>
   <article class="panel glass reveal sp-limits-box">
     <h3>What this can't tell you</h3>
     <ul class="limits" id="limits">
