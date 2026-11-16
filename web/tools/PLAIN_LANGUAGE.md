@@ -3,7 +3,7 @@
 The site is for the general public: no science background, about a 13-year-old reading level.
 Every number, every meaning and every honesty caveat stays exactly as it is. Only the words change.
 
-App name: **Amazon Forest Watch**. Tagline: **The Next Frontier** (the official NASA Space Apps 2026 theme; use these exact words).
+App name: **Through the Clouds** (primary). Secondary line: **Amazon Forest Watch**. Use these exact words.
 
 ## Style rules
 

@@ -1,4 +1,4 @@
-# Amazon Forest Watch: The Next Frontier (web front end, Pro #2)
+# Through the Clouds: Amazon Forest Watch (web front end, Pro #2)
 
 Amazon Forest Watch is a web map that shows the Amazon forest as seen by the NISAR radar satellite, which sees through clouds. It marks possible clearings to check (not confirmed) and compares them with other forest maps and alerts. All visitor-facing text follows the plain-language rules and glossary in [`tools/PLAIN_LANGUAGE.md`](tools/PLAIN_LANGUAGE.md) (tooltips and the Glossary drawer: `glossary.js`, `glossary.css`).
 
