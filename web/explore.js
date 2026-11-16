@@ -68,6 +68,45 @@ function merc(lon, lat) {
 function corners(b) { // b = W S E N
   return [[b[0], b[3]], [b[2], b[3]], [b[2], b[1]], [b[0], b[1]]];
 }
+// outline of the radar data inside an image: convex hull of its non-transparent pixels, as a lon/lat ring (null if it can't be read)
+const footprints = {};
+function dataFootprint(src, b) {
+  if (footprints[src]) return footprints[src];
+  footprints[src] = new Promise((resolve) => {
+    const img = new Image();
+    img.onerror = () => resolve(null);
+    img.onload = () => {
+      try {
+        const k = Math.min(1, 640 / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        const cx = cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(img, 0, 0, w, h);
+        const a = cx.getImageData(0, 0, w, h).data, pts = [];
+        for (let y = 0; y < h; y++) {
+          let l = -1, r = -1;
+          for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3] > 8) { if (l < 0) l = x; r = x; }
+          if (l >= 0) pts.push([l, y], [r + 1, y], [l, y + 1], [r + 1, y + 1]);
+        }
+        if (pts.length < 3) return resolve(null);
+        pts.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+        const cross = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+        const lo = [], hi = [];
+        for (const p of pts) { while (lo.length > 1 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+        for (const p of pts.slice().reverse()) { while (hi.length > 1 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+        const hull = lo.slice(0, -1).concat(hi.slice(0, -1));
+        const [mx0, my0] = merc(b[0], b[3]), [mx1, my1] = merc(b[2], b[1]);
+        const ring = hull.map(([x, y]) => {
+          const mx = mx0 + (x / w) * (mx1 - mx0), my = my0 + (y / h) * (my1 - my0);
+          return [mx / R * 180 / Math.PI, (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) * 180 / Math.PI];
+        });
+        ring.push(ring[0]);
+        resolve(ring);
+      } catch { resolve(null); }
+    };
+    img.src = src;
+  });
+  return footprints[src];
+}
 function hasImage(layer, i) { return !(layer.endsWith('chg') && i === 0); }
 function url(layer, i) {
   if (STATIC_LAYERS[layer]) return `${DATA}${state.loc.id}/${STATIC_LAYERS[layer]}`;
@@ -829,7 +868,14 @@ async function selectLoc(id) {
   drawStrip();
   renderAbout(state.loc, forest);
   const b = state.loc.bounds_lonlat;
-  if (map.getSource('boundary')) map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...corners(b), corners(b)[0]]] } });
+  if (map.getSource('boundary')) {
+    // bounds_lonlat is the padded, tile-aligned image canvas; the edge line traces the radar data inside it (non-transparent pixels)
+    map.getSource('boundary').setData({ type: 'FeatureCollection', features: [] });
+    dataFootprint(url(forest ? 'median' : 'hv', state.loc.dates.length - 1), b).then((ring) => {
+      if (state.loc !== selected || !map.getSource('boundary')) return;
+      map.getSource('boundary').setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring || [...corners(b), corners(b)[0]]] } });
+    });
+  }
   fit(state.mode === 'intro' ? 0 : 1100);
   setImage();
   preload();
